@@ -8,6 +8,7 @@ interface DropDownProps {
     content: React.ReactNode;
     onClick: () => void;
   }[];
+  selectedItem?: string;
   placeHolder: string;
 }
 
@@ -16,14 +17,18 @@ const DropDown: React.FC<DropDownProps> = ({
   onToggle,
   items,
   placeHolder,
+  selectedItem,
 }) => {
   return (
     <div
       onClick={onToggle}
-      className="relative pl-6 p-3 border border-[#2C0A4A] dark:border-[#D7B5F5] rounded-full cursor-pointer 2xl:min-w-46 max-w-46"
+      className="relative pl-6 p-3 border border-[#2C0A4A] dark:border-[#D7B5F5] rounded-full cursor-pointer w-full"
     >
       <div className="gap-2 text-[#2C0A4A] dark:text-[#D7B5F5] text-sm font-medium flex items-center  justify-between">
-        <span className="select-none truncate">{placeHolder}</span>
+        <span className="select-none truncate">
+          {selectedItem ? selectedItem : placeHolder}
+        </span>
+
         <span
           className={`${
             isOpen ? "rotate-270" : "rotate-85"

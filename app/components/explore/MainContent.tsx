@@ -3,118 +3,9 @@ import { useState } from "react";
 import Card from "./card";
 import { ArrowRightIcon, EmptyStateIcon } from "@/public/svg/svg";
 import DropDown from "../DropDown";
-
+import { dummyEvents } from "@/lib/dummyEvents/events";
 function MainContent() {
-  const [events] = useState([
-    {
-      title: "Solana Summer Hackathon",
-      date: "Jun. 02 2025",
-      time: "4:00 pm (UTC +01:00)",
-      location: "Ghana",
-      price: "$100.00",
-      type: "Hackathon",
-      privacy: "Public",
-    },
-    {
-      title: "Taipei City Idol Expo",
-      date: "Jun. 04 2025",
-      time: "4:00 pm (UTC +01:00)",
-      location: "London, UK",
-      price: "$10.00",
-      type: "Expo",
-      privacy: "Private",
-    },
-    {
-      title: "Web3 Community Meetup",
-      date: "Jun. 10 2025",
-      time: "6:00 pm (UTC +01:00)",
-      location: "Berlin, Germany",
-      price: "$0.00",
-      type: "Meetup",
-      privacy: "Public",
-    },
-    {
-      title: "NFT Art Fair",
-      date: "Jun. 12 2025",
-      time: "2:00 pm (UTC +01:00)",
-      location: "New York, USA",
-      price: "$50.00",
-      type: "Expo",
-      privacy: "Private",
-    },
-    {
-      title: "DeFi Summit",
-      date: "Jun. 15 2025",
-      time: "10:00 am (UTC +01:00)",
-      location: "London, UK",
-      price: "$200.00",
-      type: "Conference",
-      privacy: "Public",
-    },
-    {
-      title: "Crypto Gala Night",
-      date: "Jun. 18 2025",
-      time: "8:00 pm (UTC +01:00)",
-      location: "Paris, France",
-      price: "$150.00",
-      type: "Gala",
-      privacy: "Private",
-    },
-    {
-      title: "Blockchain for Good",
-      date: "Jun. 20 2025",
-      time: "3:00 pm (UTC +01:00)",
-      location: "Accra, Ghana",
-      price: "$20.00",
-      type: "Seminar",
-      privacy: "Public",
-    },
-    {
-      title: "DAO Builders Workshop",
-      date: "Jun. 22 2025",
-      time: "1:00 pm (UTC +01:00)",
-      location: "Berlin, Germany",
-      price: "$75.00",
-      type: "Workshop",
-      privacy: "Private",
-    },
-    {
-      title: "Metaverse Fashion Week",
-      date: "Jun. 25 2025",
-      time: "5:00 pm (UTC +01:00)",
-      location: "Milan, Italy",
-      price: "$120.00",
-      type: "Expo",
-      privacy: "Public",
-    },
-    {
-      title: "Smart Contract Bootcamp",
-      date: "Jun. 28 2025",
-      time: "11:00 am (UTC +01:00)",
-      location: "San Francisco, USA",
-      price: "$300.00",
-      type: "Workshop",
-      privacy: "Private",
-    },
-    {
-      title: "Women in Crypto Summit",
-      date: "Jul. 01 2025",
-      time: "9:00 am (UTC +01:00)",
-      location: "Lagos, Nigeria",
-      price: "$80.00",
-      type: "Conference",
-      privacy: "Public",
-    },
-    {
-      title: "Gaming on Blockchain",
-      date: "Jul. 03 2025",
-      time: "7:00 pm (UTC +01:00)",
-      location: "Tokyo, Japan",
-      price: "$60.00",
-      type: "Seminar",
-      privacy: "Private",
-    },
-  ]);
+  const [events] = useState(dummyEvents);
   const [IsLocationOpen, setIsLocationOpen] = useState(false);
   const [isPriceOpen, setIsPriceOpen] = useState(false);
   const [isDateOpen, setIsDateOpen] = useState(false);
@@ -142,14 +33,16 @@ function MainContent() {
   ];
 
   // Unique prices (sorted ascending)
-  const prices = Array.from(new Set(events.map((event) => event.price))).sort(
+  const prices = Array.from(
+    new Set(events.map((event) => event.price.toString()))
+  ).sort(
     (a, b) => parseFloat(a.replace("$", "")) - parseFloat(b.replace("$", ""))
   );
   const priceOptions = [
     { content: "All", onClick: () => setSelectedPrice(null) },
     ...prices.map((price) => ({
       content: price,
-      onClick: () => setSelectedPrice(price),
+      onClick: () => setSelectedPrice(price.toString()),
     })),
   ];
 
@@ -174,7 +67,7 @@ function MainContent() {
   ];
 
   // Unique privacy options
-  const privacies = Array.from(new Set(events.map((event) => event.privacy)));
+  const privacies = Array.from(new Set(events.map((event) => event.type)));
   const privacyOptions = [
     { content: "All", onClick: () => setSelectedPrivacy(null) },
     ...privacies.map((privacy) => ({
@@ -187,10 +80,11 @@ function MainContent() {
   const filteredEvents = events.filter((event) => {
     const matchLocation =
       !selectedLocation || event.location === selectedLocation;
-    const matchPrice = !selectedPrice || event.price === selectedPrice;
+    const matchPrice =
+      !selectedPrice || event.price.toString() === selectedPrice;
     const matchDate = !selectedDate || event.date === selectedDate;
     const matchType = !selectedEventType || event.type === selectedEventType;
-    const matchPrivacy = !selectedPrivacy || event.privacy === selectedPrivacy;
+    const matchPrivacy = !selectedPrivacy || event.type === selectedPrivacy;
     return (
       matchLocation && matchPrice && matchDate && matchType && matchPrivacy
     );
@@ -217,36 +111,48 @@ function MainContent() {
           </div>
           {/* Desktop: Show dropdowns, Mobile: Show 4 dots that open dropdowns */}
           <div className="lg:flex gap-2.5 items-center hidden">
-            <DropDown
-              items={privacyOptions}
-              isOpen={isPrivacyOpen}
-              onToggle={() => setIsPrivacyOpen(!isPrivacyOpen)}
-              placeHolder={selectedPrivacy ? selectedPrivacy : "Privacy"}
-            />
-            <DropDown
-              items={locationOptions}
-              isOpen={IsLocationOpen}
-              onToggle={() => setIsLocationOpen(!IsLocationOpen)}
-              placeHolder={selectedLocation ? selectedLocation : "Location"}
-            />
-            <DropDown
-              items={eventTypeOptions}
-              isOpen={isEventTypeOpen}
-              onToggle={() => setIsEventTypeOpen(!isEventTypeOpen)}
-              placeHolder={selectedEventType ? selectedEventType : "Event Type"}
-            />
-            <DropDown
-              items={priceOptions}
-              isOpen={isPriceOpen}
-              onToggle={() => setIsPriceOpen(!isPriceOpen)}
-              placeHolder={selectedPrice ? selectedPrice : "Price"}
-            />
-            <DropDown
-              items={dateOptions}
-              isOpen={isDateOpen}
-              onToggle={() => setIsDateOpen(!isDateOpen)}
-              placeHolder={selectedDate ? selectedDate : "Date"}
-            />
+            <div className="2xl:min-w-46 max-w-46">
+              <DropDown
+                items={privacyOptions}
+                isOpen={isPrivacyOpen}
+                onToggle={() => setIsPrivacyOpen(!isPrivacyOpen)}
+                placeHolder={selectedPrivacy ? selectedPrivacy : "Privacy"}
+              />
+            </div>
+            <div className="2xl:min-w-46 max-w-46">
+              <DropDown
+                items={locationOptions}
+                isOpen={IsLocationOpen}
+                onToggle={() => setIsLocationOpen(!IsLocationOpen)}
+                placeHolder={selectedLocation ? selectedLocation : "Location"}
+              />
+            </div>
+            <div className="2xl:min-w-46 max-w-46">
+              <DropDown
+                items={eventTypeOptions}
+                isOpen={isEventTypeOpen}
+                onToggle={() => setIsEventTypeOpen(!isEventTypeOpen)}
+                placeHolder={
+                  selectedEventType ? selectedEventType : "Event Type"
+                }
+              />
+            </div>
+            <div className="2xl:min-w-46 max-w-46">
+              <DropDown
+                items={priceOptions}
+                isOpen={isPriceOpen}
+                onToggle={() => setIsPriceOpen(!isPriceOpen)}
+                placeHolder={selectedPrice ? selectedPrice : "Price"}
+              />
+            </div>
+            <div className="2xl:min-w-46 max-w-46">
+              <DropDown
+                items={dateOptions}
+                isOpen={isDateOpen}
+                onToggle={() => setIsDateOpen(!isDateOpen)}
+                placeHolder={selectedDate ? selectedDate : "Date"}
+              />
+            </div>
           </div>
           {/* Mobile: 4 dots */}
           <div className="flex lg:hidden items-center">
@@ -279,17 +185,6 @@ function MainContent() {
               isPrivacyOpen) && (
               <div className="absolute inset-0 z-50 py-4 mt-6 bg-opacity-40 bg-black/5 flex items-center justify-center">
                 <div className="bg-white rounded-lg p-6 w-fit max-w-md space-y-4 relative">
-                  {/* <button
-                    className="absolute top-2 right-2 text-black hover:text-gray-800"
-                    onClick={() => {
-                      setIsLocationOpen(false);
-                      setIsPriceOpen(false);
-                      setIsDateOpen(false);
-                      setIsEventTypeOpen(false);
-                      setIsPrivacyOpen(false);
-                      SetIsFilterSidePenal(false);
-                    }}
-                  ></button> */}
                   <DropDown
                     items={privacyOptions}
                     isOpen={isPrivacyOpen}
@@ -345,7 +240,14 @@ function MainContent() {
         <div className="space-y-15">
           <div className="grid-cols-1 grid sm:grid-cols-2 lg:grid-cols-3  gap-6 ">
             {filteredEvents.slice(0, showCount).map((event, index) => (
-              <Card key={index} {...event} />
+              <Card
+                key={index}
+                date={event.date}
+                location={event.location}
+                price={"$" + event.price.toLocaleString()}
+                time={event.time}
+                title={event.title}
+              />
             ))}
           </div>
           <div className="flex items-center justify-center relative">

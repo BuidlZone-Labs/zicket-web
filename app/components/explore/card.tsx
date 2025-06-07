@@ -1,3 +1,4 @@
+"use client";
 import dummyCardImage from "@/public/images/solana-summar.png";
 import {
   ArrowRightIcon,
@@ -7,6 +8,7 @@ import {
   ShareIcon,
   TicketIcon,
 } from "@/public/svg/svg";
+import { useRouter } from "next/navigation";
 interface CardProps {
   title: string;
   date: string;
@@ -15,6 +17,12 @@ interface CardProps {
   price: string;
 }
 function Card({ title, date, time, location, price }: CardProps) {
+  const router = useRouter();
+
+  const handleNavigate = (eventId: string) => {
+    const path = `/explore/${eventId}`.replaceAll(" ", "-");
+    router.push(path);
+  };
   return (
     <div className="max-w-sm rounded-2xl p-2 border-2 bg-white border-[#E9E9E9]  flex flex-col items-center">
       <div className="border rounded-xl border-[#E9E9E9]">
@@ -50,15 +58,16 @@ function Card({ title, date, time, location, price }: CardProps) {
               <TicketIcon />
               <p className="text-xl font-semibold text-[#1E1E1E]">{price}</p>
             </div>
-            <a
-              href=""
+            <button
+              role="link"
               className="flex items-center text-base font-semibold text-[#2C0A4A] group w-fit"
+              onClick={() => handleNavigate(title)}
             >
               Get Ticket{" "}
               <span className="group-hover:translate-x-1 transition ease-in-out duration-150">
                 <ArrowRightIcon />
               </span>
-            </a>
+            </button>
           </div>
         </div>
       </div>
