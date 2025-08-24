@@ -56,6 +56,7 @@ export default function EventPage({ params }: Props) {
             <TicketInfo
               ticketTypes={event[0].ticketTypes}
               slotsLeft={event[0].slotsLeft}
+              title={event[0].title}
             />
           </div>
         </div>

@@ -1,5 +1,6 @@
 "use client";
 import { FC, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import DropDown from "../../DropDown";
 import {
   DangerIcon,
@@ -41,8 +42,15 @@ import {
 interface TicketInfoProps {
   ticketTypes: string[];
   slotsLeft: number;
+  title: string;
 }
-export const TicketInfo: FC<TicketInfoProps> = ({ ticketTypes, slotsLeft }) => {
+export const TicketInfo: FC<TicketInfoProps> = ({
+  ticketTypes,
+  slotsLeft,
+  title,
+}) => {
+  const router = useRouter();
+
   const [isDropDownOpen, setIsDropDownOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<string>("");
   const [availableTickets, setAvailableTickets] = useState(slotsLeft);
@@ -69,6 +77,11 @@ export const TicketInfo: FC<TicketInfoProps> = ({ ticketTypes, slotsLeft }) => {
       },
     };
   });
+
+  const handleNavigation = (eventId: string) => {
+    const path = `/explore/${eventId}/ticket`.replaceAll(" ", "-");
+    router.push(path);
+  };
 
   return (
     <div className="p-8 border border-[#E9E9E9] rounded-xl space-y-6 dark:border-[#232323] w-full ">
@@ -142,7 +155,11 @@ export const TicketInfo: FC<TicketInfoProps> = ({ ticketTypes, slotsLeft }) => {
           <p className="text-xs font-medium">Secure & Instant Payment</p>
         </div>
         <div>
-          <button className="py-4 px-6 bg-[#6917AF] text-[#FCFDFD] flex w-full items-center justify-center font-bold rounded-full gap-3 cursor-pointer hover:bg-[#6917AF]/95 duration-200 ease-in-out transition dark:bg-[#751AC6] dark:text-[#0F0F0F] dark:hover:bg-[#751AC6]/95">
+          <button
+            onClick={() => handleNavigation(title)}
+            type="button"
+            className="py-4 px-6 bg-[#6917AF] text-[#FCFDFD] flex w-full items-center justify-center font-bold rounded-full gap-3 cursor-pointer hover:bg-[#6917AF]/95 duration-200 ease-in-out transition dark:bg-[#751AC6] dark:text-[#0F0F0F] dark:hover:bg-[#751AC6]/95"
+          >
             <PasswordProtectedShield />
             <span>Get Your Pass</span>
           </button>
