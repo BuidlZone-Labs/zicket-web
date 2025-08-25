@@ -43,9 +43,11 @@ export default function EventPage({ params }: Props) {
           title={event[0].title}
           date={event[0].date}
           time={event[0].time}
-          type={event[0].type}
+          type={event[0].location}
           description={event[0].description}
           tags={event[0].tags}
+          price={event[0].price}
+          privacyType={event[0].privacyLevel[0]}
         />
         <div className="flex gap-5 sm:flex-row flex-col">
           <div className="space-y-5 basis-[55%]">
@@ -56,6 +58,8 @@ export default function EventPage({ params }: Props) {
             <TicketInfo
               ticketTypes={event[0].ticketTypes}
               slotsLeft={event[0].slotsLeft}
+              privacyLevel={event[0].privacyLevel}
+              isPaid={event[0].isPaid}
             />
           </div>
         </div>

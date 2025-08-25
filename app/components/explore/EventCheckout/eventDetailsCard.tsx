@@ -2,9 +2,13 @@ import dummyImage from "@/public/images/solana_summer_game.jpg";
 import {
   CalendarIcon,
   ClockIcon,
+  KeyIcon,
   LocationIcon,
+  LockIcon,
   ShareIcon,
+  ShiedIcon,
   TagIcon,
+  TicketIconSmall,
 } from "@/public/svg/svg";
 import Image from "next/image";
 import { FC } from "react";
@@ -16,6 +20,8 @@ interface EventDetailCardProps {
   type: string;
   description: string;
   tags: string[];
+  price?: number;
+  privacyType: string;
 }
 export const EventDetailCard: FC<EventDetailCardProps> = ({
   title,
@@ -24,6 +30,8 @@ export const EventDetailCard: FC<EventDetailCardProps> = ({
   type,
   description,
   tags,
+  price,
+  privacyType,
 }) => {
   return (
     <div className="flex flex-col lg:flex-row gap-10 w-full dark:bg-[#0D0D0D] bg-white">
@@ -61,6 +69,24 @@ export const EventDetailCard: FC<EventDetailCardProps> = ({
             <div className="flex gap-2">
               <LocationIcon />
               <p className="text-[#5C6170] text-sm sm:text-base">{type}</p>
+            </div>
+            <div className="flex gap-2 items-center">
+              <TicketIconSmall />
+              <p className="text-[#1E1E1E] font-medium text-lg capitalize">
+                {price ? "paid" : "Free"}
+              </p>
+            </div>
+            <div className="flex gap-1 border-[0.5px] rounded-lg border-[#E9E9E9] px-3 py-1.5 items-center">
+              {privacyType === "Wallet Required" ? (
+                <KeyIcon />
+              ) : privacyType === "Verified Access" ? (
+                <LockIcon />
+              ) : (
+                <ShiedIcon />
+              )}
+              <p className="text-[#5C6170] text-xs font-medium">
+                {privacyType}
+              </p>
             </div>
           </div>
         </div>

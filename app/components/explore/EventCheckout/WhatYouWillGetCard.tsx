@@ -8,7 +8,7 @@ export const WhatYouWillGetCard: FC<OffersProps> = ({ perks }) => {
     <div className="p-8 border border-[#E9E9E9] rounded-xl space-y-6 dark:border-[#232323]">
       <div>
         <p className="text-xl sm:text-2xl font-semibold dark:text-[#E0E0E0] text-[#1F1F1F]">
-          What You’ll Get
+          Privacy Info
         </p>
       </div>
       <hr className="w-full h-0.5" />

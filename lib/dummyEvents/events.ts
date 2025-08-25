@@ -1,5 +1,18 @@
 export type PrivacyLevel = "Anonymous" | "Verified Access" | "Wallet Required";
-export type EventType = "Music" | "Tech & Web3" | "Art & Culture" | "Business" | "Health & Wellness" | "Education" | "Community";
+
+export type EventType =
+  | "Music"
+  | "Tech & Web3"
+  | "Art & Culture"
+  | "Business"
+  | "Health & Wellness"
+  | "Education"
+  | "Community";
+
+export type TicketType = {
+  name: string;
+  price: number | string;
+};
 
 export interface Event {
   id: string;
@@ -21,8 +34,8 @@ export interface Event {
   quantitySelected: number;
   isPaid: boolean;
   price: number;
-  ticketTypes: string[];
-  privacyLevel: PrivacyLevel;
+  ticketTypes: TicketType[];
+  privacyLevel: PrivacyLevel[];
 }
 
 export const dummyEvents: Event[] = [
@@ -35,7 +48,7 @@ export const dummyEvents: Event[] = [
     type: "Music",
     image: "/images/explore/1.png",
     description:
-      "Join Africa’s brightest minds in blockchain and web3 at the Solana Summer Hackathon.",
+      "Join Africa's brightest minds in blockchain and web3 at the Solana Summer Hackathon.",
     tags: ["Solana", "CryptoBuilders", "HackathonNG", "AccraTech"],
     perks: [
       "48 Hours of hacking",
@@ -52,9 +65,13 @@ export const dummyEvents: Event[] = [
     slotsLeft: 12,
     quantitySelected: 0,
     isPaid: true,
-    price: 25,
-    ticketTypes: ["VIP", "Regular", "Student"],
-    privacyLevel: "Anonymous",
+    price: 1500,
+    ticketTypes: [
+      { name: "VIP", price: 3500 },
+      { name: "Regular", price: 2000 },
+      { name: "Student", price: 1500 },
+    ],
+    privacyLevel: ["Anonymous"],
   },
   {
     id: "naija-tech-summit",
@@ -65,20 +82,20 @@ export const dummyEvents: Event[] = [
     type: "Tech & Web3",
     image: "/images/explore/2.png",
     description:
-      "Nigeria’s biggest technology meetup featuring top innovators and startups.",
+      "Nigeria's biggest technology meetup featuring top innovators and startups.",
     tags: ["NaijaTech", "Developers", "Innovation"],
     perks: ["Startup pitch", "Investor panels", "Free merch", "Demo booths"],
     organizer: {
       name: "NaijaTech Collective",
-      bio: "Building Nigeria’s tech future.",
+      bio: "Building Nigeria's tech future.",
       contact: "https://naijatech.co",
     },
     slotsLeft: 34,
     quantitySelected: 0,
     isPaid: false,
     price: 0,
-    ticketTypes: ["General", "VIP"],
-    privacyLevel: "Verified Access",
+    ticketTypes: [{ name: "Free", price: 0 }],
+    privacyLevel: ["Verified Access"],
   },
   {
     id: "web3-bootcamp-nairobi",
@@ -99,9 +116,12 @@ export const dummyEvents: Event[] = [
     slotsLeft: 20,
     quantitySelected: 0,
     isPaid: true,
-    price: 15,
-    ticketTypes: ["Student", "Regular"],
-    privacyLevel: "Wallet Required",
+    price: 1200,
+    ticketTypes: [
+      { name: "Student", price: 1200 },
+      { name: "Regular", price: 2500 },
+    ],
+    privacyLevel: ["Wallet Required"],
   },
   {
     id: "femcode-fest-2025",
@@ -124,8 +144,8 @@ export const dummyEvents: Event[] = [
     quantitySelected: 0,
     isPaid: false,
     price: 0,
-    ticketTypes: ["Free"],
-    privacyLevel: "Verified Access",
+    ticketTypes: [{ name: "Free", price: 0 }],
+    privacyLevel: ["Verified Access"],
   },
   {
     id: "lagos-design-week",
@@ -135,7 +155,7 @@ export const dummyEvents: Event[] = [
     location: "Lagos, Nigeria",
     type: "Health & Wellness",
     image: "/images/explore/5.png",
-    description: "A showcase of Nigeria’s top UI/UX design talent and trends.",
+    description: "A showcase of Nigeria's top UI/UX design talent and trends.",
     tags: ["UIUX", "Design", "LagosEvents"],
     perks: ["Design challenges", "Exhibitions", "Mentorship"],
     organizer: {
@@ -146,9 +166,12 @@ export const dummyEvents: Event[] = [
     slotsLeft: 75,
     quantitySelected: 0,
     isPaid: true,
-    price: 10,
-    ticketTypes: ["General", "VIP"],
-    privacyLevel: "Wallet Required",
+    price: 1800,
+    ticketTypes: [
+      { name: "General", price: 1800 },
+      { name: "VIP", price: 3200 },
+    ],
+    privacyLevel: ["Wallet Required"],
   },
   {
     id: "crypto-build-ghana",
@@ -170,9 +193,12 @@ export const dummyEvents: Event[] = [
     slotsLeft: 18,
     quantitySelected: 0,
     isPaid: true,
-    price: 30,
-    ticketTypes: ["Student", "VIP"],
-    privacyLevel: "Verified Access",
+    price: 2200,
+    ticketTypes: [
+      { name: "Student", price: 2200 },
+      { name: "VIP", price: 4000 },
+    ],
+    privacyLevel: ["Verified Access"],
   },
   {
     id: "founders-lab-africa",
@@ -194,9 +220,13 @@ export const dummyEvents: Event[] = [
     slotsLeft: 10,
     quantitySelected: 0,
     isPaid: true,
-    price: 50,
-    ticketTypes: ["VIP", "Co-Founder", "Observer"],
-    privacyLevel: "Verified Access",
+    price: 2800,
+    ticketTypes: [
+      { name: "VIP", price: 3800 },
+      { name: "Co-Founder", price: 2800 },
+      { name: "Observer", price: 1600 },
+    ],
+    privacyLevel: ["Verified Access"],
   },
   {
     id: "product-weekend-abidjan",
@@ -217,9 +247,12 @@ export const dummyEvents: Event[] = [
     slotsLeft: 40,
     quantitySelected: 0,
     isPaid: true,
-    price: 20,
-    ticketTypes: ["General", "Team"],
-    privacyLevel: "Verified Access",
+    price: 1400,
+    ticketTypes: [
+      { name: "General", price: 1400 },
+      { name: "Team", price: 3600 },
+    ],
+    privacyLevel: ["Verified Access"],
   },
   {
     id: "frontend-fusion-fest",
@@ -227,7 +260,7 @@ export const dummyEvents: Event[] = [
     date: "Jun. 30 2025",
     time: "3:00 pm (UTC +02:00)",
     location: "Cape Town, South Africa",
-      type: "Health & Wellness",
+    type: "Health & Wellness",
     image: "/images/explore/9.png",
     description: "Conference for frontend developers & UI engineers.",
     tags: ["Frontend", "React", "CSS", "JavaScript"],
@@ -240,9 +273,13 @@ export const dummyEvents: Event[] = [
     slotsLeft: 28,
     quantitySelected: 0,
     isPaid: true,
-    price: 35,
-    ticketTypes: ["Early Bird", "Standard", "VIP"],
-    privacyLevel: "Wallet Required",
+    price: 1000,
+    ticketTypes: [
+      { name: "Early Bird", price: 1000 },
+      { name: "Standard", price: 2400 },
+      { name: "VIP", price: 3700 },
+    ],
+    privacyLevel: ["Wallet Required"],
   },
   {
     id: "makerthon-benue",
@@ -263,9 +300,12 @@ export const dummyEvents: Event[] = [
     slotsLeft: 16,
     quantitySelected: 0,
     isPaid: true,
-    price: 20,
-    ticketTypes: ["Builder", "Observer"],
-    privacyLevel: "Anonymous",
+    price: 1700,
+    ticketTypes: [
+      { name: "Builder", price: 2100 },
+      { name: "Observer", price: 1700 },
+    ],
+    privacyLevel: ["Anonymous"],
   },
   {
     id: "devconnect-tanzania",
@@ -287,8 +327,8 @@ export const dummyEvents: Event[] = [
     quantitySelected: 0,
     isPaid: false,
     price: 0,
-    ticketTypes: ["Open"],
-    privacyLevel: "Wallet Required",
+    ticketTypes: [{ name: "Free", price: 0 }],
+    privacyLevel: ["Wallet Required"],
   },
   {
     id: "africa-ai-hub",
@@ -309,9 +349,13 @@ export const dummyEvents: Event[] = [
     slotsLeft: 25,
     quantitySelected: 0,
     isPaid: true,
-    price: 45,
-    ticketTypes: ["General", "Startup", "Researcher"],
-    privacyLevel: "Anonymous",
+    price: 2600,
+    ticketTypes: [
+      { name: "General", price: 3100 },
+      { name: "Startup", price: 2600 },
+      { name: "Researcher", price: 2900 },
+    ],
+    privacyLevel: ["Anonymous"],
   },
   {
     id: "open-source-fest-ng",
@@ -333,8 +377,8 @@ export const dummyEvents: Event[] = [
     quantitySelected: 0,
     isPaid: false,
     price: 0,
-    ticketTypes: ["Free"],
-    privacyLevel: "Wallet Required",
+    ticketTypes: [{ name: "Free", price: 0 }],
+    privacyLevel: ["Wallet Required"],
   },
   {
     id: "devrel-days-ghana",
@@ -355,8 +399,12 @@ export const dummyEvents: Event[] = [
     slotsLeft: 22,
     quantitySelected: 0,
     isPaid: true,
-    price: 15,
-    ticketTypes: ["Speaker", "Community Lead", "Guest"],
-    privacyLevel: "Verified Access",
+    price: 1300,
+    ticketTypes: [
+      { name: "Speaker", price: 1300 },
+      { name: "Community Lead", price: 1900 },
+      { name: "Guest", price: 2300 },
+    ],
+    privacyLevel: ["Verified Access"],
   },
 ];
