@@ -10,6 +10,7 @@
   --font-mono: var(--font-geist-mono);
   --font-inter: var(--font-inter);
   --font-satoshi: var(--font-satoshi);
+  --font-work-sans: var(--font-work-sans);
   --color-primary: #6917af;
   --color-primary-dark: #1d0f2a;
   --color-dark-gray: #1e1e1e;
@@ -137,6 +138,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -147,6 +149,7 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }

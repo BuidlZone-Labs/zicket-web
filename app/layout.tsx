@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Geist, Geist_Mono, Inter, Work_Sans } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import Header from "./components/Header";
@@ -21,6 +21,11 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+const workSans = Work_Sans({
+  variable: "--font-work-sans",
+  subsets: ["latin"],
+});
+
 const satoshi = localFont({
   src: "../fonts/Satoshi-Variable.ttf",
   variable: "--font-satoshi",
@@ -39,7 +44,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${satoshi.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${satoshi.variable} ${workSans.variable} antialiased`}
       >
         <ThemeProvider
           attribute="class"
