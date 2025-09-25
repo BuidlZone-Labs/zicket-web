@@ -1,10 +1,13 @@
+import { StaticImport } from 'next/dist/shared/lib/get-img-props';
+import { ReactNode } from 'react';
+
 export type Event = {
   id: string;
   title: string;
   date: string;
   time: string;
   location: string;
-  type: "Public" | "Private";
+  type: 'Public' | 'Private';
   image: string;
   description: string;
   tags: string[];
@@ -46,4 +49,19 @@ export interface Article {
   image: string;
   author: Author;
   featured?: boolean;
+}
+
+export interface IRecentActivities {
+  key: number;
+  icon: string | StaticImport;
+  title: string;
+  titleTag?: string;
+  description: string;
+  timeStamp: string;
+}
+
+export interface EmailActivity {
+  key: number;
+  icon: string | StaticImport;
+  title: string;
 }
