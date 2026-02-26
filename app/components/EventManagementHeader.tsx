@@ -53,13 +53,17 @@ const EditIcon = () => (
     onPreviewEvent,
     }) => {
     return (
-        <header className="w-full bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-4">
+        <header className="w-full bg-background border-b border-border px-4 sm:px-6 lg:px-8 py-4">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
 
             {/* Left section: Logo + Event Meta */}
             <div className="flex items-center gap-4 flex-1 min-w-0">
+
             {/* Event Logo */}
-            <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-purple-100 border border-purple-200 flex items-center justify-center">
+            <div
+                className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden flex items-center justify-center border border-border"
+                style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, white)" }}
+            >
                 {eventLogo ? (
                 <Image
                     src={eventLogo}
@@ -69,25 +73,33 @@ const EditIcon = () => (
                     className="object-cover w-full h-full"
                 />
                 ) : (
-                /* Fallback placeholder logo */
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="w-8 h-8 text-purple-500"
+                    className="w-8 h-8"
                     viewBox="0 0 24 24"
-                    fill="currentColor"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{ color: "var(--color-primary)" }}
                     aria-hidden="true"
                 >
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                    <path d="M2 7l10-5 10 5v10l-10 5L2 17V7z" />
+                    <path d="M12 2v20M2 7l10 5 10-5" />
                 </svg>
                 )}
             </div>
 
-            {/* Event Meta: Label + Title */}
+            {/* Event Meta */}
             <div className="min-w-0">
-                <p className="text-xs font-medium text-purple-600 uppercase tracking-wide mb-0.5">
+                <p
+                className="text-xs font-semibold uppercase tracking-widest mb-0.5"
+                style={{ color: "var(--color-primary)" }}
+                >
                 Manage Event:
                 </p>
-                <h1 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900 truncate">
+                <h1 className="text-base sm:text-lg lg:text-xl font-semibold truncate text-foreground">
                 {eventTitle}
                 </h1>
             </div>
@@ -95,48 +107,50 @@ const EditIcon = () => (
 
             {/* Right section: Action Buttons */}
             <div className="flex items-center gap-3 sm:flex-shrink-0">
-            {/* Edit Event - Primary filled purple button */}
+
+            {/* Edit Event — Primary filled button */}
             <button
                 onClick={onEditEvent}
                 type="button"
-                className="
-                inline-flex items-center gap-2
-                px-4 py-2.5
-                bg-purple-600 text-white
-                text-sm font-medium
-                rounded-lg
-                border border-purple-600
-                transition-all duration-200
-                hover:bg-purple-700 hover:border-purple-700 hover:shadow-md hover:shadow-purple-200
-                active:scale-95
-                focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
-                cursor-pointer
-                whitespace-nowrap
-                "
+                className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer whitespace-nowrap"
+                style={{
+                backgroundColor: "var(--color-primary)",
+                color: "var(--primary-foreground)",
+                border: "1px solid var(--color-primary)",
+                }}
+                onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--color-primary-dark)";
+                e.currentTarget.style.borderColor = "var(--color-primary-dark)";
+                }}
+                onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--color-primary)";
+                e.currentTarget.style.borderColor = "var(--color-primary)";
+                }}
                 aria-label="Edit Event"
             >
                 <EditIcon />
                 Edit Event
             </button>
 
-            {/* Preview Event Page - Secondary outlined purple button */}
+            {/* Preview Event Page — Secondary outlined button */}
             <button
                 onClick={onPreviewEvent}
                 type="button"
-                className="
-                inline-flex items-center gap-2
-                px-4 py-2.5
-                bg-transparent text-purple-600
-                text-sm font-medium
-                rounded-lg
-                border border-purple-600
-                transition-all duration-200
-                hover:bg-purple-50 hover:text-purple-700 hover:border-purple-700 hover:shadow-md hover:shadow-purple-100
-                active:scale-95
-                focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
-                cursor-pointer
-                whitespace-nowrap
-                "
+                className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer whitespace-nowrap bg-transparent"
+                style={{
+                color: "var(--color-primary)",
+                border: "1px solid var(--color-primary)",
+                }}
+                onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "color-mix(in srgb, var(--color-primary) 8%, transparent)";
+                e.currentTarget.style.color = "var(--color-primary-dark)";
+                e.currentTarget.style.borderColor = "var(--color-primary-dark)";
+                }}
+                onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.color = "var(--color-primary)";
+                e.currentTarget.style.borderColor = "var(--color-primary)";
+                }}
                 aria-label="Preview Event Page"
             >
                 <PreviewIcon />
