@@ -1,5 +1,6 @@
+"use client"
 import React from 'react';
-import ZkEmailCenter from './ZkEmailCenter';
+import ZkEmailCenterCard from './ZkEmailCenterCard';
 import RecentActivities from './RecentActivities';
 import RevenueTrends from './RevenueTrendsChart';
 
@@ -20,7 +21,17 @@ const ActivitiesPanel = () => {
       {/* Row 2: ZkEmail Center + Recent Activities */}
       <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
         <div className='md:col-span-1'>
-          <ZkEmailCenter />
+          <ZkEmailCenterCard
+            title='zkEmail Center'
+            activitiesTitle='Activities'
+            monthLabel='This Month'
+            messagesSent={3}
+            scheduledUpdates={1}
+            autoConfirmationsOn={true}
+            onSendNewMessage={() => {
+              /* placeholder click */
+            }}
+          />
         </div>
         <div className='md:col-span-2'>
           <RecentActivities />
