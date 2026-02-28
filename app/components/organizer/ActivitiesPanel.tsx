@@ -2,6 +2,7 @@ import React from 'react';
 import ZkEmailCenter from './ZkEmailCenter';
 import RecentActivities from './RecentActivities';
 import RevenueTrends from './RevenueTrendsChart';
+import PrivacySplitChart from './PrivacySplitChart';
 
 const ActivitiesPanel = () => {
   return (
@@ -13,7 +14,7 @@ const ActivitiesPanel = () => {
           <RevenueTrends />
         </div>
         <div className='md:col-span-1'>
-          {/* <PrivacySplit /> */}
+          <PrivacySplitChart />
         </div>
       </div>
 
