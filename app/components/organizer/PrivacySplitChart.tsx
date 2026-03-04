@@ -113,11 +113,10 @@ export default function PrivacySplitChart({
                   key={option.value}
                   type="button"
                   onClick={() => handleFilterSelect(option.value)}
-                  className={`block w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${
-                    selectedFilter === option.value
-                      ? "bg-gray-50 font-medium text-gray-900"
-                      : "text-gray-600"
-                  }`}
+                  className={`block w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${selectedFilter === option.value
+                    ? "bg-gray-50 font-medium text-gray-900"
+                    : "text-gray-600"
+                    }`}
                 >
                   {option.label}
                 </button>
@@ -142,21 +141,25 @@ export default function PrivacySplitChart({
                 outerRadius={90}
                 paddingAngle={0}
                 strokeWidth={0}
+                isAnimationActive={!isEmptyState}
               >
-                {chartData.map((entry) => {
+                {chartData.map((entry, index) => {
                   const config = CATEGORY_CONFIG[entry.name];
                   const color = isEmptyState
-                    ? "#E5E7EB"
+                    ? "#E5E5E5" // the exact gray from figma for empty state
                     : config?.color ?? "#E5E7EB";
 
-                  return <Cell key={entry.name} fill={color} />;
+                  return <Cell key={`cell-${index}`} fill={color} />;
                 })}
               </Pie>
               {!isEmptyState && <Tooltip />}
             </PieChart>
           </ResponsiveContainer>
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <span className="text-sm font-medium text-gray-600">Privacy</span>
+            {/* The white inner circle with text */}
+            <div className="flex h-[110px] w-[110px] items-center justify-center rounded-full bg-white shadow-sm">
+              <span className="text-sm font-semibold text-[#1E1E1E]">Privacy</span>
+            </div>
           </div>
         </div>
 
@@ -192,7 +195,7 @@ export default function PrivacySplitChart({
               </p>
             </div>
           ) : (
-            <div className="flex min-h-[100px] items-center justify-center text-sm text-gray-400">
+            <div className="flex min-h-[100px] items-center justify-start pl-4 text-[15px] font-medium text-[#1E1E1E]">
               No Data to Show yet...
             </div>
           )}
