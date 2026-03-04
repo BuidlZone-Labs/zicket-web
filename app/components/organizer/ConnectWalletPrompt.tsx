@@ -5,39 +5,39 @@ import { ChevronRight } from "lucide-react";
 
 export default function ConnectWalletPrompt() {
   function connectWallet() {
-    console.log("Connect Wallet clicked 🚀");
+    console.log("Connect Wallet clicked");
   }
 
   return (
-    <div className="w-full flex flex-col md:flex-row items-center justify-between gap-10 max-w-6xl mx-auto my-8 border-2 border-gray-200 rounded-xl pt-6 pb-6 px-20  md:px-[120px] bg-white">
-      <div className="flex-shrink-0">
+    <div className="w-full flex flex-col md:flex-row items-center justify-center gap-6 md:gap-16 border border-[#E3E3E3] rounded-2xl py-8 px-6 md:px-16 bg-white">
+      <div className="shrink-0">
         <Image
-          src="/images/placeholder-illustration.png"
-          alt="Wallet illustration"
-          width={400}
-          height={300}
-          className="max-w-full"
+          src="/images/connect-wallet-illustration.png"
+          alt="Two people connecting a plug illustration"
+          width={350}
+          height={260}
+          className="w-70 md:w-87.5 h-auto"
         />
       </div>
 
-      <div className="flex flex-col justify-center text-center gap-3 w-full max-w-sm">
-        <h2 className="text-3xl font-bold text-gray-900">
-          Connect your wallet
+      <div className="flex flex-col items-center text-center gap-3">
+        <h2 className="text-xl md:text-2xl font-bold text-[#1D2939]">
+          Connect you wallet
         </h2>
 
-        <p className="text-gray-600 text-lg leading-relaxed max-w-lg">
+        <p className="text-sm md:text-base text-[#475467] leading-relaxed max-w-70">
           Connect your Azguard wallet to receive payments from paid events.
         </p>
 
-       <div>
-         <button
-          onClick={connectWallet}
-          className="inline-flex group items-center cursor-pointer gap-2 bg-purple-700 hover:bg-purple-800 text-white font-medium px-10 py-4 rounded-full transition whitespace-nowrap"
-        >
-          Connect Wallet
-          <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition ease-in-out duration-300" />
-        </button>
-       </div>
+        <div className="mt-2">
+          <button
+            onClick={connectWallet}
+            className="inline-flex group items-center cursor-pointer gap-2 bg-[#6917AF] hover:bg-[#5A1296] text-white font-medium text-sm md:text-base px-8 py-3 rounded-full transition whitespace-nowrap"
+          >
+            Connect Wallet
+            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition ease-in-out duration-300" />
+          </button>
+        </div>
       </div>
     </div>
   );
