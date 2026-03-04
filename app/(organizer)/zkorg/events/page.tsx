@@ -1,9 +1,8 @@
 "use client"
 
 import React from "react"
-import { Plus, Search } from "lucide-react"
+import { Search } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
   Table,
@@ -15,6 +14,7 @@ import {
 } from "@/components/ui/table"
 import { InputWithIcon } from "@/components/ui/input"
 import { EventPageLink } from "@/app/components/organizer/EventPageLink"
+import { EventManagementHeader } from "@/app/components/organizer/EventManagementHeader"
 import {
   EventSidebarPreviewCard,
   type EventPreviewData,
@@ -47,26 +47,20 @@ export default function OrgEvents() {
   const handlePreview = () => {
     window.open(`/explore/solana-summer-hackathon`, "_blank")
   }
+  const handleEditEvent = () => {
+    window.alert("Edit Event flow coming soon")
+  }
 
   return (
     <div className="flex gap-6 p-6 lg:p-8">
       {/* Main Content */}
       <div className="flex-1 min-w-0 space-y-6">
-        {/* Page Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-[#101828] dark:text-white">
-              Events
-            </h1>
-            <p className="text-sm text-[#667085] dark:text-[#808080] mt-1">
-              Manage and track all your events
-            </p>
-          </div>
-          <Button variant="gradient" className="gap-2 rounded-lg self-start">
-            <Plus className="size-4" />
-            Create Event
-          </Button>
-        </div>
+        <EventManagementHeader
+          logoSrc="/images/solana-summar.png"
+          eventTitle="Crypto Art Lagos 2025"
+          onEditEvent={handleEditEvent}
+          onPreviewEventPage={handlePreview}
+        />
 
         {/* Event Page Link */}
         <EventPageLink
