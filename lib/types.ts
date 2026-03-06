@@ -65,3 +65,19 @@ export interface EmailActivity {
   icon: string | StaticImport;
   title: string;
 }
+
+/** Attendance type for the breakdown table */
+export type AttendanceType =
+  | 'wallet-required'
+  | 'verified-access'
+  | 'anonymous';
+
+/** Single row for the attendance breakdown table */
+export interface AttendanceBreakdownRow {
+  type: AttendanceType;
+  count: number;
+  percentage: number; // 0–100, component will append "%"
+}
+
+/** Full attendance breakdown data (array of rows) */
+export type AttendanceBreakdownData = AttendanceBreakdownRow[];
