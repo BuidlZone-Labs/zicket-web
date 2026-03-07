@@ -1,3 +1,5 @@
+import MessagingCenter from '@/app/components/organizer/MessagingCenter';
+
 export default async function ZkorgPage({
   searchParams,
 }: {
@@ -5,6 +7,15 @@ export default async function ZkorgPage({
 }) {
   const { v } = await searchParams;
   const state = v || 'overview';
+
+  // Show Messaging Center for zkEmail tab
+  if (state === 'zkemail') {
+    return (
+      <div className="p-4 sm:p-8">
+        <MessagingCenter />
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
