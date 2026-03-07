@@ -10,7 +10,11 @@ export default async function ZkorgPage({
 
   // Show Messaging Center for zkEmail tab
   if (state === 'zkemail') {
-    return <MessagingCenter />;
+    return (
+      <div className="p-4 sm:p-8">
+        <MessagingCenter />
+      </div>
+    );
   }
 
   return (
