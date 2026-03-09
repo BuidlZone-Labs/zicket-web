@@ -1,8 +1,8 @@
 "use client"
 
 import React from "react"
-import { Search } from "lucide-react"
 import Link from "next/link"
+import { Plus, Search } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -37,6 +37,12 @@ export default function OrgEvents() {
               Open an event to manage details, analytics, and attendee actions.
             </p>
           </div>
+          <Button variant="gradient" className="gap-2 rounded-lg self-start" asChild>
+            <Link href="/zkorg/events/new">
+              <Plus className="size-4" />
+              Create Event
+            </Link>
+          </Button>
           <Button asChild variant="outline" className="self-start">
             <Link href="/zkorg/events/crypto-art-lagos-2025">
               Open sample event details
