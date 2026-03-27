@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { ChevronLeft, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";

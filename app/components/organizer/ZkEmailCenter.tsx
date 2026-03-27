@@ -2,7 +2,7 @@ import Image from 'next/image';
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronRight } from 'lucide-react';
-import { EmailActivity } from '@/lib/types';
+import { EmailActivity } from '@/lib/validations/types';
 import {
   Select,
   SelectContent,
