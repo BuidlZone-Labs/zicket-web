@@ -36,11 +36,15 @@ let loadPromise: Promise<WalletSDK> | null = null;
  */
 export async function loadWalletSDK(): Promise<WalletSDK> {
   if (!loadPromise) {
-    // TODO: Replace "wallet-sdk-package" with the actual package name, e.g.:
-    //   import("@azguard/sdk")
-    loadPromise = import("wallet-sdk-package").then(
-      (mod) => (mod.default ?? mod) as WalletSDK
+    // TODO: Replace the dynamic import below with the actual package, e.g.:
+    //   loadPromise = import("@azguard/sdk").then((mod) => (mod.default ?? mod) as WalletSDK);
+    loadPromise = Promise.reject(
+      new Error("Wallet SDK package is not yet configured. Replace the placeholder in lib/walletSdk.ts.")
     );
+    // Reset on failure so callers can retry once the real package is wired up
+    loadPromise.catch(() => {
+      loadPromise = null;
+    });
   }
   return loadPromise;
 }
