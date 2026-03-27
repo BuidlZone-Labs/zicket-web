@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, use, useEffect } from "react";
+import { useState, use } from "react";
 import EventSlider from "@/app/components/EventSlider";
 import { PurchasedStage } from "@/app/components/explore/EventCheckout/PurchasedStage";
 import { TicketCancellationModal } from "@/app/components/TicketCancellationModal";
@@ -14,6 +14,13 @@ type Props = {
   params: Promise<{ eventId: string }>;
 };
 
+type PaymentAttemptResult = {
+  ok: boolean;
+  error?: string;
+};
+
+type PaymentStatus = "idle" | "processing" | "failed";
+
 export default function EventPage({ params }: Props) {
   const { eventId } = use(params);
   const eventName = eventId.replaceAll("-", " ");
@@ -25,12 +32,48 @@ export default function EventPage({ params }: Props) {
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("idle");
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const isPurchased = isConfirmed && isPaid;
 
-  const handleStatusChange = (status: { isConfirmed: boolean; isPaid: boolean }) => {
-    setIsConfirmed(status.isConfirmed);
-    setIsPaid(status.isPaid);
+  const resetPaymentAttemptState = () => {
+    setPaymentStatus("idle");
+    setPaymentError(null);
+  };
+
+  const handleStatusChange = async (
+    status: { isConfirmed: boolean; isPaid: boolean }
+  ): Promise<PaymentAttemptResult> => {
+    if (paymentStatus === "processing") {
+      return { ok: false, error: "Payment already in progress." };
+    }
+
+    if (isPurchased) {
+      return { ok: false, error: "Payment already completed." };
+    }
+
+    if (event[0].slotsLeft < 1) {
+      setPaymentStatus("failed");
+      setPaymentError("Tickets are sold out for this event.");
+      return { ok: false, error: "Tickets are sold out for this event." };
+    }
+
+    setPaymentStatus("processing");
+    setPaymentError(null);
+
+    try {
+      // Placeholder for a real payment API/SDK call.
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      setIsConfirmed(status.isConfirmed);
+      setIsPaid(status.isPaid);
+      resetPaymentAttemptState();
+      return { ok: true };
+    } catch {
+      setPaymentStatus("failed");
+      setPaymentError("Payment failed. Please try again.");
+      return { ok: false, error: "Payment failed. Please try again." };
+    }
   };
 
   if (!event || event.length === 0) return <div className="p-20 text-center">Event not found</div>;
@@ -77,6 +120,8 @@ export default function EventPage({ params }: Props) {
                 slotsLeft={event[0].slotsLeft}
                 privacyLevel={event[0].privacyLevel}
                 isPaid={event[0].isPaid}
+                paymentStatus={paymentStatus}
+                paymentError={paymentError}
                 onStatusChange={handleStatusChange}
               />
             </div>
@@ -98,6 +143,7 @@ export default function EventPage({ params }: Props) {
         onConfirm={(_, __, updatedState) => {
           setIsConfirmed(updatedState.isConfirmed);
           setIsPaid(updatedState.isPaid);
+          resetPaymentAttemptState();
           setShowCancelModal(false);
         }}
       />
