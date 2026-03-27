@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import { ChevronRight } from "lucide-react";
+import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
 
 export default function ConnectWalletPrompt() {
   function connectWallet() {
-    console.log("Connect Wallet clicked");
+    trackAnalyticsEvent("wallet_connect_cta_clicked", { source: "organizer_prompt" });
   }
 
   return (

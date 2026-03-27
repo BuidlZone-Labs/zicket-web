@@ -9,13 +9,14 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import Logo from "@/public/images/Logo.png";
+import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
 
 const NavBar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const connectWallet = () => {
-    console.log('Connecting wallet...');
+    trackAnalyticsEvent('wallet_connect_cta_clicked', { source: 'organizer_navbar' });
     alert('Wallet connection feature coming soon!');
   };
 
