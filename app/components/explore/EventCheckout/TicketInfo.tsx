@@ -1,6 +1,7 @@
 "use client";
 import { FC, useEffect, useState } from "react";
 import DropDown from "../../DropDown";
+import { useSimulatedAvailability } from "@/lib/hooks/useSimulatedAvailability";
 import {
   DangerIcon,
   KeyIcon,
@@ -15,15 +16,15 @@ import { TicketType } from "@/lib/dummyEvents/events";
 import { Check } from "lucide-react";
 
 interface TicketInfoProps {
+  eventId: string;
   ticketTypes: TicketType[];
-  slotsLeft: number;
   privacyLevel: string[];
   isPaid: boolean;
   onStatusChange?: (status: { isConfirmed: boolean; isPaid: boolean }) => void;
 }
 export const TicketInfo: FC<TicketInfoProps> = ({
+  eventId,
   ticketTypes,
-  slotsLeft,
   privacyLevel,
   isPaid,
   onStatusChange,
@@ -32,13 +33,19 @@ export const TicketInfo: FC<TicketInfoProps> = ({
   const [selectedTicket, setSelectedTicket] = useState<string>(
     ticketTypes[0].name
   );
-  const [availableTickets, setAvailableTickets] = useState(slotsLeft);
+  const { slotsLeft: liveSlotsLeft, isSoldOut } = useSimulatedAvailability(eventId);
   const [quantity, setQuantity] = useState(1);
+
+  useEffect(() => {
+    if (liveSlotsLeft <= 0) return;
+    setQuantity((q) => Math.min(q, liveSlotsLeft));
+  }, [liveSlotsLeft]);
+
   const handleDropDownToggle = () => {
     setIsDropDownOpen(!isDropDownOpen);
   };
   const incrementQuantity = () => {
-    if (quantity < availableTickets) {
+    if (!isSoldOut && quantity < liveSlotsLeft) {
       setQuantity((prev) => prev + 1);
     }
   };
@@ -64,6 +71,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
       </p>
       <hr className="w-full h-0.5" />
       <form className="space-y-10">
+        <fieldset disabled={isSoldOut} className="space-y-10 min-w-0 border-0 p-0 m-0">
         <div>
           {ticketTypes.map((ticket, index) => {
             const isSelected = selectedTicket === ticket.name;
@@ -74,7 +82,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
               >
                 <label
                   htmlFor={ticket.name}
-                  className={`cursor-pointer flex px-6 py-4 border rounded-xl justify-between items-center transition-colors ease-in-out duration-300  ${isSelected ? "border-[#6917AF]" : "border-[#E4E5E6]"
+                  className={`${isSoldOut ? "cursor-not-allowed opacity-60" : "cursor-pointer"} flex px-6 py-4 border rounded-xl justify-between items-center transition-colors ease-in-out duration-300  ${isSelected ? "border-[#6917AF]" : "border-[#E4E5E6]"
                     }`}
                 >
                   <p
@@ -126,8 +134,8 @@ export const TicketInfo: FC<TicketInfoProps> = ({
               <button
                 type="button"
                 onClick={incrementQuantity}
-                disabled={quantity === availableTickets ? true : false}
-                className={`${quantity === availableTickets
+                disabled={isSoldOut || quantity === liveSlotsLeft ? true : false}
+                className={`${isSoldOut || quantity === liveSlotsLeft
                     ? "text-[#667185] dark:text-[#667185] cursor-not-allowed"
                     : "text-[#6917AF] dark:text-[#6917AF] cursor-pointer"
                   }`}
@@ -136,14 +144,20 @@ export const TicketInfo: FC<TicketInfoProps> = ({
               </button>
             </div>
             <div>
-              <p className="text-[#667185] text-sm font-normal">
-                Only{" "}
-                <span className="font-semibold dark:text-[#6917AF] text-[#6917AF]">
-                  {availableTickets} Slots
-                </span>{" "}
-                Left!
-              </p>
-              <p className="text-sm  text-[#667185]">Don’t miss it</p>
+              {isSoldOut ? (
+                <p className="text-[#B42318] dark:text-[#F97066] text-sm font-semibold" role="status">
+                  This event is sold out.
+                </p>
+              ) : (
+                <p className="text-[#667185] text-sm font-normal" aria-live="polite">
+                  Only{" "}
+                  <span className="font-semibold dark:text-[#6917AF] text-[#6917AF]">
+                    {liveSlotsLeft} Slots
+                  </span>{" "}
+                  left!
+                </p>
+              )}
+              <p className="text-sm text-[#667185]">{isSoldOut ? "Check back for other dates." : "Don’t miss it"}</p>
             </div>
           </div>
         </div>
@@ -196,15 +210,19 @@ export const TicketInfo: FC<TicketInfoProps> = ({
         <div>
           <button
             type="button"
+            disabled={isSoldOut}
             onClick={() => onStatusChange?.({ isConfirmed: true, isPaid: true })}
-            className="py-4 px-6 bg-[#6917AF] text-[#FCFDFD] flex w-full items-center justify-center font-bold rounded-full gap-3 cursor-pointer hover:bg-[#6917AF]/95 duration-200 ease-in-out transition dark:bg-[#751AC6] dark:text-[#0F0F0F] dark:hover:bg-[#751AC6]/95"
+            className={`py-4 px-6 flex w-full items-center justify-center font-bold rounded-full gap-3 duration-200 ease-in-out transition ${
+              isSoldOut
+                ? "bg-[#E4E5E6] text-[#98A2B3] cursor-not-allowed dark:bg-[#232323] dark:text-[#667085]"
+                : "bg-[#6917AF] text-[#FCFDFD] cursor-pointer hover:bg-[#6917AF]/95 dark:bg-[#751AC6] dark:text-[#0F0F0F] dark:hover:bg-[#751AC6]/95"
+            }`}
           >
             <PasswordProtectedShield />
-            <span>
-              {isPaid ? "Connect Wallet to Purchase" : "Attend Anonymously"}
-            </span>
+            <span>{isSoldOut ? "Sold out" : isPaid ? "Connect Wallet to Purchase" : "Attend Anonymously"}</span>
           </button>
         </div>
+        </fieldset>
       </form>
     </div>
   );

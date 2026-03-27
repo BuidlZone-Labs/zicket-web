@@ -73,8 +73,8 @@ export default function EventPage({ params }: Props) {
             </div>
             <div className="basis-[45%]">
               <TicketInfo
+                eventId={event[0].id}
                 ticketTypes={event[0].ticketTypes}
-                slotsLeft={event[0].slotsLeft}
                 privacyLevel={event[0].privacyLevel}
                 isPaid={event[0].isPaid}
                 onStatusChange={handleStatusChange}
