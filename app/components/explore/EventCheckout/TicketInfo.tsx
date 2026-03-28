@@ -11,7 +11,8 @@ import {
   ShiedIcon,
 } from "@/public/svg/svg";
 import { TicketType } from "@/lib/dummyEvents/events";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
+import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
 
 type PaymentStatus = "idle" | "processing" | "failed";
 
@@ -41,9 +42,13 @@ export const TicketInfo: FC<TicketInfoProps> = ({
   );
   const availableTickets = slotsLeft;
   const [quantity, setQuantity] = useState(1);
-
   const isProcessingPayment = paymentStatus === "processing";
   const hasPaymentFailed = paymentStatus === "failed";
+
+  const [walletState, setWalletState] = useState<WalletLoadState>({
+    isLoading: false,
+    error: null,
+  });
 
   const incrementQuantity = () => {
     if (quantity < availableTickets) {
@@ -56,9 +61,25 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     }
   };
 
-  const handlePaymentClick = async () => {
+  const handlePrimaryClick = async () => {
     if (isProcessingPayment) return;
-    await onStatusChange?.({ isConfirmed: true, isPaid: true });
+
+    if (isPaid) {
+      setWalletState({ isLoading: true, error: null });
+      try {
+        await loadWalletSDK();
+        await onStatusChange?.({ isConfirmed: true, isPaid: true });
+        setWalletState({ isLoading: false, error: null });
+      } catch (err) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Failed to load wallet. Please try again.";
+        setWalletState({ isLoading: false, error: message });
+      }
+    } else {
+      await onStatusChange?.({ isConfirmed: true, isPaid: true });
+    }
   };
 
   return (
@@ -210,24 +231,38 @@ export const TicketInfo: FC<TicketInfoProps> = ({
         <div>
           <button
             type="button"
-            onClick={handlePaymentClick}
-            disabled={isProcessingPayment}
-            className={`py-4 px-6 bg-[#6917AF] text-[#FCFDFD] flex w-full items-center justify-center font-bold rounded-full gap-3 duration-200 ease-in-out transition dark:bg-[#751AC6] dark:text-[#0F0F0F] dark:hover:bg-[#751AC6]/95 ${isProcessingPayment
-              ? "opacity-70 cursor-not-allowed"
-              : "cursor-pointer hover:bg-[#6917AF]/95"
+            disabled={isProcessingPayment || walletState.isLoading}
+            onClick={handlePrimaryClick}
+            onMouseEnter={preloadWalletSDK}
+            onFocus={preloadWalletSDK}
+            className={`py-4 px-6 bg-[#6917AF] text-[#FCFDFD] flex w-full items-center justify-center font-bold rounded-full gap-3 duration-200 ease-in-out transition dark:bg-[#751AC6] dark:text-[#0F0F0F] dark:hover:bg-[#751AC6]/95 disabled:opacity-60 disabled:cursor-not-allowed ${!(isProcessingPayment || walletState.isLoading)
+              ? "cursor-pointer hover:bg-[#6917AF]/95"
+              : ""
               }`}
           >
-            <PasswordProtectedShield />
-            <span>
-              {isProcessingPayment
-                ? "Processing Payment..."
-                : hasPaymentFailed
-                  ? "Retry Payment"
-                  : isPaid
-                    ? "Connect Wallet to Purchase"
-                    : "Attend Anonymously"}
-            </span>
+            {walletState.isLoading ? (
+              <>
+                <Loader2 className="animate-spin" size={20} />
+                <span>Connecting…</span>
+              </>
+            ) : (
+              <>
+                <PasswordProtectedShield />
+                <span>
+                  {isProcessingPayment
+                    ? "Processing Payment..."
+                    : hasPaymentFailed
+                      ? "Retry Payment"
+                      : isPaid
+                        ? "Connect Wallet to Purchase"
+                        : "Attend Anonymously"}
+                </span>
+              </>
+            )}
           </button>
+          {walletState.error && (
+            <p className="mt-2 text-sm text-red-500">{walletState.error}</p>
+          )}
         </div>
       </form>
     </div>
