@@ -1,6 +1,5 @@
 "use client";
-import { FC, useEffect, useState } from "react";
-import DropDown from "../../DropDown";
+import { FC, useState } from "react";
 import {
   DangerIcon,
   KeyIcon,
@@ -15,45 +14,42 @@ import { TicketType } from "@/lib/dummyEvents/events";
 import { Check, Loader2 } from "lucide-react";
 import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
 
+type PaymentStatus = "idle" | "processing" | "failed";
+
 interface TicketInfoProps {
   ticketTypes: TicketType[];
   slotsLeft: number;
   privacyLevel: string[];
   isPaid: boolean;
-  onStatusChange?: (status: { isConfirmed: boolean; isPaid: boolean }) => void;
+  paymentStatus?: PaymentStatus;
+  paymentError?: string | null;
+  onStatusChange?: (status: {
+    isConfirmed: boolean;
+    isPaid: boolean;
+  }) => Promise<{ ok: boolean; error?: string }> | { ok: boolean; error?: string };
 }
 export const TicketInfo: FC<TicketInfoProps> = ({
   ticketTypes,
   slotsLeft,
   privacyLevel,
   isPaid,
+  paymentStatus = "idle",
+  paymentError = null,
   onStatusChange,
 }) => {
-  const [isDropDownOpen, setIsDropDownOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<string>(
     ticketTypes[0].name
   );
-  const [availableTickets, setAvailableTickets] = useState(slotsLeft);
+  const availableTickets = slotsLeft;
   const [quantity, setQuantity] = useState(1);
+  const isProcessingPayment = paymentStatus === "processing";
+  const hasPaymentFailed = paymentStatus === "failed";
+
   const [walletState, setWalletState] = useState<WalletLoadState>({
     isLoading: false,
     error: null,
   });
 
-  const handleWalletClick = async () => {
-    setWalletState({ isLoading: true, error: null });
-    try {
-      await loadWalletSDK();
-      onStatusChange?.({ isConfirmed: true, isPaid: true });
-      setWalletState({ isLoading: false, error: null });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load wallet. Please try again.";
-      setWalletState({ isLoading: false, error: message });
-    }
-  };
-  const handleDropDownToggle = () => {
-    setIsDropDownOpen(!isDropDownOpen);
-  };
   const incrementQuantity = () => {
     if (quantity < availableTickets) {
       setQuantity((prev) => prev + 1);
@@ -65,14 +61,26 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     }
   };
 
-  const tickets = ticketTypes.map((ticket) => {
-    return {
-      content: ticket,
-      onClick: () => {
-        setSelectedTicket(ticket.name);
-      },
-    };
-  });
+  const handlePrimaryClick = async () => {
+    if (isProcessingPayment) return;
+
+    if (isPaid) {
+      setWalletState({ isLoading: true, error: null });
+      try {
+        await loadWalletSDK();
+        await onStatusChange?.({ isConfirmed: true, isPaid: true });
+        setWalletState({ isLoading: false, error: null });
+      } catch (err) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Failed to load wallet. Please try again.";
+        setWalletState({ isLoading: false, error: message });
+      }
+    } else {
+      await onStatusChange?.({ isConfirmed: true, isPaid: true });
+    }
+  };
 
   return (
     <div className="p-8 border border-[#E9E9E9] rounded-xl space-y-6 dark:border-[#232323] w-full ">
@@ -167,8 +175,11 @@ export const TicketInfo: FC<TicketInfoProps> = ({
         <div className="flex gap-6 items-center">
           <p className="font-medium text-[#7D7D7D]">Privacy Level:</p>
           <div className="flex gap-4 flex-wrap">
-            {privacyLevel.map((level, index) => (
-              <div className="flex gap-1 border-[0.5px] rounded-lg border-[#E9E9E9] px-3 py-1.5 items-center">
+            {privacyLevel.map((level) => (
+              <div
+                key={level}
+                className="flex gap-1 border-[0.5px] rounded-lg border-[#E9E9E9] px-3 py-1.5 items-center"
+              >
                 {level === "Wallet Required" ? (
                   <KeyIcon />
                 ) : level === "Verified Access" ? (
@@ -210,14 +221,24 @@ export const TicketInfo: FC<TicketInfoProps> = ({
           <DangerIcon />
           <p className="text-xs font-medium">Secure & Instant Payment</p>
         </div>
+        {hasPaymentFailed && (
+          <div className="bg-[#FFF2F2] border border-[#FBCACA] text-[#B42318] py-3 px-5 rounded-lg">
+            <p className="text-xs font-medium">
+              {paymentError ?? "Payment failed. Please retry."}
+            </p>
+          </div>
+        )}
         <div>
           <button
             type="button"
-            disabled={walletState.isLoading}
-            onClick={handleWalletClick}
+            disabled={isProcessingPayment || walletState.isLoading}
+            onClick={handlePrimaryClick}
             onMouseEnter={preloadWalletSDK}
             onFocus={preloadWalletSDK}
-            className="py-4 px-6 bg-[#6917AF] text-[#FCFDFD] flex w-full items-center justify-center font-bold rounded-full gap-3 cursor-pointer hover:bg-[#6917AF]/95 duration-200 ease-in-out transition dark:bg-[#751AC6] dark:text-[#0F0F0F] dark:hover:bg-[#751AC6]/95 disabled:opacity-60 disabled:cursor-not-allowed"
+            className={`py-4 px-6 bg-[#6917AF] text-[#FCFDFD] flex w-full items-center justify-center font-bold rounded-full gap-3 duration-200 ease-in-out transition dark:bg-[#751AC6] dark:text-[#0F0F0F] dark:hover:bg-[#751AC6]/95 disabled:opacity-60 disabled:cursor-not-allowed ${!(isProcessingPayment || walletState.isLoading)
+              ? "cursor-pointer hover:bg-[#6917AF]/95"
+              : ""
+              }`}
           >
             {walletState.isLoading ? (
               <>
@@ -228,7 +249,13 @@ export const TicketInfo: FC<TicketInfoProps> = ({
               <>
                 <PasswordProtectedShield />
                 <span>
-                  {isPaid ? "Connect Wallet to Purchase" : "Attend Anonymously"}
+                  {isProcessingPayment
+                    ? "Processing Payment..."
+                    : hasPaymentFailed
+                      ? "Retry Payment"
+                      : isPaid
+                        ? "Connect Wallet to Purchase"
+                        : "Attend Anonymously"}
                 </span>
               </>
             )}
