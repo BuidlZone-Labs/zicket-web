@@ -12,7 +12,8 @@ import {
   ShiedIcon,
 } from "@/public/svg/svg";
 import { TicketType } from "@/lib/dummyEvents/events";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
+import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
 
 interface TicketInfoProps {
   ticketTypes: TicketType[];
@@ -34,6 +35,22 @@ export const TicketInfo: FC<TicketInfoProps> = ({
   );
   const [availableTickets, setAvailableTickets] = useState(slotsLeft);
   const [quantity, setQuantity] = useState(1);
+  const [walletState, setWalletState] = useState<WalletLoadState>({
+    isLoading: false,
+    error: null,
+  });
+
+  const handleWalletClick = async () => {
+    setWalletState({ isLoading: true, error: null });
+    try {
+      await loadWalletSDK();
+      onStatusChange?.({ isConfirmed: true, isPaid: true });
+      setWalletState({ isLoading: false, error: null });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load wallet. Please try again.";
+      setWalletState({ isLoading: false, error: message });
+    }
+  };
   const handleDropDownToggle = () => {
     setIsDropDownOpen(!isDropDownOpen);
   };
@@ -196,14 +213,29 @@ export const TicketInfo: FC<TicketInfoProps> = ({
         <div>
           <button
             type="button"
-            onClick={() => onStatusChange?.({ isConfirmed: true, isPaid: true })}
-            className="py-4 px-6 bg-[#6917AF] text-[#FCFDFD] flex w-full items-center justify-center font-bold rounded-full gap-3 cursor-pointer hover:bg-[#6917AF]/95 duration-200 ease-in-out transition dark:bg-[#751AC6] dark:text-[#0F0F0F] dark:hover:bg-[#751AC6]/95"
+            disabled={walletState.isLoading}
+            onClick={handleWalletClick}
+            onMouseEnter={preloadWalletSDK}
+            onFocus={preloadWalletSDK}
+            className="py-4 px-6 bg-[#6917AF] text-[#FCFDFD] flex w-full items-center justify-center font-bold rounded-full gap-3 cursor-pointer hover:bg-[#6917AF]/95 duration-200 ease-in-out transition dark:bg-[#751AC6] dark:text-[#0F0F0F] dark:hover:bg-[#751AC6]/95 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <PasswordProtectedShield />
-            <span>
-              {isPaid ? "Connect Wallet to Purchase" : "Attend Anonymously"}
-            </span>
+            {walletState.isLoading ? (
+              <>
+                <Loader2 className="animate-spin" size={20} />
+                <span>Connecting…</span>
+              </>
+            ) : (
+              <>
+                <PasswordProtectedShield />
+                <span>
+                  {isPaid ? "Connect Wallet to Purchase" : "Attend Anonymously"}
+                </span>
+              </>
+            )}
           </button>
+          {walletState.error && (
+            <p className="mt-2 text-sm text-red-500">{walletState.error}</p>
+          )}
         </div>
       </form>
     </div>
