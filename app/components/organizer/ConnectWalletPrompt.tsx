@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { ChevronRight, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
 import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
 
 export default function ConnectWalletPrompt() {
@@ -12,6 +13,7 @@ export default function ConnectWalletPrompt() {
   });
 
   async function handleConnectWallet() {
+    trackAnalyticsEvent("wallet_connect_cta_clicked", { source: "organizer_prompt" });
     setWalletState({ isLoading: true, error: null });
     try {
       await loadWalletSDK();

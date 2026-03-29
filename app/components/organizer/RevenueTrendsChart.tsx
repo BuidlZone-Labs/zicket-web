@@ -50,7 +50,6 @@ const Y_TICKS_DISPLAY = [0, 20000, 40000, 80000, 160000, 320000];
 const Y_TICK_COUNT = Y_TICKS_DISPLAY.length;
 
 function toLinear(realValue: number): number {
-  const maxDisplay = Y_TICKS_DISPLAY[Y_TICK_COUNT - 1];
   for (let i = 0; i < Y_TICK_COUNT - 1; i++) {
     const lo = Y_TICKS_DISPLAY[i];
     const hi = Y_TICKS_DISPLAY[i + 1];
@@ -131,14 +130,16 @@ const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
   );
 };
 
-const CustomActiveDot = (props: any) => {
-  const { cx, cy } = props;
-  return (
-    <circle cx={cx} cy={cy} r={5} fill='#6B21A8' stroke='white' strokeWidth={2} />
-  );
-};
+interface AreaCursorProps {
+  points?: Array<{ x: number; y: number }>;
+  height?: number;
+}
 
-const CustomCursor = (props: any) => {
+const CustomActiveDot = ({ cx, cy }: { cx?: number; cy?: number }) => (
+  <circle cx={cx} cy={cy} r={5} fill='#6B21A8' stroke='white' strokeWidth={2} />
+);
+
+const CustomCursor = (props: AreaCursorProps) => {
   const { points, height } = props;
   if (!points || points.length === 0) return null;
   const { x, y } = points[0];
@@ -147,7 +148,7 @@ const CustomCursor = (props: any) => {
       x1={x}
       y1={y}
       x2={x}
-      y2={y + height}
+      y2={y + (height ?? 0)}
       stroke='#6B21A8'
       strokeWidth={1}
       strokeDasharray='4 4'

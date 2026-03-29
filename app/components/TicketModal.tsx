@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import TicketInfo from './TicketInfo';
 import TicketSummary from './TicketSummary';
 import { X } from 'lucide-react';

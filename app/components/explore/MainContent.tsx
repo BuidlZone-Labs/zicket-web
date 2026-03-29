@@ -188,9 +188,12 @@ function MainContent() {
   };
 
   useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => setLoading(false), 1000);
-    return () => clearTimeout(timer);
+    const showTimer = setTimeout(() => setLoading(true), 0);
+    const hideTimer = setTimeout(() => setLoading(false), 1000);
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+    };
   }, [
     selectedPrivacy,
     selectedPrice,
@@ -419,8 +422,8 @@ function MainContent() {
       ) : (
         <div className="space-y-10">
           <div className="grid-cols-1 grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 ">
-            {sortedEvents.slice(0, showCount).map((event, index) => (
-              <Card key={index} {...event} />
+            {sortedEvents.slice(0, showCount).map((event) => (
+              <Card key={event.id} {...event} />
             ))}
           </div>
           <div className="flex items-center justify-center relative mt-8">
