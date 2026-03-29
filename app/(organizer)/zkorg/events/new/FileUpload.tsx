@@ -18,7 +18,6 @@ export interface FileUploadProps {
 }
 
 export function FileUpload({
-  value,
   onChange,
   onBlur,
   error,

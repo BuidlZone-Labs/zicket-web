@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, use } from "react";
+import Link from "next/link";
 import EventSlider from "@/app/components/EventSlider";
 import { PurchasedStage } from "@/app/components/explore/EventCheckout/PurchasedStage";
 import { TicketCancellationModal } from "@/app/components/TicketCancellationModal";
@@ -81,12 +82,12 @@ export default function EventPage({ params }: Props) {
   return (
     <div className="max-w-7xl mx-auto space-y-15 py-20 px-4">
       <div className="flex gap-1 items-center w-[calc(100vw - 20px)] lg:w-[436px]">
-        <a
+        <Link
           href="/explore"
           className="text-sm font-medium text-[#2C0A4A] dark:text-[#D7B5F5] capitalize"
         >
           explore
-        </a>
+        </Link>
         <span className="text-[#667185]">/</span>
         <p className="w-fit text-xs md:text-sm font-medium text-[#2C0A4A] dark:text-[#D7B5F5] line-clamp-1 flex-shrink">
           Web3 & Crypto Meetups

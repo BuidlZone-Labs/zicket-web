@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { ChevronDown } from "lucide-react";
@@ -86,9 +87,11 @@ export default function PrivacySplitChart({
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="rounded-full bg-gray-100 p-2">
-            <img
+            <Image
               src="/images/security-lock.png"
               alt="Privacy"
+              width={20}
+              height={20}
               className="h-5 w-5"
             />
           </div>
@@ -178,9 +181,11 @@ export default function PrivacySplitChart({
 
                 return (
                   <div key={item.name} className="flex items-center gap-2">
-                    <img
+                    <Image
                       src={config.iconSrc}
                       alt={config.label}
+                      width={20}
+                      height={20}
                       className="h-5 w-5"
                     />
                     <span className="text-gray-700">

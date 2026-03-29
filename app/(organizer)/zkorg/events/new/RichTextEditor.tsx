@@ -21,6 +21,32 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+function ToolbarButton({
+  onClick,
+  active,
+  children,
+  title,
+}: {
+  onClick: () => void
+  active?: boolean
+  children: React.ReactNode
+  title: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={cn(
+        "p-1.5 rounded hover:bg-[#EEEFF2] dark:hover:bg-[#2A2A2A] transition-colors",
+        active && "bg-[#E3E3E3] dark:bg-[#404040] text-[#6917AF] dark:text-[#D7B5F5]"
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
 export interface RichTextEditorProps {
   value: string
   onChange: (html: string) => void
@@ -85,30 +111,6 @@ export function RichTextEditor({
   }, [editor])
 
   if (!editor) return null
-
-  const ToolbarButton = ({
-    onClick,
-    active,
-    children,
-    title,
-  }: {
-    onClick: () => void
-    active?: boolean
-    children: React.ReactNode
-    title: string
-  }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className={cn(
-        "p-1.5 rounded hover:bg-[#EEEFF2] dark:hover:bg-[#2A2A2A] transition-colors",
-        active && "bg-[#E3E3E3] dark:bg-[#404040] text-[#6917AF] dark:text-[#D7B5F5]"
-      )}
-    >
-      {children}
-    </button>
-  )
 
   return (
     <div

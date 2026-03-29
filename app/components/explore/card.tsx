@@ -51,8 +51,14 @@ function Card({ id, title, date, time, location, price, image, privacyLevel }: E
 
   return (
     <div className="max-w-sm rounded-2xl p-2 border-2 bg-white border-[#E9E9E9]  flex flex-col items-center">
-      <div className="relative border rounded-xl border-[#E9E9E9]">
-        <img src={image} alt="" />
+      <div className="relative w-full aspect-[4/3] overflow-hidden rounded-xl border border-[#E9E9E9]">
+        <Image
+          src={image}
+          alt=""
+          fill
+          className="object-cover rounded-xl"
+          sizes="(max-width: 24rem) 100vw, 384px"
+        />
         <div className="absolute top-2 left-2">
           {getPrivacyLevel(privacyLevel[0])}
         </div>

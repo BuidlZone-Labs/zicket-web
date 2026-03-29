@@ -4,6 +4,7 @@ import "swiper/css";
 import EventCard from "./EventCard";
 import Image from "next/image";
 import { useRef } from "react";
+import type { Swiper as SwiperType } from "swiper";
 import { dummyEvents } from "@/lib/dummyEvents/events";
 
 const sliderEvents = dummyEvents.slice(0, 8).map((e) => ({
@@ -17,7 +18,7 @@ const sliderEvents = dummyEvents.slice(0, 8).map((e) => ({
 }));
 
 export default function EventSlider() {
-  const swiperRef = useRef<any>(null);
+  const swiperRef = useRef<SwiperType | null>(null);
 
   return (
     <div className="w-full max-w-6xl mx-auto py-8">

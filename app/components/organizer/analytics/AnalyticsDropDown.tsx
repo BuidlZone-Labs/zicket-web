@@ -1,6 +1,5 @@
 "use client";
 import { ArrowRightIcon } from "@/public/svg/svg";
-import { useState } from "react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 

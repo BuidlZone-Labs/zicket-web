@@ -188,9 +188,12 @@ function MainContent() {
   };
 
   useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => setLoading(false), 1000);
-    return () => clearTimeout(timer);
+    const showTimer = setTimeout(() => setLoading(true), 0);
+    const hideTimer = setTimeout(() => setLoading(false), 1000);
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+    };
   }, [
     selectedPrivacy,
     selectedPrice,
