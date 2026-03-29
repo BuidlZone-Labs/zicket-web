@@ -1,6 +1,5 @@
 "use client";
-import { FC, useEffect, useState } from "react";
-import DropDown from "../../DropDown";
+import { FC, useState } from "react";
 import {
   DangerIcon,
   KeyIcon,
@@ -29,11 +28,10 @@ export const TicketInfo: FC<TicketInfoProps> = ({
   isPaid,
   onStatusChange,
 }) => {
-  const [isDropDownOpen, setIsDropDownOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<string>(
     ticketTypes[0].name
   );
-  const [availableTickets, setAvailableTickets] = useState(slotsLeft);
+  const availableTickets = slotsLeft;
   const [quantity, setQuantity] = useState(1);
   const [walletState, setWalletState] = useState<WalletLoadState>({
     isLoading: false,
@@ -51,9 +49,6 @@ export const TicketInfo: FC<TicketInfoProps> = ({
       setWalletState({ isLoading: false, error: message });
     }
   };
-  const handleDropDownToggle = () => {
-    setIsDropDownOpen(!isDropDownOpen);
-  };
   const incrementQuantity = () => {
     if (quantity < availableTickets) {
       setQuantity((prev) => prev + 1);
@@ -64,15 +59,6 @@ export const TicketInfo: FC<TicketInfoProps> = ({
       setQuantity((prev) => prev - 1);
     }
   };
-
-  const tickets = ticketTypes.map((ticket) => {
-    return {
-      content: ticket,
-      onClick: () => {
-        setSelectedTicket(ticket.name);
-      },
-    };
-  });
 
   return (
     <div className="p-8 border border-[#E9E9E9] rounded-xl space-y-6 dark:border-[#232323] w-full ">
@@ -167,8 +153,11 @@ export const TicketInfo: FC<TicketInfoProps> = ({
         <div className="flex gap-6 items-center">
           <p className="font-medium text-[#7D7D7D]">Privacy Level:</p>
           <div className="flex gap-4 flex-wrap">
-            {privacyLevel.map((level, index) => (
-              <div className="flex gap-1 border-[0.5px] rounded-lg border-[#E9E9E9] px-3 py-1.5 items-center">
+            {privacyLevel.map((level) => (
+              <div
+                key={level}
+                className="flex gap-1 border-[0.5px] rounded-lg border-[#E9E9E9] px-3 py-1.5 items-center"
+              >
                 {level === "Wallet Required" ? (
                   <KeyIcon />
                 ) : level === "Verified Access" ? (

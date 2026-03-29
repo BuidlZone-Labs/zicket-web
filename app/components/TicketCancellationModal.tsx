@@ -100,7 +100,7 @@ export function TicketCancellationModal({
 
             <div className="mb-5">
               <p className="text-gray-700 text-base leading-relaxed">
-                Are you sure you want to cancel your registration. We'll let the host know that you can't make it.
+                Are you sure you want to cancel your registration. We&apos;ll let the host know that you can&apos;t make it.
               </p>
             </div>
 

@@ -2,9 +2,10 @@
 import { useState } from "react";
 import React from "react";
 import Logo from "@/public/images/Logo.png";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarsIcon, SearchIcon } from "@/public/svg/svg";
+import { BarsIcon } from "@/public/svg/svg";
 import { Switch } from "@/components/ui/switch";
 import { ModeToggle } from "./DarkModeToggle";
 import { Search } from "lucide-react";
@@ -32,16 +33,14 @@ function Header() {
     <div className="pt-5 px-5 sticky top-0 z-20 backdrop-blur-md">
       <div className="pl-6 pr-4 py-4 w-full max-w-[1200px] m-auto border border-[#E4E4E4] bg-[#FFFFFFCC] rounded-[100px] flex items-center justify-between">
         <div className="flex items-center gap-8">
-          <a
+          <Link
             href="/"
             className="cursor-pointer dark:drop-shadow-[0_0_2em_rgba(255,255,255,0.85)]"
           >
-            <img src={Logo.src} alt="Zicket Logo" className="h-5 w-auto" />
-          </a>
+            <Image src={Logo} alt="Zicket Logo" className="h-5 w-auto" width={120} height={20} priority />
+          </Link>
           <div className="hidden md:flex gap-6 text-sm">
             {navLinks.map((link) => {
-              const isActive = pathname === link.href;
-
               return (
                 <Link
                   key={link.href}
@@ -98,8 +97,6 @@ function Header() {
           <div className="absolute lg:hidden right-20 top-20 w-fit p-5 flex flex-col gap-5  bg-white border border-gray-200 rounded-md shadow-lg z-10">
             <div className="md:hidden flex flex-col gap-3 text-sm">
               {navLinks.map((link) => {
-                const isActive = pathname === link.href;
-
                 return (
                   <Link
                     key={link.href}

@@ -69,7 +69,7 @@ export default function HowItWorks() {
       >
         <aside className="md:w-1/3 w-full flex flex-col gap-6">
           <h3 className="text-[20px] font-semibold [color:var(--color-text-main)] dark:text-[var(--color-text-main-dark)] leading-tight mb-2">
-            Here's how Zicket makes discovering and attending private events simple, safe, and social:
+            Here&apos;s how Zicket makes discovering and attending private events simple, safe, and social:
           </h3>
           <nav aria-label="Steps navigation">
             <ul className="flex md:flex-col flex-row md:gap-2 gap-1 overflow-x-auto md:overflow-visible relative">

@@ -1,7 +1,6 @@
 'use client'
 
 import Image from "next/image"
-import { UpAndRightArrow } from "./SvgComponents"
 import { useTheme } from "next-themes"
 import { ArrowUpRight } from "lucide-react"
 
@@ -44,7 +43,7 @@ const images: {
 ]
 
 export default function WhatZicketOffers () {
-    let { theme } = useTheme();
+    const { theme } = useTheme();
     if (!theme) return
 
     return (

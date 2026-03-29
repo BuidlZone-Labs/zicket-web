@@ -76,22 +76,6 @@ export default function ZicketTrending () {
     }, []);
 
 
-    // Scroll to a particular card
-    const scrollToCard = (index: number) => {
-        if (containerRef.current) {
-            const container = containerRef.current;
-            const card = container.children[index] as HTMLElement;
-            const cardWidth = card.offsetWidth;
-            const gap = 20;
-
-            container.scrollTo({
-                left: index * (cardWidth + gap),
-                behavior: "smooth",
-            });
-            setCurrentIndex(index)
-        }
-    }
-
     // Scroll by one card
     const scrollBy = (direction: "left" | "right") => {
         if (containerRef.current) {

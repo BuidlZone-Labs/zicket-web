@@ -9,7 +9,7 @@ interface ManageZkEmailProps {
   eventName?: string;
 }
 
-export default function MessagingCenter({ eventName = 'Crypto Art Lagos 2025' }: ManageZkEmailProps) {
+export default function MessagingCenter({ eventName: _eventName = 'Crypto Art Lagos 2025' }: ManageZkEmailProps) {
   return (
     <div className="border-2 border-[#36B9CC] rounded-lg sm:rounded-xl bg-white overflow-hidden">
       {/* Card Header */}

@@ -9,6 +9,8 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import Logo from "@/public/images/Logo.png";
+import Image from "next/image";
+import Link from "next/link";
 import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
 
 const NavBar = () => {
@@ -33,12 +35,12 @@ const NavBar = () => {
         <div className="flex justify-between items-center h-20">
           {/* Left Section: Logo */}
           <div className="flex items-center">
-            <a
+            <Link
               href="/"
               className="cursor-pointer flex items-center space-x-2 dark:drop-shadow-[0_0_2em_rgba(255,255,255,0.85)]"
             >
-              <img src={Logo.src} alt="Zicket Logo" className="h-8 w-auto" />
-            </a>
+              <Image src={Logo} alt="Zicket Logo" className="h-8 w-auto" width={120} height={32} />
+            </Link>
           </div>
 
           {/* Center Section: Navigation Links (Desktop) */}

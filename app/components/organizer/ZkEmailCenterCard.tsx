@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import React from "react"
-import { ChevronDown, ChevronRight } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardAction, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {

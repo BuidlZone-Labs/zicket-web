@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { Check } from 'lucide-react';
 import Image from 'next/image';
 import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,7 +24,7 @@ const TicketInfo = () => {
     },
   });
 
-  function onSubmit(data: z.infer<typeof ticketSchema>) {
+  function onSubmit(_data: z.infer<typeof ticketSchema>) {
     form.reset();
     alert('Ticket booked successfully!');
   }

@@ -141,7 +141,7 @@ export default function NewsPage() {
 
         {/* Articles Grid */}
         <section className="w-full max-w-6xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-          {paginated.map((article, idx) => (
+          {paginated.map((article) => (
             <Link href={`/news/${article.slug}`} key={article.id} className="bg-white rounded-2xl dark:bg-[#181818] flex flex-col overflow-hidden cursor-pointer hover:border hover:border-[#E0E0E0] dark:border-[#282828] hover:rounded-2xl hover:shadow-sm">
               <div className="relative w-full h-44 md:h-52">
                 <Image

@@ -4,6 +4,7 @@ import "swiper/css";
 import EventCard from "./EventCard";
 import Image from "next/image";
 import { useRef } from "react";
+import type { Swiper as SwiperType } from "swiper";
 
 const eventData = [
   {
@@ -73,7 +74,7 @@ const eventData = [
 ];
 
 export default function EventSlider() {
-  const swiperRef = useRef<any>(null);
+  const swiperRef = useRef<SwiperType | null>(null);
 
   return (
     <div className="w-full max-w-6xl mx-auto py-8">
