@@ -9,14 +9,17 @@ import {
 } from "@/public/svg/svg";
 import { useRouter } from "next/navigation";
 import { Event, PrivacyLevel } from "@/lib/dummyEvents/events";
+import { explorePathForEventTitle } from "@/lib/dummyEvents/explorePath";
+import { useSimulatedAvailability } from "@/lib/hooks/useSimulatedAvailability";
 import Image from "next/image";
 
-function Card({ title, date, time, location, price, image, privacyLevel }: Event) {
+function Card({ id, title, date, time, location, price, image, privacyLevel }: Event) {
   const router = useRouter();
+  const { slotsLeft, isSoldOut } = useSimulatedAvailability(id);
 
-  const handleNavigate = (eventId: string) => {
-    const path = `/explore/${eventId}`.replaceAll(" ", "-");
-    router.push(path);
+  const handleNavigate = () => {
+    if (isSoldOut) return;
+    router.push(explorePathForEventTitle(title));
   };
 
   const getPrivacyLevel = (privacyLevel: PrivacyLevel) => {
@@ -84,22 +87,36 @@ function Card({ title, date, time, location, price, image, privacyLevel }: Event
               <p className="text-sm text-[#5C6170] font-normal">{location}</p>
             </div>
           </div>
+          <p className="text-xs font-medium text-[#667085]" aria-live="polite">
+            {isSoldOut ? (
+              <span className="text-[#B42318] font-semibold">Sold out</span>
+            ) : (
+              <>
+                <span className="text-[#6917AF] font-semibold">{slotsLeft}</span> tickets left
+              </>
+            )}
+          </p>
           <hr className="border border-[#E9E9E9] w-full" />
           <div className="flex items-center justify-between">
             <div className="flex gap-2 items-center">
               <TicketIcon />
               {getPrice(price)}
             </div>
-            <button
-              role="link"
-              className="cursor-pointer flex items-center text-base font-semibold text-[#2C0A4A] group w-fit"
-              onClick={() => handleNavigate(title)}
-            >
-              Get Ticket{" "}
-              <span className="group-hover:translate-x-1 transition ease-in-out duration-150">
-                <ArrowRightIcon />
-              </span>
-            </button>
+            {isSoldOut ? (
+              <span className="text-base font-semibold text-[#98A2B3] cursor-default">Sold out</span>
+            ) : (
+              <button
+                type="button"
+                role="link"
+                className="cursor-pointer flex items-center text-base font-semibold text-[#2C0A4A] group w-fit"
+                onClick={handleNavigate}
+              >
+                Get Ticket{" "}
+                <span className="group-hover:translate-x-1 transition ease-in-out duration-150">
+                  <ArrowRightIcon />
+                </span>
+              </button>
+            )}
           </div>
         </div>
       </div>
