@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { ModeToggle } from "./DarkModeToggle";
 import { Search } from "lucide-react";
 import { ArrowUpRight } from "lucide-react";
+import { useUserSessionSync } from "@/lib/user-session-sync";
 
 function Header() {
   type NavLink = {
@@ -17,7 +18,7 @@ function Header() {
     href: string;
   };
   const [isOpen, setIsOpen] = useState(false);
-  const [isAnonymous, setIsAnonymous] = useState(false);
+  const { anonymousBrowsing, setAnonymousBrowsing } = useUserSessionSync();
   const navLinks: NavLink[] = [
     { name: "Explore", href: "/explore" },
     { name: "News", href: "/news" },
@@ -74,12 +75,12 @@ function Header() {
               Anonymous Browsing
             </span>
             <Switch
-              checked={isAnonymous}
-              onCheckedChange={setIsAnonymous}
+              checked={anonymousBrowsing}
+              onCheckedChange={setAnonymousBrowsing}
               className="data-[state=checked]:bg-[#6917AF]"
             />
             <span className="text-sm font-medium text-[#172233] dark:text-white">
-              {isAnonymous ? "ON" : "OFF"}
+              {anonymousBrowsing ? "ON" : "OFF"}
             </span>
           </div>
           <a href="/login" className="group flex gap-1 items-center cursor-pointer px-6 py-3 border border-[#8F37DA] bg-gradient-to-b from-[#5E4BF3] to-[#9109D0] text-white dark:text-[#6917AF] rounded-full font-bold transition-all duration-300 dark:hover:drop-shadow-[0_0_2em_rgba(255,255,255,0.3)] dark:hover:text-gray-50">
@@ -124,12 +125,12 @@ function Header() {
                 Anonymous Browsing
               </span>
               <Switch
-                checked={isAnonymous}
-                onCheckedChange={setIsAnonymous}
+                checked={anonymousBrowsing}
+                onCheckedChange={setAnonymousBrowsing}
                 className="data-[state=checked]:bg-[#6917AF]"
               />
               <span className="text-sm font-medium text-[#172233]">
-                {isAnonymous ? "ON" : "OFF"}
+                {anonymousBrowsing ? "ON" : "OFF"}
               </span>
             </div>
             <a href="/login" className="flex px-6 py-3 bg-[#6917AF] text-white rounded-full font-bold">

@@ -14,6 +14,7 @@ import {
 } from "@/public/svg/svg";
 import { TicketType } from "@/lib/dummyEvents/events";
 import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
+import { useUserSessionSync } from "@/lib/user-session-sync";
 
 type TxStatus = "idle" | "pending" | "confirmed" | "failed";
 type PaymentStatus = "idle" | "processing" | "failed";
@@ -108,6 +109,8 @@ export const TicketInfo: FC<TicketInfoProps> = ({
   paymentError = null,
   onStatusChange,
 }) => {
+  const { anonymousBrowsing, walletConnected, setAnonymousBrowsing, setWalletConnected } =
+    useUserSessionSync();
   const [selectedTicket, setSelectedTicket] = useState<string>(
     ticketTypes[0].name
   );
@@ -195,10 +198,12 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     try {
       if (isPaid) {
         const txHash = await loadWalletSDK();
+        setWalletConnected(true);
         setWalletState({ isLoading: false, error: null });
         startTracking(txHash);
       } else {
         await onStatusChange?.({ isConfirmed: true, isPaid: false });
+        setAnonymousBrowsing(true);
         setWalletState({ isLoading: false, error: null });
       }
     } catch (err) {
@@ -262,7 +267,13 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     return (
       <>
         <PasswordProtectedShield />
-        {isPaid ? "Connect Wallet to Purchase" : "Attend Anonymously"}
+        {isPaid
+          ? walletConnected
+            ? "Wallet Connected"
+            : "Connect Wallet to Purchase"
+          : anonymousBrowsing
+            ? "Anonymous Mode Enabled"
+            : "Attend Anonymously"}
       </>
     );
   };

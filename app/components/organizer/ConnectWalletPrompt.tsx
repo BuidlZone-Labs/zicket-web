@@ -5,18 +5,21 @@ import { ChevronRight, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
 import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
+import { useUserSessionSync } from "@/lib/user-session-sync";
 
 export default function ConnectWalletPrompt() {
   const [walletState, setWalletState] = useState<WalletLoadState>({
     isLoading: false,
     error: null,
   });
+  const { walletConnected, setWalletConnected } = useUserSessionSync();
 
   async function handleConnectWallet() {
     trackAnalyticsEvent("wallet_connect_cta_clicked", { source: "organizer_prompt" });
     setWalletState({ isLoading: true, error: null });
     try {
       await loadWalletSDK();
+      setWalletConnected(true);
       // TODO: invoke wallet connection flow with the loaded SDK
       setWalletState({ isLoading: false, error: null });
     } catch (err) {
@@ -61,7 +64,7 @@ export default function ConnectWalletPrompt() {
               </>
             ) : (
               <>
-                Connect Wallet
+                {walletConnected ? "Wallet Connected" : "Connect Wallet"}
                 <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition ease-in-out duration-300" />
               </>
             )}
