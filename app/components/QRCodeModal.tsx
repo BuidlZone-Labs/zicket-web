@@ -31,12 +31,12 @@ export function QRCodeModal({
   const securePayload = useMemo(() => {
     // 1. Create a validation hint (e.g., expiry set to 24 hours from generation)
     // For production, you might pass a specific expiry date as a prop instead.
-    const expiryTimestamp = Date.now() + (24 * 60 * 60 * 1000); 
+    const expiryTimestamp = Date.now() + (24 * 60 * 60 * 1000);
 
     // 2. Build the lightweight payload object
     const payloadData = {
       id: accessCode, // Assuming accessCode is the safe ticket ID or Hash
-      exp: expiryTimestamp 
+      expMs: expiryTimestamp // Expiry in milliseconds since Unix epoch
     };
 
     // 3. Base64 encode the JSON so it acts as an opaque, offline-readable token
