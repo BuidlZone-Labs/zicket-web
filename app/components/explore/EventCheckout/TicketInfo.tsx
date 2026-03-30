@@ -17,6 +17,7 @@ import { TicketType } from "@/lib/dummyEvents/events";
 import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
 
 type TxStatus = "idle" | "pending" | "confirmed" | "failed";
+type PaymentStatus = "idle" | "processing" | "failed";
 
 interface TxState {
   status: TxStatus;
