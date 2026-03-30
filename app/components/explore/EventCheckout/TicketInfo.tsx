@@ -1,16 +1,15 @@
 "use client";
 
-import { FC, useState, useEffect, useRef, useCallback } from "react";
+import { FC, useState, useEffect, useRef } from "react";
 import { Check, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { useSimulatedAvailability } from "@/lib/hooks/useSimulatedAvailability";
 import {
   DangerIcon,
   KeyIcon,
   LockIcon,
-  MailSecureIcon,
-  MinusIcon,
   PasswordProtectedShield,
   PlusIcon,
+  MinusIcon,
   ShiedIcon,
 } from "@/public/svg/svg";
 import { TicketType } from "@/lib/dummyEvents/events";
@@ -40,7 +39,6 @@ interface TicketInfoProps {
 }
 
 const POLL_INTERVAL_MS = 3000;
-const MAX_ATTEMPTS = 20;
 
 async function fetchTxStatus(
   txHash: string
@@ -88,8 +86,8 @@ function TxBanner({ txState }: { txState: TxState }) {
         <p className={`text-xs ${cfg.text}`}>{cfg.message}</p>
 
         {txState.txHash && txState.status !== "pending" && (
-          <a
-            href={`https://solscan.io/tx/${txState.txHash}`}
+          
+          <a  href={`https://solscan.io/tx/${txState.txHash}`}
             target="_blank"
             className={`text-xs underline ${cfg.text}`}
           >
@@ -116,11 +114,6 @@ export const TicketInfo: FC<TicketInfoProps> = ({
   const { slotsLeft: liveSlotsLeft, isSoldOut } = useSimulatedAvailability(eventId);
   const [quantity, setQuantity] = useState(1);
 
-  useEffect(() => {
-    if (liveSlotsLeft <= 0) return;
-    setQuantity((q) => Math.min(q, liveSlotsLeft));
-  }, [liveSlotsLeft]);
-
   const isProcessingPayment = paymentStatus === "processing";
   const hasPaymentFailed = paymentStatus === "failed";
 
@@ -141,12 +134,24 @@ export const TicketInfo: FC<TicketInfoProps> = ({
   const stopPolling = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
   };
-  
+
+  const decrementQuantity = () => {
+    if (quantity > 1) {
+      setQuantity((prev) => prev - 1);
+    }
+  };
+
   const incrementQuantity = () => {
     if (!isSoldOut && quantity < liveSlotsLeft) {
       setQuantity((prev) => prev + 1);
     }
   };
+
+  // Fix: avoid synchronous setState in effect by clamping during increment
+  // instead of reacting to liveSlotsLeft changes via useEffect.
+  // We only need to clamp when liveSlotsLeft drops below current quantity,
+  // which we handle safely by checking inside the handlers and on render.
+  const clampedQuantity = liveSlotsLeft > 0 ? Math.min(quantity, liveSlotsLeft) : quantity;
 
   const poll = async (txHash: string) => {
     try {
@@ -184,7 +189,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
 
     setWalletState({ isLoading: true, error: null });
     setTxState({ status: "idle", txHash: null, error: null, attempts: 0 });
-    
+
     if (isSoldOut || isProcessingPayment) return;
 
     try {
@@ -263,213 +268,177 @@ export const TicketInfo: FC<TicketInfoProps> = ({
   };
 
   return (
-    <div className="p-8 border border-[#E9E9E9] rounded-xl space-y-6 dark:border-[#232323] w-full ">
+    <div className="p-8 border border-[#E9E9E9] rounded-xl space-y-6 dark:border-[#232323] w-full">
       <p className="text-2xl font-semibold text-[#1F1F1F] dark:text-[#E0E0E0]">
         Ticket Info
       </p>
       <hr className="w-full h-0.5" />
       <form className="space-y-10">
         <fieldset disabled={isSoldOut} className="space-y-10 min-w-0 border-0 p-0 m-0">
-        <div>
-          {ticketTypes.map((ticket, index) => {
-            const isSelected = selectedTicket === ticket.name;
-            return (
-              <div
-                key={ticket.name + index}
-                className="space-y-3 mb-6 last:mb-0"
-              >
-                <label
-                  htmlFor={ticket.name}
-                  className={`${isSoldOut ? "cursor-not-allowed opacity-60" : "cursor-pointer"} flex px-6 py-4 border rounded-xl justify-between items-center transition-colors ease-in-out duration-300  ${isSelected ? "border-[#6917AF]" : "border-[#E4E5E6]"
-                    }`}
+          <div>
+            {ticketTypes.map((ticket, index) => {
+              const isSelected = selectedTicket === ticket.name;
+              return (
+                <div
+                  key={ticket.name + index}
+                  className="space-y-3 mb-6 last:mb-0"
                 >
-                  <p
-                    className={`font-semibold text-base transition-colors ease-in-out duration-300 ${isSelected ? "text-[#6917AF] " : ""
-                      }`}
+                  <label
+                    htmlFor={ticket.name}
+                    className={`${isSoldOut ? "cursor-not-allowed opacity-60" : "cursor-pointer"} flex px-6 py-4 border rounded-xl justify-between items-center transition-colors ease-in-out duration-300 ${isSelected ? "border-[#6917AF]" : "border-[#E4E5E6]"}`}
                   >
-                    {" "}
-                    {ticket.name}
-                  </p>
-                  <div className="relative size-5">
-                    <input
-                      type="radio"
-                      name="ticketType"
-                      id={ticket.name}
-                      className="appearance-none border-[#E4E5E6] size-5 rounded-sm transition-colors ease-in-out duration-300 checked:bg-[#6917AF] border-[1.5px] "
-                      onChange={() => setSelectedTicket(ticket.name)}
-                      checked={isSelected}
-                    />
-                    <Check
-                      size={16}
-                      className="absolute top-1/2 left-1/2 text-white -translate-1/2 transition-colors ease-in-out duration-300"
-                    />
-                  </div>
-                </label>
-              </div>
-            );
-          })}
-        </div>
-        <div className="flex gap-6 flex-col">
-          <label htmlFor="" className="text-[#7D7D7D] font-medium">
-            Quantity
-          </label>
-          <div className="flex justify-between lg:items-center gap-6 flex-col lg:flex-row">
-            <div className="flex py-5 px-6.5 bg-[#F9FAFB] border border-[#F0F2F5] dark:bg-[#121212] dark:border-[#191919] rounded-4xl w-fit gap-10 justify-between max-w-[12.8rem] min-w-[12.8rem]">
-              <button
-                disabled={quantity === 1 ? true : false}
-                type="button"
-                onClick={decrementQuantity}
-                className={`${quantity === 1
+                    <p
+                      className={`font-semibold text-base transition-colors ease-in-out duration-300 ${isSelected ? "text-[#6917AF]" : ""}`}
+                    >
+                      {ticket.name}
+                    </p>
+                    <div className="relative size-5">
+                      <input
+                        type="radio"
+                        name="ticketType"
+                        id={ticket.name}
+                        className="appearance-none border-[#E4E5E6] size-5 rounded-sm transition-colors ease-in-out duration-300 checked:bg-[#6917AF] border-[1.5px]"
+                        onChange={() => setSelectedTicket(ticket.name)}
+                        checked={isSelected}
+                      />
+                      <Check
+                        size={16}
+                        className="absolute top-1/2 left-1/2 text-white -translate-1/2 transition-colors ease-in-out duration-300"
+                      />
+                    </div>
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex gap-6 flex-col">
+            <label htmlFor="" className="text-[#7D7D7D] font-medium">
+              Quantity
+            </label>
+            <div className="flex justify-between lg:items-center gap-6 flex-col lg:flex-row">
+              <div className="flex py-5 px-6.5 bg-[#F9FAFB] border border-[#F0F2F5] dark:bg-[#121212] dark:border-[#191919] rounded-4xl w-fit gap-10 justify-between max-w-[12.8rem] min-w-[12.8rem]">
+                <button
+                  disabled={clampedQuantity === 1}
+                  type="button"
+                  onClick={decrementQuantity}
+                  className={`${clampedQuantity === 1
                     ? "text-[#667185] cursor-not-allowed"
                     : "text-[#6917AF] dark:text-[#6917AF] cursor-pointer"
-                  }`}
-              >
-                <MinusIcon />
-              </button>
-              <p className="text-xl font-semibold text-[#6917AF] dark:text-[#6917AF]">
-                {quantity}
-              </p>
-              <button
-                type="button"
-                onClick={incrementQuantity}
-                disabled={isSoldOut || quantity === liveSlotsLeft ? true : false}
-                className={`${isSoldOut || quantity === liveSlotsLeft
+                    }`}
+                >
+                  <MinusIcon />
+                </button>
+                <p className="text-xl font-semibold text-[#6917AF] dark:text-[#6917AF]">
+                  {clampedQuantity}
+                </p>
+                <button
+                  type="button"
+                  onClick={incrementQuantity}
+                  disabled={isSoldOut || clampedQuantity === liveSlotsLeft}
+                  className={`${isSoldOut || clampedQuantity === liveSlotsLeft
                     ? "text-[#667185] dark:text-[#667185] cursor-not-allowed"
                     : "text-[#6917AF] dark:text-[#6917AF] cursor-pointer"
-                  }`}
-              >
-                <PlusIcon />
-              </button>
-            </div>
-            <div>
-              {isSoldOut ? (
-                <p className="text-[#B42318] dark:text-[#F97066] text-sm font-semibold" role="status">
-                  This event is sold out.
-                </p>
-              ) : (
-                <p className="text-[#667185] text-sm font-normal" aria-live="polite">
-                  Only{" "}
-                  <span className="font-semibold dark:text-[#6917AF] text-[#6917AF]">
-                    {liveSlotsLeft} Slots
-                  </span>{" "}
-                  left!
-                </p>
-              )}
-              <p className="text-sm text-[#667185]">{isSoldOut ? "Check back for other dates." : "Don’t miss it"}</p>
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-6 items-center">
-          <p className="font-medium text-[#7D7D7D]">Privacy Level:</p>
-          <div className="flex gap-4 flex-wrap">
-            {privacyLevel.map((level) => (
-              <div
-                key={level}
-                className="flex gap-1 border-[0.5px] rounded-lg border-[#E9E9E9] px-3 py-1.5 items-center"
-              >
-                {level === "Wallet Required" ? (
-                  <KeyIcon />
-                ) : level === "Verified Access" ? (
-                  <LockIcon />
-                ) : (
-                  <ShiedIcon />
-                )}
-                <p className="text-[#5C6170] text-xs font-medium">{level}</p>
+                    }`}
+                >
+                  <PlusIcon />
+                </button>
               </div>
-            ))}
+              <div>
+                {isSoldOut ? (
+                  <p className="text-[#B42318] dark:text-[#F97066] text-sm font-semibold" role="status">
+                    This event is sold out.
+                  </p>
+                ) : (
+                  <p className="text-[#667185] text-sm font-normal" aria-live="polite">
+                    Only{" "}
+                    <span className="font-semibold dark:text-[#6917AF] text-[#6917AF]">
+                      {liveSlotsLeft} Slots
+                    </span>{" "}
+                    left!
+                  </p>
+                )}
+                <p className="text-sm text-[#667185]">{isSoldOut ? "Check back for other dates." : "Don't miss it"}</p>
+              </div>
+            </div>
           </div>
-        </div>
-
-      {/* Payment error */}
-      {hasPaymentFailed && (
-        <div className="bg-red-100 p-3 text-sm">
-          {paymentError ?? "Payment failed. Please retry."}
-        </div>
-      )}
-
-      {/* Tx banner */}
-      <TxBanner txState={txState} />
-
-      {/* Button */}
-      <button
-        onClick={handlePrimaryClick}
-        disabled={isButtonDisabled}
-        onMouseEnter={preloadWalletSDK}
-        className="w-full py-4 bg-purple-700 text-white rounded-full flex items-center justify-center gap-2 disabled:opacity-60"
-      >
-        {buttonLabel()}
-      </button>
-
-      {walletState.error && (
-        <p className="text-sm text-red-500">{walletState.error}</p>
-      )}
-
-      {txState.status === "failed" && (
-        <button
-          onClick={() =>
-            setTxState({ status: "idle", txHash: null, error: null, attempts: 0 })
-          }
-          className="text-sm underline mt-2"
-        >
-          Try again
-        </button>
-      )}
-        <div className="bg-[#F2FFF2] dark:bg-[#131313] dark:text-[#0BD330] text-[#0ABA2A] py-3 px-5 gap-4 flex ">
-          <DangerIcon />
-          <p className="text-xs font-medium">Secure & Instant Payment</p>
-        </div>
-        {hasPaymentFailed && (
-          <div className="bg-[#FFF2F2] border border-[#FBCACA] text-[#B42318] py-3 px-5 rounded-lg">
-            <p className="text-xs font-medium">
-              {paymentError ?? "Payment failed. Please retry."}
-            </p>
+          <div className="flex gap-6 items-center">
+            <p className="font-medium text-[#7D7D7D]">Privacy Level:</p>
+            <div className="flex gap-4 flex-wrap">
+              {privacyLevel.map((level) => (
+                <div
+                  key={level}
+                  className="flex gap-1 border-[0.5px] rounded-lg border-[#E9E9E9] px-3 py-1.5 items-center"
+                >
+                  {level === "Wallet Required" ? (
+                    <KeyIcon />
+                  ) : level === "Verified Access" ? (
+                    <LockIcon />
+                  ) : (
+                    <ShiedIcon />
+                  )}
+                  <p className="text-[#5C6170] text-xs font-medium">{level}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        )}
-        <div>
-          <button
-            type="button"
-            disabled={isSoldOut || isProcessingPayment || walletState.isLoading}
-            onClick={handlePrimaryClick}
-            onMouseEnter={isSoldOut ? undefined : preloadWalletSDK}
-            onFocus={isSoldOut ? undefined : preloadWalletSDK}
-            className={
-              isSoldOut
-                ? "py-4 px-6 flex w-full items-center justify-center font-bold rounded-full gap-3 duration-200 ease-in-out transition bg-[#E4E5E6] text-[#98A2B3] cursor-not-allowed dark:bg-[#232323] dark:text-[#667085]"
-                : `py-4 px-6 bg-[#6917AF] text-[#FCFDFD] flex w-full items-center justify-center font-bold rounded-full gap-3 duration-200 ease-in-out transition dark:bg-[#751AC6] dark:text-[#0F0F0F] dark:hover:bg-[#751AC6]/95 disabled:opacity-60 disabled:cursor-not-allowed ${!(isProcessingPayment || walletState.isLoading)
+
+          {/* Tx banner */}
+          <TxBanner txState={txState} />
+
+          {/* Payment error */}
+          {hasPaymentFailed && (
+            <div className="bg-[#FFF2F2] border border-[#FBCACA] text-[#B42318] py-3 px-5 rounded-lg">
+              <p className="text-xs font-medium">
+                {paymentError ?? "Payment failed. Please retry."}
+              </p>
+            </div>
+          )}
+
+          <div className="bg-[#F2FFF2] dark:bg-[#131313] dark:text-[#0BD330] text-[#0ABA2A] py-3 px-5 gap-4 flex">
+            <DangerIcon />
+            <p className="text-xs font-medium">Secure & Instant Payment</p>
+          </div>
+
+          <div>
+            <button
+              type="button"
+              disabled={isSoldOut || isProcessingPayment || walletState.isLoading || isButtonDisabled}
+              onClick={handlePrimaryClick}
+              onMouseEnter={isSoldOut ? undefined : preloadWalletSDK}
+              onFocus={isSoldOut ? undefined : preloadWalletSDK}
+              className={
+                isSoldOut
+                  ? "py-4 px-6 flex w-full items-center justify-center font-bold rounded-full gap-3 duration-200 ease-in-out transition bg-[#E4E5E6] text-[#98A2B3] cursor-not-allowed dark:bg-[#232323] dark:text-[#667085]"
+                  : `py-4 px-6 bg-[#6917AF] text-[#FCFDFD] flex w-full items-center justify-center font-bold rounded-full gap-3 duration-200 ease-in-out transition dark:bg-[#751AC6] dark:text-[#0F0F0F] dark:hover:bg-[#751AC6]/95 disabled:opacity-60 disabled:cursor-not-allowed ${!(isProcessingPayment || walletState.isLoading)
                     ? "cursor-pointer hover:bg-[#6917AF]/95"
                     : ""
-                  }`
-            }
-          >
-            {isSoldOut ? (
-              <>
-                <PasswordProtectedShield />
-                <span>Sold out</span>
-              </>
-            ) : walletState.isLoading ? (
-              <>
-                <Loader2 className="animate-spin" size={20} />
-                <span>Connecting…</span>
-              </>
-            ) : (
-              <>
-                <PasswordProtectedShield />
-                <span>
-                  {isProcessingPayment
-                    ? "Processing Payment..."
-                    : hasPaymentFailed
-                      ? "Retry Payment"
-                      : isPaid
-                        ? "Connect Wallet to Purchase"
-                        : "Attend Anonymously"}
-                </span>
-              </>
+                    }`
+              }
+            >
+              {isSoldOut ? (
+                <>
+                  <PasswordProtectedShield />
+                  <span>Sold out</span>
+                </>
+              ) : (
+                <>{buttonLabel()}</>
+              )}
+            </button>
+            {walletState.error && (
+              <p className="mt-2 text-sm text-red-500">{walletState.error}</p>
             )}
-          </button>
-          {walletState.error && (
-            <p className="mt-2 text-sm text-red-500">{walletState.error}</p>
-          )}
-        </div>
+            {txState.status === "failed" && (
+              <button
+                type="button"
+                onClick={() =>
+                  setTxState({ status: "idle", txHash: null, error: null, attempts: 0 })
+                }
+                className="text-sm underline mt-2"
+              >
+                Try again
+              </button>
+            )}
+          </div>
         </fieldset>
       </form>
     </div>
