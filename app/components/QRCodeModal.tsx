@@ -41,7 +41,7 @@ export function QRCodeModal({
 
     // 3. Base64 encode the JSON so it acts as an opaque, offline-readable token
     return btoa(JSON.stringify(payloadData));
-  }, [accessCode]);
+  }, [accessCode, isOpen]);
   // --------------------------
 
   return (
