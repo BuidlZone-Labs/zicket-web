@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useMemo } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,7 @@ import { QRCodeSVG } from 'qrcode.react'
 interface QRCodeModalProps {
   isOpen: boolean
   onClose: () => void
-  accessCode: string
+  accessCode: string // This should ideally be JUST the ticket ID/Hash now
 }
 
 export function QRCodeModal({
@@ -26,6 +26,23 @@ export function QRCodeModal({
       onClose()
     }
   }
+
+  // --- NEW SECURITY LOGIC ---
+  const securePayload = useMemo(() => {
+    // 1. Create a validation hint (e.g., expiry set to 24 hours from generation)
+    // For production, you might pass a specific expiry date as a prop instead.
+    const expiryTimestamp = Date.now() + (24 * 60 * 60 * 1000);
+
+    // 2. Build the lightweight payload object
+    const payloadData = {
+      id: accessCode, // Assuming accessCode is the safe ticket ID or Hash
+      expMs: expiryTimestamp // Expiry in milliseconds since Unix epoch
+    };
+
+    // 3. Base64 encode the JSON so it acts as an opaque, offline-readable token
+    return btoa(JSON.stringify(payloadData));
+  }, [accessCode, isOpen]);
+  // --------------------------
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -52,8 +69,9 @@ export function QRCodeModal({
         <div className="flex flex-col items-center space-y-6">
           <div className="bg-white p-4 rounded-lg border border-gray-100">
             <QRCodeSVG
-              value={accessCode}
+              value={securePayload} // Changed from accessCode to securePayload
               size={256}
+              level="M" // Added Medium error correction for better scannability
               className="block"
             />
           </div>
