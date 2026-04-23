@@ -9,14 +9,20 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import Logo from "@/public/images/Logo.png";
+import Image from "next/image";
+import Link from "next/link";
+import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
+import { useUserSessionSync } from '@/lib/user-session-sync';
 
 const NavBar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const { walletConnected, setWalletConnected } = useUserSessionSync();
 
   const connectWallet = () => {
+    trackAnalyticsEvent('wallet_connect_cta_clicked', { source: 'organizer_navbar' });
+    setWalletConnected(true);
     console.log('Connecting wallet...');
-    alert('Wallet connection feature coming soon!');
   };
 
   const navLinks = [
@@ -32,12 +38,12 @@ const NavBar = () => {
         <div className="flex justify-between items-center h-20">
           {/* Left Section: Logo */}
           <div className="flex items-center">
-            <a
+            <Link
               href="/"
               className="cursor-pointer flex items-center space-x-2 dark:drop-shadow-[0_0_2em_rgba(255,255,255,0.85)]"
             >
-              <img src={Logo.src} alt="Zicket Logo" className="h-8 w-auto" />
-            </a>
+              <Image src={Logo} alt="Zicket Logo" className="h-8 w-auto" width={120} height={32} />
+            </Link>
           </div>
 
           {/* Center Section: Navigation Links (Desktop) */}
@@ -99,7 +105,7 @@ const NavBar = () => {
               <svg className="w-4 h-4 mr-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              Connect Wallet
+              {walletConnected ? 'Wallet Connected' : 'Connect Wallet'}
             </button>
 
             {/* Mobile menu button */}
@@ -164,7 +170,7 @@ const NavBar = () => {
                   <svg className="w-5 h-5 mr-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
-                  Connect Wallet
+                  {walletConnected ? 'Wallet Connected' : 'Connect Wallet'}
                 </button>
               </div>
             </div>
