@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import LogoWhite from "../../public/images/LogoWhite.png";
 import { LinkedInIcon, TwitterIcon } from "@/public/svg/svg";
 import { ArrowUpRight } from "lucide-react";
@@ -9,7 +10,7 @@ function Footer() {
       <div className="w-full bg-[#1E1E1E] px-5 sm:px-25 py-4 sm:py-12 rounded-[24px]">
         <div className="flex flex-wrap gap-10 justify-between">
           <div className="w-80">
-            <img src={LogoWhite.src} alt="Logo" className="h-8 w-auto" />
+            <Image src={LogoWhite} alt="Logo" className="h-8 w-auto" height={32} width={120} />
             <p className="text-sm text-[#A8A8A8] mt-5">
               Lorem ipsum dolor sit amet, consectetur adipiscing elit.
             </p>

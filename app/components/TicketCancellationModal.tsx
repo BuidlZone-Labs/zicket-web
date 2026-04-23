@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { X, Ticket } from 'lucide-react'
+import { trackAnalyticsEvent } from '@/lib/privacyAnalytics'
 
 interface TicketCancellationModalProps {
   isOpen: boolean
@@ -37,15 +38,15 @@ export function TicketCancellationModal({
     try {
       // Placeholder: replace with real API call when backend is ready
       // e.g. await fetch(`/api/registrations/${ticketId}/cancel`, { method: 'POST' })
-      console.log('Cancel registration API (placeholder):', { ticketId, userId })
-
-      const payload = {
-        ticketId,
-        userId,
-        previousState: { isConfirmed, isPaid },
-        newState: { isConfirmed: false, isPaid: false }
-      }
-      console.log('Cancelling ticket:', payload)
+      trackAnalyticsEvent(
+        'ticket_cancellation_requested',
+        {
+          previousState: { isConfirmed, isPaid },
+          nextState: { isConfirmed: false, isPaid: false },
+          hasTicketReference: Boolean(ticketId)
+        },
+        { isAnonymous: !userId }
+      )
 
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 500))
@@ -99,7 +100,7 @@ export function TicketCancellationModal({
 
             <div className="mb-5">
               <p className="text-gray-700 text-base leading-relaxed">
-                Are you sure you want to cancel your registration. We'll let the host know that you can't make it.
+                Are you sure you want to cancel your registration. We&apos;ll let the host know that you can&apos;t make it.
               </p>
             </div>
 

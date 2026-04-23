@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useEffect, useRef } from "react"
+import React, { useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import {
   EventSidebarPreviewCard,
@@ -34,15 +34,20 @@ export default function AddNewEventPage() {
   const router = useRouter()
 
   const [formValues, setFormValues] = React.useState<Partial<BasicInfoEventFormValues>>({})
-  const previewImageUrlRef = useRef<string | null>(null)
+
+  const coverPreviewUrl = useMemo(() => {
+    const file = formValues.coverImage
+    if (!file || typeof window === "undefined") return null
+    return URL.createObjectURL(file)
+  }, [formValues.coverImage])
 
   useEffect(() => {
     return () => {
-      if (previewImageUrlRef.current) URL.revokeObjectURL(previewImageUrlRef.current)
+      if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl)
     }
-  }, [])
+  }, [coverPreviewUrl])
 
-  const handleSubmit = (data: BasicInfoEventFormValues) => {
+  const handleSubmit = (_data: BasicInfoEventFormValues) => {
     // Step 2 not implemented yet; could navigate to ?step=2 or a separate route
     router.push("/zkorg/events/new?step=2")
   }
@@ -54,13 +59,7 @@ export default function AddNewEventPage() {
     const date = d?.startDate ? formatDate(d.startDate) : "Feb. 08 2025"
     const time = d?.startTime ? formatTime(d.startTime) : "6:00 PM"
     const tags = d?.tags?.length ? d.tags : ["DAO", "TECH"]
-    let image = "/images/explore/1.png"
-    if (d?.coverImage && typeof window !== "undefined") {
-      const prev = previewImageUrlRef.current
-      if (prev) URL.revokeObjectURL(prev)
-      previewImageUrlRef.current = URL.createObjectURL(d.coverImage)
-      image = previewImageUrlRef.current
-    }
+    const image = coverPreviewUrl ?? "/images/explore/1.png"
 
     return {
       title,
@@ -74,7 +73,7 @@ export default function AddNewEventPage() {
       tags,
       description,
     }
-  }, [formValues])
+  }, [formValues, coverPreviewUrl])
 
   return (
     <div className="flex gap-6 p-6 lg:p-8">
