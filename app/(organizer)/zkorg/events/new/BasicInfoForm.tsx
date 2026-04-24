@@ -48,7 +48,7 @@ export function BasicInfoForm({ onSubmit, onValuesChange, className }: BasicInfo
     mode: "onChange",
   })
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch("tags")
+  // eslint-disable-next-line
   const watchedTags = form.watch("tags")
   const tags = useMemo(() => watchedTags ?? [], [watchedTags])
   const watched = form.watch()
