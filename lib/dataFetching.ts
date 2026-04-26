@@ -12,6 +12,13 @@ import InMemoryCache from './cache';
 /**
  * Get all public events for the explore list page
  * Safe to use with static generation and ISR
+ */
+export async function getAllPublicEvents(): Promise<Event[]> {
+  // Simulate a small server-side delay (e.g., from a database)
+  // In production, this would fetch from your actual backend
+  await new Promise(resolve => setTimeout(resolve, 0));
+  
+  return dummyEvents;
  * Uses in-memory caching to improve performance
  * 
  * Privacy: Only caches public event data, no user information
@@ -36,6 +43,17 @@ export async function getAllPublicEvents(): Promise<Event[]> {
 /**
  * Get a single event by ID for the detail page
  * Used with generateStaticParams for static generation
+ */
+export async function getEventById(eventId: string): Promise<Event | null> {
+  // Simulate a small server-side delay
+  await new Promise(resolve => setTimeout(resolve, 0));
+  
+  const eventName = eventId.replaceAll('-', ' ');
+  const event = dummyEvents.find(
+    (event) => event.title.toLowerCase() === eventName.toLowerCase()
+  );
+  
+  return event || null;
  * Uses in-memory caching to improve performance
  * 
  * Privacy: Cache key is the public event ID only, no user information
@@ -64,6 +82,10 @@ export async function getEventById(eventId: string): Promise<Event | null> {
 /**
  * Get all event IDs for static generation
  * Returns an array of event IDs that should be pre-rendered
+ */
+export async function getAllEventIds(): Promise<string[]> {
+  const events = await getAllPublicEvents();
+  return events.map(event => event.title.toLowerCase().replaceAll(' ', '-'));
  * Uses in-memory caching to improve performance
  * 
  * Privacy: Cache key is generic, no user identifiers
