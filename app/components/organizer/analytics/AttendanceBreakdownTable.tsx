@@ -3,7 +3,7 @@
 import React from "react";
 import { ShieldCheck } from "lucide-react";
 import { KeyIcon, LockIcon } from "@/public/svg/svg";
-import type { AttendanceBreakdownRow, AttendanceType } from "@/lib/types";
+import type { AttendanceBreakdownRow, AttendanceType } from "@/lib/validations/types";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -52,7 +52,7 @@ export default function AttendanceBreakdownTable({
   title = "Attendance breakdown",
 }: AttendanceBreakdownTableProps) {
   return (
-    <section className="max-w-[1200px] m-auto my-4 px-4 lg:px-0">
+    <section className="max-w-300 m-auto my-4 px-4 lg:px-0">
       <div className="border border-[#E3E3E3] dark:border-[#2A2A2A] rounded-[12px] overflow-hidden">
         {title && (
           <div className="px-4 py-3 border-b border-[#E3E3E3] dark:border-[#2A2A2A]">

@@ -1,7 +1,10 @@
 type AnalyticsPrimitive = string | number | boolean | null;
-type AnalyticsValue = AnalyticsPrimitive | AnalyticsPayload | AnalyticsValue[];
 
-export type AnalyticsPayload = Record<string, AnalyticsValue>;
+export interface AnalyticsPayload {
+  [key: string]: AnalyticsValue;
+}
+
+type AnalyticsValue = AnalyticsPrimitive | AnalyticsPayload | AnalyticsValue[];
 
 export interface PrivacyAnalyticsOptions {
   isAnonymous?: boolean;
