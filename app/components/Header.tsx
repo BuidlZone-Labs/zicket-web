@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import React from "react";
 import Logo from "@/public/images/Logo.png";
 import Image from "next/image";
@@ -11,6 +11,7 @@ import { ModeToggle } from "./DarkModeToggle";
 import { Search } from "lucide-react";
 import { ArrowUpRight } from "lucide-react";
 import { useUserSessionSync } from "@/lib/user-session-sync";
+import { useDebounce } from "@/hooks/useDebounce";
 
 function Header() {
   type NavLink = {
@@ -18,7 +19,24 @@ function Header() {
     href: string;
   };
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [mounted, setMounted] = useState(false);
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const { anonymousBrowsing, setAnonymousBrowsing } = useUserSessionSync();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Use debounced search query for API calls
+  useEffect(() => {
+    if (debouncedSearchQuery) {
+      // TODO: Replace with actual search API call
+      console.log("Searching for:", debouncedSearchQuery);
+      // Example: searchEvents(debouncedSearchQuery);
+    }
+  }, [debouncedSearchQuery]);
+
   const navLinks: NavLink[] = [
     { name: "Explore", href: "/explore" },
     { name: "News", href: "/news" },
@@ -64,6 +82,8 @@ function Header() {
             <input
               type="text"
               placeholder="Search Anonymously"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-600 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#6917AF] focus:border-transparent"
             />
           </div>
@@ -74,14 +94,18 @@ function Header() {
             <span className="text-sm font-medium text-[#172233] dark:text-white">
               Anonymous Browsing
             </span>
-            <Switch
-              checked={anonymousBrowsing}
-              onCheckedChange={setAnonymousBrowsing}
-              className="data-[state=checked]:bg-[#6917AF]"
-            />
-            <span className="text-sm font-medium text-[#172233] dark:text-white">
-              {anonymousBrowsing ? "ON" : "OFF"}
-            </span>
+            {mounted && (
+              <>
+                <Switch
+                  checked={anonymousBrowsing}
+                  onCheckedChange={setAnonymousBrowsing}
+                  className="data-[state=checked]:bg-[#6917AF]"
+                />
+                <span className="text-sm font-medium text-[#172233] dark:text-white">
+                  {anonymousBrowsing ? "ON" : "OFF"}
+                </span>
+              </>
+            )}
           </div>
           <a href="/login" className="group flex gap-1 items-center cursor-pointer px-6 py-3 border border-[#8F37DA] bg-gradient-to-b from-[#5E4BF3] to-[#9109D0] text-white dark:text-[#6917AF] rounded-full font-bold transition-all duration-300 dark:hover:drop-shadow-[0_0_2em_rgba(255,255,255,0.3)] dark:hover:text-gray-50">
             Host Event <ArrowUpRight size="15" className="group-hover:rotate-45 delay-300 transition-all" />
@@ -117,6 +141,8 @@ function Header() {
               <input
                 type="text"
                 placeholder="Search Anonymously"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#6917AF] focus:border-transparent"
               />
             </div>
@@ -124,14 +150,18 @@ function Header() {
               <span className="text-sm font-medium text-[#172233]">
                 Anonymous Browsing
               </span>
-              <Switch
-                checked={anonymousBrowsing}
-                onCheckedChange={setAnonymousBrowsing}
-                className="data-[state=checked]:bg-[#6917AF]"
-              />
-              <span className="text-sm font-medium text-[#172233]">
-                {anonymousBrowsing ? "ON" : "OFF"}
-              </span>
+              {mounted && (
+                <>
+                  <Switch
+                    checked={anonymousBrowsing}
+                    onCheckedChange={setAnonymousBrowsing}
+                    className="data-[state=checked]:bg-[#6917AF]"
+                  />
+                  <span className="text-sm font-medium text-[#172233]">
+                    {anonymousBrowsing ? "ON" : "OFF"}
+                  </span>
+                </>
+              )}
             </div>
             <a href="/login" className="flex px-6 py-3 bg-[#6917AF] text-white rounded-full font-bold">
               Host Event

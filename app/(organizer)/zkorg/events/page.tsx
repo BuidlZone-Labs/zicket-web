@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { Plus, Search } from "lucide-react"
 
@@ -15,6 +15,7 @@ import {
   TableEmpty,
 } from "@/components/ui/table"
 import { InputWithIcon } from "@/components/ui/input"
+import { useDebounce } from "@/hooks/useDebounce"
 
 const tableColumns = [
   { id: "name", label: "Event Name" },
@@ -25,6 +26,18 @@ const tableColumns = [
 ]
 
 export default function OrgEvents() {
+  const [searchQuery, setSearchQuery] = useState("")
+  const debouncedSearchQuery = useDebounce(searchQuery, 400)
+
+  // Use debounced search query for API calls
+  useEffect(() => {
+    if (debouncedSearchQuery) {
+      // TODO: Replace with actual search API call
+      console.log("Searching events for:", debouncedSearchQuery)
+      // Example: searchEvents(debouncedSearchQuery);
+    }
+  }, [debouncedSearchQuery])
+
   return (
     <div className="p-6 lg:p-8">
       <div className="space-y-6">
@@ -55,6 +68,8 @@ export default function OrgEvents() {
             <InputWithIcon
               icon={<Search className="size-4" />}
               placeholder="Search events..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <div className="flex items-center gap-2">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   MagnifyingGlassIcon, 
   BellIcon, 
@@ -13,11 +13,22 @@ import Image from "next/image";
 import Link from "next/link";
 import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
 import { useUserSessionSync } from '@/lib/user-session-sync';
+import { useDebounce } from '@/hooks/useDebounce';
 
 const NavBar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const { walletConnected, setWalletConnected } = useUserSessionSync();
+
+  // Use debounced search query for API calls
+  useEffect(() => {
+    if (debouncedSearchQuery) {
+      // TODO: Replace with actual search API call
+      console.log('Searching for:', debouncedSearchQuery);
+      // Example: searchEvents(debouncedSearchQuery);
+    }
+  }, [debouncedSearchQuery]);
 
   const connectWallet = () => {
     trackAnalyticsEvent('wallet_connect_cta_clicked', { source: 'organizer_navbar' });
