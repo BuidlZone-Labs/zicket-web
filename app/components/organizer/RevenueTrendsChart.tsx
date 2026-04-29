@@ -175,11 +175,11 @@ const RevenueTrends = ({ data, onPeriodChange }: RevenueTrendsProps) => {
   const linearTicks = Y_TICKS_DISPLAY.map((_, i) => i);
 
   return (
-    <section className='border border-card-border rounded-2xl bg-white flex flex-col overflow-hidden'>
+    <section className='border border-card-border rounded-2xl bg-white flex flex-col overflow-hidden' aria-labelledby="revenue-trends-title">
       {/* ── Header ── */}
       <header className='flex items-center justify-between px-5 py-4 border-b border-card-border'>
         <div className='flex items-center gap-3'>
-          <div className='w-8 h-8 rounded-full border border-[#E3E3E3] bg-[#F5F5F5] flex items-center justify-center text-[#6B21A8]'>
+          <div className='w-8 h-8 rounded-full border border-[#E3E3E3] bg-[#F5F5F5] flex items-center justify-center text-[#6B21A8]' aria-hidden="true">
 
 
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -189,11 +189,11 @@ const RevenueTrends = ({ data, onPeriodChange }: RevenueTrendsProps) => {
 
 
           </div>
-          <h3 className='font-medium text-[#1E1E1E] text-[16px]'>Revenue trends</h3>
+          <h3 id="revenue-trends-title" className='font-medium text-[#1E1E1E] text-[16px]'>Revenue trends</h3>
         </div>
 
         <Select value={period} onValueChange={handlePeriodChange}>
-          <SelectTrigger className='w-[130px] rounded-full font-medium text-[#1E1E1E] text-xs h-8'>
+          <SelectTrigger aria-label="Select revenue period" className='w-[130px] rounded-full font-medium text-[#1E1E1E] text-xs h-8'>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -205,7 +205,15 @@ const RevenueTrends = ({ data, onPeriodChange }: RevenueTrendsProps) => {
       </header>
 
       <div className='flex-1 px-2 pt-4 pb-2 relative' style={{ minHeight: 240 }}>
+        <p className="sr-only">
+          {isEmpty
+            ? "No revenue data is available for the selected period."
+            : `Revenue data for the selected period: ${rawData
+                .map((point) => `${point.date}: ${formatCurrency(point.value)}`)
+                .join(", ")}.`}
+        </p>
         {/* Always render the chart grid/axes shell */}
+        <div aria-hidden="true">
         <ResponsiveContainer width='100%' height={240}>
           <AreaChart
             data={isEmpty ? skeletonData : chartData}
@@ -267,6 +275,7 @@ const RevenueTrends = ({ data, onPeriodChange }: RevenueTrendsProps) => {
             )}
           </AreaChart>
         </ResponsiveContainer>
+        </div>
 
         {/* Empty state overlay — sits on top of the grid */}
         {isEmpty && (

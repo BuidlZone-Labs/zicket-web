@@ -13,11 +13,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
 import { useUserSessionSync } from '@/lib/user-session-sync';
+import { usePathname } from 'next/navigation';
 
 const NavBar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { walletConnected, setWalletConnected } = useUserSessionSync();
+  const pathname = usePathname();
 
   const connectWallet = () => {
     trackAnalyticsEvent('wallet_connect_cta_clicked', { source: 'organizer_navbar' });
@@ -26,10 +28,10 @@ const NavBar = () => {
   };
 
   const navLinks = [
-    { name: 'Overview', href: '/zkorg/dashboard', active: true },
-    { name: 'Events', href: '/zkorg/events', active: false },
-    { name: 'Orders', href: '/zkorg/orders', active: false },
-    { name: 'zkEmail Center', href: '/zkorg/zkemail', active: false }
+    { name: 'Overview', href: '/zkorg/dashboard' },
+    { name: 'Events', href: '/zkorg/events' },
+    { name: 'Orders', href: '/zkorg/orders' },
+    { name: 'zkEmail Center', href: '/zkorg/zkemail' }
   ];
 
   return (
@@ -53,10 +55,11 @@ const NavBar = () => {
                 key={link.name}
                 href={link.href}
                 className={`px-4 py-2.5 text-[15px] font-medium transition-all duration-200 rounded-lg ${
-                  link.active
+                  pathname === link.href
                     ? 'text-purple-700 bg-purple-50'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
+                aria-current={pathname === link.href ? 'page' : undefined}
               >
                 {link.name}
               </a>
@@ -71,7 +74,9 @@ const NavBar = () => {
                 <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
               </div>
               <input
+                id="organizer-search"
                 type="text"
+                aria-label="Search your events"
                 placeholder="Search your events..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -80,27 +85,28 @@ const NavBar = () => {
             </div>
 
             {/* Search Icon (Mobile & Tablet) */}
-            <button className="lg:hidden p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-all duration-200">
-              <MagnifyingGlassIcon className="h-5 w-5" />
+            <button className="lg:hidden p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-all duration-200" aria-label="Open event search">
+              <MagnifyingGlassIcon className="h-5 w-5" aria-hidden="true" />
             </button>
 
             {/* Notification Icon */}
-            <button className="relative p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-all duration-200">
-              <BellIcon className="h-5 w-5" />
+            <button className="relative p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-all duration-200" aria-label="View 3 notifications">
+              <BellIcon className="h-5 w-5" aria-hidden="true" />
               <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
                 <span className="text-xs text-white font-medium">3</span>
               </span>
             </button>
 
             {/* Settings Icon */}
-            <button className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-all duration-200">
-              <Cog6ToothIcon className="h-5 w-5" />
+            <button className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-all duration-200" aria-label="Open settings">
+              <Cog6ToothIcon className="h-5 w-5" aria-hidden="true" />
             </button>
 
             {/* Connect Wallet Button */}
             <button
               onClick={connectWallet}
               className="hidden sm:inline-flex items-center px-6 py-2.5 bg-white border border-gray-200 hover:border-gray-300 text-gray-700 text-sm font-semibold rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+              aria-live="polite"
             >
               <svg className="w-4 h-4 mr-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -112,6 +118,9 @@ const NavBar = () => {
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="lg:hidden p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-all duration-200"
+              aria-label="Toggle organizer navigation"
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="organizer-mobile-menu"
             >
               {isMobileMenuOpen ? (
                 <XMarkIcon className="h-6 w-6" />
@@ -124,7 +133,7 @@ const NavBar = () => {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden border-t border-gray-100 bg-white">
+          <div id="organizer-mobile-menu" className="lg:hidden border-t border-gray-100 bg-white">
             <div className="px-4 pt-4 pb-6 space-y-3">
               {/* Mobile Search */}
               <div className="relative">
@@ -132,7 +141,9 @@ const NavBar = () => {
                   <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
+                  id="organizer-mobile-search"
                   type="text"
+                  aria-label="Search your events"
                   placeholder="Search your events..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -147,11 +158,12 @@ const NavBar = () => {
                     key={link.name}
                     href={link.href}
                     className={`block px-4 py-3 text-base font-medium rounded-lg transition-all duration-200 ${
-                      link.active
+                      pathname === link.href
                         ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-500'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                     onClick={() => setIsMobileMenuOpen(false)}
+                    aria-current={pathname === link.href ? 'page' : undefined}
                   >
                     {link.name}
                   </a>

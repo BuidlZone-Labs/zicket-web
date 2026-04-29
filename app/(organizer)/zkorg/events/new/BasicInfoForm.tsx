@@ -164,6 +164,7 @@ export function BasicInfoForm({ onSubmit, onValuesChange, className }: BasicInfo
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={handleTagKeyDown}
                     placeholder={tags.length === 0 ? "Add tags..." : ""}
+                    aria-label="Add event tag"
                     className="flex-1 min-w-[120px] bg-transparent text-sm outline-none placeholder:text-[#667085] dark:placeholder:text-[#808080]"
                   />
                 </div>

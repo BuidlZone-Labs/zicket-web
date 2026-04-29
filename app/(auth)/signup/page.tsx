@@ -30,13 +30,14 @@ export default function SignupPage() {
         <SignupForm />
 
         <Button
+          asChild
           variant="secondary"
           className="w-auto md:w-auto bg-[#FFFFFF] text-[#514A4A] hover:bg-slate-100 h-16 px-8 rounded-full font-medium text-lg"
         >
-          {"Already Have an Account? "}
-          <span className="text-[#8F37DA] ml-1 font-bold cursor-pointer">
-            <Link href="/login">Log in</Link>
-          </span>
+          <Link href="/login">
+            {"Already Have an Account? "}
+            <span className="text-[#8F37DA] ml-1 font-bold">Log in</span>
+          </Link>
         </Button>
       </div>
     </div>

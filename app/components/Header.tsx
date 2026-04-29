@@ -31,8 +31,11 @@ function Header() {
   }
 
   return (
-    <div className="pt-5 px-5 sticky top-0 z-20 backdrop-blur-md">
-      <div className="pl-6 pr-4 py-4 w-full max-w-[1200px] m-auto border border-[#E4E4E4] bg-[#FFFFFFCC] rounded-[100px] flex items-center justify-between">
+    <header className="pt-5 px-5 sticky top-0 z-20 backdrop-blur-md">
+      <nav
+        className="pl-6 pr-4 py-4 w-full max-w-[1200px] m-auto border border-[#E4E4E4] bg-[#FFFFFFCC] rounded-[100px] flex items-center justify-between"
+        aria-label="Primary navigation"
+      >
         <div className="flex items-center gap-8">
           <Link
             href="/"
@@ -50,6 +53,7 @@ function Header() {
                       ? "text-[#6917AF] dark:text-[#D7B5F5]"
                       : "text-[#172233] dark:text-white hover:text-[#6917AF] dark:hover:text-[#D7B5F5]"
                     }`}
+                  aria-current={pathname === link.href ? "page" : undefined}
                 >
                   {link.name}
                 </Link>
@@ -60,8 +64,12 @@ function Header() {
 
         <div className="hidden lg:flex items-center gap-4 flex-1 max-w-md mx-8">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" aria-hidden="true" />
+            <label htmlFor="site-search" className="sr-only">
+              Search events anonymously
+            </label>
             <input
+              id="site-search"
               type="text"
               placeholder="Search Anonymously"
               className="w-full pl-10 pr-4 py-2 bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-600 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#6917AF] focus:border-transparent"
@@ -75,6 +83,7 @@ function Header() {
               Anonymous Browsing
             </span>
             <Switch
+              aria-label="Anonymous browsing"
               checked={anonymousBrowsing}
               onCheckedChange={setAnonymousBrowsing}
               className="data-[state=checked]:bg-[#6917AF]"
@@ -83,29 +92,37 @@ function Header() {
               {anonymousBrowsing ? "ON" : "OFF"}
             </span>
           </div>
-          <a href="/login" className="group flex gap-1 items-center cursor-pointer px-6 py-3 border border-[#8F37DA] bg-gradient-to-b from-[#5E4BF3] to-[#9109D0] text-white dark:text-[#6917AF] rounded-full font-bold transition-all duration-300 dark:hover:drop-shadow-[0_0_2em_rgba(255,255,255,0.3)] dark:hover:text-gray-50">
-            Host Event <ArrowUpRight size="15" className="group-hover:rotate-45 delay-300 transition-all" />
+          <a href="/login" className="group flex gap-1 items-center cursor-pointer px-6 py-3 border border-[#8F37DA] bg-gradient-to-b from-[#5E4BF3] to-[#9109D0] text-white rounded-full font-bold transition-all duration-300 dark:hover:drop-shadow-[0_0_2em_rgba(255,255,255,0.3)] dark:hover:text-gray-50">
+            Host Event <ArrowUpRight size="15" className="group-hover:rotate-45 delay-300 transition-all" aria-hidden="true" />
           </a>
         </div>
         {/* mobile nav */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="lg:hidden border-2 border-[#751AC6] rounded-lg p-3"
+          aria-label="Toggle navigation menu"
+          aria-expanded={isOpen}
+          aria-controls="mobile-primary-menu"
         >
           <BarsIcon />
         </button>
         {isOpen && (
-          <div className="absolute lg:hidden right-20 top-20 w-fit p-5 flex flex-col gap-5  bg-white border border-gray-200 rounded-md shadow-lg z-10">
+          <div
+            id="mobile-primary-menu"
+            className="absolute lg:hidden right-20 top-20 w-fit p-5 flex flex-col gap-5  bg-white border border-gray-200 rounded-md shadow-lg z-10"
+          >
             <div className="md:hidden flex flex-col gap-3 text-sm">
               {navLinks.map((link) => {
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
+                    onClick={() => setIsOpen(false)}
                     className={`px-2 ${pathname === link.href
                         ? "text-[#6917AF]"
                         : "text-[#172233] hover:text-[#6917AF]"
                       }`}
+                    aria-current={pathname === link.href ? "page" : undefined}
                   >
                     {link.name}
                   </Link>
@@ -113,8 +130,12 @@ function Header() {
               })}
             </div>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" aria-hidden="true" />
+              <label htmlFor="mobile-site-search" className="sr-only">
+                Search events anonymously
+              </label>
               <input
+                id="mobile-site-search"
                 type="text"
                 placeholder="Search Anonymously"
                 className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#6917AF] focus:border-transparent"
@@ -125,6 +146,7 @@ function Header() {
                 Anonymous Browsing
               </span>
               <Switch
+                aria-label="Anonymous browsing"
                 checked={anonymousBrowsing}
                 onCheckedChange={setAnonymousBrowsing}
                 className="data-[state=checked]:bg-[#6917AF]"
@@ -135,16 +157,16 @@ function Header() {
             </div>
             <a href="/login" className="flex px-6 py-3 bg-[#6917AF] text-white rounded-full font-bold">
               Host Event
-              <ArrowUpRight className="w-5 h-5" />
+              <ArrowUpRight className="w-5 h-5" aria-hidden="true" />
             </a>
           </div>
         )}
-      </div>
+      </nav>
 
       <div className="hidden md:block absolute top-12 right-6">
         <ModeToggle />
       </div>
-    </div>
+    </header>
   );
 }
 
