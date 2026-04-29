@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet Connection Indicator Test</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin-bottom: 32px;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #1f2937;
+        }
+        .wallet-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 1px solid;
+        }
+        .wallet-indicator.connected {
+            background: #f0fdf4;
+            color: #15803d;
+            border-color: #bbf7d0;
+        }
+        .wallet-indicator.disconnected {
+            background: #f9fafb;
+            color: #6b7280;
+            border-color: #e5e7eb;
+        }
+        .wallet-indicator.organizer {
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+        .demo-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .demo-button {
+            padding: 8px 16px;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .demo-button:hover {
+            background: #f3f4f6;
+        }
+        .demo-button.active {
+            background: #8b5cf6;
+            color: white;
+            border-color: #8b5cf6;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { CheckCircle2, Wallet } = lucide;
+
+        // Mock wallet state management
+        const useWalletState = () => {
+            const [walletConnected, setWalletConnected] = useState(false);
+            return { walletConnected, setWalletConnected };
+        };
+
+        // Wallet Connection Indicator Component
+        const WalletConnectionIndicator = ({ variant = "user", showLabel = true }) => {
+            const { walletConnected } = useWalletState();
+
+            const baseClasses = "wallet-indicator";
+            const variantClasses = variant === "organizer" ? "organizer" : "";
+            const statusClasses = walletConnected ? "connected" : "disconnected";
+
+            return (
+                <div className={`${baseClasses} ${variantClasses} ${statusClasses}`}>
+                    {walletConnected ? (
+                        <CheckCircle2 size={16} />
+                    ) : (
+                        <Wallet size={16} />
+                    )}
+                    {showLabel && (
+                        <span>
+                            {walletConnected ? "Connected" : "Disconnected"}
+                        </span>
+                    )}
+                </div>
+            );
+        };
+
+        // Demo Component
+        const Demo = () => {
+            const { walletConnected, setWalletConnected } = useWalletState();
+
+            return (
+                <div className="container">
+                    <h1>Wallet Connection State Indicator Demo</h1>
+                    
+                    <div className="section">
+                        <h2>User Area Wallet Indicator</h2>
+                        <p>This shows how the wallet indicator appears in the user area (Header.tsx)</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <WalletConnectionIndicator variant="user" />
+                            <span style={{ color: '#6b7280', fontSize: '14px' }}>
+                                Current state: {walletConnected ? 'Connected' : 'Disconnected'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="section">
+                        <h2>Organizer Area Wallet Indicator</h2>
+                        <p>This shows how the wallet indicator appears in the organizer area (NavBar.tsx)</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <WalletConnectionIndicator variant="organizer" />
+                            <span style={{ color: '#6b7280', fontSize: '14px' }}>
+                                Current state: {walletConnected ? 'Connected' : 'Disconnected'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="section">
+                        <h2>State Control</h2>
+                        <p>Toggle wallet connection state to see the indicators update in real-time</p>
+                        <div className="demo-buttons">
+                            <button 
+                                className={`demo-button ${!walletConnected ? 'active' : ''}`}
+                                onClick={() => setWalletConnected(false)}
+                            >
+                                Disconnect Wallet
+                            </button>
+                            <button 
+                                className={`demo-button ${walletConnected ? 'active' : ''}`}
+                                onClick={() => setWalletConnected(true)}
+                            >
+                                Connect Wallet
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="section">
+                        <h2>Implementation Details</h2>
+                        <ul style={{ lineHeight: '1.6' }}>
+                            <li><strong>Component:</strong> <code>WalletConnectionIndicator.tsx</code></li>
+                            <li><strong>State Management:</strong> Uses existing <code>useUserSessionSync()</code> hook</li>
+                            <li><strong>User Area:</strong> Integrated in <code>Header.tsx</code> (desktop & mobile)</li>
+                            <li><strong>Organizer Area:</strong> Integrated in <code>NavBar.tsx</code> (desktop & mobile)</li>
+                            <li><strong>Variants:</strong> "user" (rounded) and "organizer" (rounded-lg)</li>
+                            <li><strong>Visual States:</strong> Green (connected) with checkmark, Gray (disconnected) with wallet icon</li>
+                        </ul>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<Demo />, document.getElementById('root'));
+    </script>
+</body>
+</html>

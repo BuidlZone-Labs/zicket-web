@@ -11,6 +11,7 @@ import { ModeToggle } from "./DarkModeToggle";
 import { Search } from "lucide-react";
 import { ArrowUpRight } from "lucide-react";
 import { useUserSessionSync } from "@/lib/user-session-sync";
+import WalletConnectionIndicator from "./WalletConnectionIndicator";
 
 function Header() {
   type NavLink = {
@@ -70,6 +71,7 @@ function Header() {
         </div>
 
         <div className="hidden lg:flex items-center gap-4">
+          <WalletConnectionIndicator variant="user" />
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-[#172233] dark:text-white">
               Anonymous Browsing
@@ -120,6 +122,7 @@ function Header() {
                 className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#6917AF] focus:border-transparent"
               />
             </div>
+            <WalletConnectionIndicator variant="user" />
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-[#172233]">
                 Anonymous Browsing
