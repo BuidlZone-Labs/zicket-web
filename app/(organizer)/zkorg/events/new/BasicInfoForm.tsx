@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useCallback, useEffect, useRef } from "react"
+import React, { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Calendar, Clock } from "lucide-react"
@@ -48,7 +48,9 @@ export function BasicInfoForm({ onSubmit, onValuesChange, className }: BasicInfo
     mode: "onChange",
   })
 
-  const tags = form.watch("tags") ?? []
+  // eslint-disable-next-line
+  const watchedTags = form.watch("tags")
+  const tags = useMemo(() => watchedTags ?? [], [watchedTags])
   const watched = form.watch()
   const lastSent = useRef<string>("")
 

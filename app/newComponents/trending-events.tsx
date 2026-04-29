@@ -88,11 +88,13 @@ export function TrendingEvents() {
 
   // Reset current index when items per view changes
   useEffect(() => {
-    const maxIndex = Math.max(0, events.length - itemsPerView);
-    if (currentIndex > maxIndex) {
-      setCurrentIndex(maxIndex);
-    }
-  }, [itemsPerView, events.length, currentIndex]);
+    queueMicrotask(() => {
+      setCurrentIndex((prev) => {
+        const maxIdx = Math.max(0, events.length - itemsPerView);
+        return prev > maxIdx ? maxIdx : prev;
+      });
+    });
+  }, [itemsPerView, events.length]);
 
   const maxIndex = Math.max(0, events.length - itemsPerView);
 

@@ -1,16 +1,5 @@
 import Image from "next/image";
-import {
-  BarChart3,
-  Calendar,
-  Zap,
-  Users,
-  Settings,
-  Globe,
-  Lock,
-  Shield,
-  ArrowUpRight,
-} from "lucide-react";
-import { image } from "framer-motion/client";
+import { ArrowUpRight } from "lucide-react";
 
 export function PowerfulTools() {
   const tools = [

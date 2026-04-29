@@ -2,7 +2,6 @@
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperClass } from "swiper";
 import "swiper/css";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";

@@ -1,11 +1,32 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
+import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
+import { useUserSessionSync } from "@/lib/user-session-sync";
 
 export default function ConnectWalletPrompt() {
-  function connectWallet() {
-    console.log("Connect Wallet clicked");
+  const [walletState, setWalletState] = useState<WalletLoadState>({
+    isLoading: false,
+    error: null,
+  });
+  const { walletConnected, setWalletConnected } = useUserSessionSync();
+
+  async function handleConnectWallet() {
+    trackAnalyticsEvent("wallet_connect_cta_clicked", { source: "organizer_prompt" });
+    setWalletState({ isLoading: true, error: null });
+    try {
+      await loadWalletSDK();
+      setWalletConnected(true);
+      // TODO: invoke wallet connection flow with the loaded SDK
+      setWalletState({ isLoading: false, error: null });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to load wallet. Please try again.";
+      setWalletState({ isLoading: false, error: message });
+    }
   }
 
   return (
@@ -31,12 +52,26 @@ export default function ConnectWalletPrompt() {
 
         <div className="mt-2">
           <button
-            onClick={connectWallet}
-            className="inline-flex group items-center cursor-pointer gap-2 bg-[#6917AF] hover:bg-[#5A1296] text-white font-medium text-sm md:text-base px-8 py-3 rounded-full transition whitespace-nowrap"
+            onClick={handleConnectWallet}
+            onMouseEnter={preloadWalletSDK}
+            disabled={walletState.isLoading}
+            className="inline-flex group items-center cursor-pointer gap-2 bg-[#6917AF] hover:bg-[#5A1296] text-white font-medium text-sm md:text-base px-8 py-3 rounded-full transition whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Connect Wallet
-            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition ease-in-out duration-300" />
+            {walletState.isLoading ? (
+              <>
+                <Loader2 className="animate-spin w-5 h-5" />
+                <span>Connecting…</span>
+              </>
+            ) : (
+              <>
+                {walletConnected ? "Wallet Connected" : "Connect Wallet"}
+                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition ease-in-out duration-300" />
+              </>
+            )}
           </button>
+          {walletState.error && (
+            <p className="mt-2 text-sm text-red-500">{walletState.error}</p>
+          )}
         </div>
       </div>
     </div>

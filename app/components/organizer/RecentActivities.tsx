@@ -1,4 +1,4 @@
-import { IRecentActivities } from '@/lib/types';
+import { IRecentActivities } from '@/lib/validations/types';
 import Image from 'next/image';
 import React from 'react';
 import { ChevronRight } from 'lucide-react';

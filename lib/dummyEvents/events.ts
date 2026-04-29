@@ -90,7 +90,7 @@ export const dummyEvents: Event[] = [
       bio: "Building Nigeria's tech future.",
       contact: "https://naijatech.co",
     },
-    slotsLeft: 34,
+    slotsLeft: 0,
     quantitySelected: 0,
     isPaid: false,
     price: 0,

@@ -1,5 +1,4 @@
-import Image from "next/image"
-import { Aztec, Starknet, UpAndRightArrow } from "./SvgComponents"
+import { Aztec, Starknet } from "./SvgComponents"
 import { ArrowUpRight } from "lucide-react"
 
 export const Description = () => {

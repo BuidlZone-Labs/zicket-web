@@ -4,7 +4,7 @@ import Summary from '@/app/components/organizer/analytics/Summary';
 import AttendanceBreakdownTable from '@/app/components/organizer/analytics/AttendanceBreakdownTable';
 import ActivitiesPanel from '../../../components/organizer/ActivitiesPanel';
 import ConnectWalletPrompt from '@/app/components/organizer/ConnectWalletPrompt';
-import type { AttendanceBreakdownRow } from '@/lib/types';
+import type { AttendanceBreakdownRow } from '@/lib/validations/types';
 
 const mockAttendanceBreakdown: AttendanceBreakdownRow[] = [
   { type: 'wallet-required', count: 111, percentage: 32 },

@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import React from 'react';
-import { IRecentActivities } from '@/lib/types';
+import { IRecentActivities } from '@/lib/validations/types';
 
 interface ActivityProps {
   activity: IRecentActivities;
@@ -12,7 +12,7 @@ const Activity = ({ activity }: ActivityProps) => {
   return (
     <div className='flex items-start gap-3 p-3 rounded-xl bg-[#F8F8F8] border border-[#EFEFEF]'>
       {/* Icon */}
-      <div className='flex-shrink-0 mt-0.5'>
+      <div className='shrink-0 mt-0.5'>
         <Image
           src={icon}
           alt='activity icon'
@@ -27,7 +27,7 @@ const Activity = ({ activity }: ActivityProps) => {
         <div className='flex flex-wrap items-center gap-1.5'>
           <span className='text-sm font-medium text-[#1A1A1A]'>{title}</span>
           {titleTag && (
-            <span className='inline-flex items-center px-2.5 py-0.5 rounded bg-[#EFEFEF] text-xs font-medium text-black whitespace-nowrap bg-white'>
+            <span className='inline-flex items-center px-2.5 py-0.5 rounded bg-[#EFEFEF] text-xs font-medium text-black whitespace-nowrap'>
               {titleTag}
             </span>
           )}
@@ -40,7 +40,7 @@ const Activity = ({ activity }: ActivityProps) => {
       </div>
 
       {/* Timestamp */}
-      <div className='flex-shrink-0 text-xs text-[#9B9B9B] whitespace-nowrap mt-0.5'>
+      <div className='shrink-0 text-xs text-[#9B9B9B] whitespace-nowrap mt-0.5'>
         · {timeStamp}
       </div>
     </div>

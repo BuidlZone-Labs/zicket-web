@@ -4,12 +4,15 @@ import { useState, useEffect } from "react";
 import Card from "./card";
 import { EmptyStateIcon } from "@/public/svg/svg";
 import CustomDropdown from "./CustomDropdown";
-import { dummyEvents } from "@/lib/dummyEvents/events";
 import SkeletonCard from "./SkeletonCard";
-import type { EventType } from "@/lib/dummyEvents/events";
+import type { EventType, Event } from "@/lib/dummyEvents/events";
 
-function MainContent() {
-  const [events] = useState(dummyEvents);
+interface MainContentProps {
+  initialEvents?: Event[];
+}
+
+function MainContent({ initialEvents = [] }: MainContentProps) {
+  const [events] = useState<Event[]>(initialEvents);
   const [selectedPrivacy, setSelectedPrivacy] = useState<string | null>(null);
   const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
@@ -188,9 +191,12 @@ function MainContent() {
   };
 
   useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => setLoading(false), 1000);
-    return () => clearTimeout(timer);
+    const showTimer = setTimeout(() => setLoading(true), 0);
+    const hideTimer = setTimeout(() => setLoading(false), 1000);
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+    };
   }, [
     selectedPrivacy,
     selectedPrice,
@@ -366,14 +372,14 @@ function MainContent() {
           </div>
         </>
       )}
-      <div className="hidden sm:flex flex-wrap items-center justify-between gap-2 mb-4 mt-1 w-full min-h-[32px]">
-        <div className="flex flex-wrap gap-2 min-h-[28px]">
+      <div className="hidden sm:flex flex-wrap items-center justify-between gap-2 mb-4 mt-1 w-full min-h-8">
+        <div className="flex flex-wrap gap-2 min-h-7">
           {filterConfigs.map(
             (f) =>
               f.value && (
                 <span
                   key={f.key}
-                  className="gap-2 justify-between align-center px-2 rounded-[8px] border border-[#7C3AED] text-[#6B7280] bg-white flex items-center text-base font-semibold h-7"
+                  className="gap-2 justify-between align-center px-2 rounded-xl border border-[#7C3AED] text-[#6B7280] bg-white flex items-center text-base font-semibold h-7"
                 >
                   {f.value}
                   <button
@@ -419,8 +425,8 @@ function MainContent() {
       ) : (
         <div className="space-y-10">
           <div className="grid-cols-1 grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 ">
-            {sortedEvents.slice(0, showCount).map((event, index) => (
-              <Card key={index} {...event} />
+            {sortedEvents.slice(0, showCount).map((event) => (
+              <Card key={event.id} {...event} />
             ))}
           </div>
           <div className="flex items-center justify-center relative mt-8">

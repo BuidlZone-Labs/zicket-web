@@ -1,6 +1,5 @@
 "use client";
 import { ArrowRightIcon } from "@/public/svg/svg";
-import { useState } from "react";
 interface DropDownProps {
   isOpen: boolean;
   onToggle: () => void;
