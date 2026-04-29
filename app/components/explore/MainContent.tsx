@@ -174,13 +174,15 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
+  const closeDrawer = () => setDrawerOpen(false);
+
   const handleMobileApply = () => {
     setSelectedPrivacy(mobilePrivacy);
     setSelectedPrice(mobilePrice);
     setSelectedDate(mobileDate);
     setSelectedEventType(mobileEventType);
     setSelectedLocation(mobileLocation);
-    setDrawerOpen(false);
+    closeDrawer();
   };
   const handleMobileClear = () => {
     setMobilePrivacy(null);
@@ -205,6 +207,17 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
     selectedEventType,
     showCount,
   ]);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeDrawer();
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [drawerOpen]);
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4">
@@ -238,6 +251,8 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
           className="rounded-full"
           onClick={() => setDrawerOpen(true)}
           aria-label="Open filters"
+          aria-expanded={drawerOpen}
+          aria-controls="mobile-filter-drawer"
         >
           <svg
             width="40"
@@ -278,13 +293,20 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
         <>
           <div
             className="fixed inset-0 bg-black bg-opacity-30 z-40"
-            onClick={() => setDrawerOpen(false)}
+            onClick={closeDrawer}
+            aria-hidden="true"
           />
-          <div className="fixed right-0 top-0 h-full w-11/12 max-w-xs bg-white shadow-lg p-6 flex flex-col z-50">
+          <div
+            id="mobile-filter-drawer"
+            className="fixed right-0 top-0 h-full w-11/12 max-w-xs bg-white shadow-lg p-6 flex flex-col z-50"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mobile-filter-title"
+          >
             <div className="flex items-center justify-between mb-4">
-              <span className="font-bold text-lg text-[#2C0A4A]">Filters</span>
+              <h2 id="mobile-filter-title" className="font-bold text-lg text-[#2C0A4A]">Filters</h2>
               <button
-                onClick={() => setDrawerOpen(false)}
+                onClick={closeDrawer}
                 aria-label="Close filters"
               >
                 <svg
@@ -386,7 +408,7 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
                     className="text-[#6B7280] text-2xl flex items-center justify-center w-2 h-7 mb-1 rounded-full cursor-pointer"
                     style={{ lineHeight: 1 }}
                     onClick={() => f.setValue(null)}
-                    aria-label="Remove filter"
+                    aria-label={`Remove ${f.value} filter`}
                   >
                     ×
                   </button>
@@ -398,6 +420,10 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
           )}
         </div>
         <div className="text-xs text-[#6B7280] ml-auto">
+          <span className="sr-only" aria-live="polite">
+            Showing {Math.min(showCount, filteredEvents.length)} of{" "}
+            {filteredEvents.length} results
+          </span>
           Showing 1 - {Math.min(showCount, filteredEvents.length)} of{" "}
           {filteredEvents.length} results
         </div>
@@ -445,6 +471,7 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
             <button
               onClick={scrollToTop}
               className="absolute right-0 bg-[#F6F6F6] hover:bg-[#F6F6F6]/10 rotate-270 transform p-3 rounded-full cursor-pointer"
+              aria-label="Scroll to top"
             >
               <svg
                 width="20"

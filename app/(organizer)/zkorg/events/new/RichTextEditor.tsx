@@ -37,6 +37,8 @@ function ToolbarButton({
       type="button"
       onClick={onClick}
       title={title}
+      aria-label={title}
+      aria-pressed={active}
       className={cn(
         "p-1.5 rounded hover:bg-[#EEEFF2] dark:hover:bg-[#2A2A2A] transition-colors",
         active && "bg-[#E3E3E3] dark:bg-[#404040] text-[#6917AF] dark:text-[#D7B5F5]"
@@ -84,6 +86,8 @@ export function RichTextEditor({
       attributes: {
         class:
           "min-h-[120px] px-3 py-2 text-sm outline-none prose prose-sm dark:prose-invert max-w-none",
+        "aria-label": "Event description",
+        "aria-invalid": error ? "true" : "false",
       },
       handleDOMEvents: {
         blur: () => onBlur?.(),
@@ -159,7 +163,11 @@ export function RichTextEditor({
         </ToolbarButton>
       </div>
       <EditorContent editor={editor} />
-      {error && <p className="px-3 pb-2 text-xs text-destructive">{error}</p>}
+      {error && (
+        <p className="px-3 pb-2 text-xs text-destructive" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

@@ -31,7 +31,9 @@ function TrendingEventCard({ card }: { card: (typeof dummyEvents)[number] }) {
       <div className="px-6 py-4 flex flex-col gap-4">
         <div className="flex items-center justify-between gap-2">
           <p className="font-semibold text-[17.09px] line-clamp-2">{card.title}</p>
-          <Share2 className="text-[#646468] text-[17px] bg-[#FBE7D3] w-[35px] h-[35px] px-2 py-2 rounded-full shrink-0" />
+          <button type="button" aria-label={`Share ${card.title}`} className="bg-[#FBE7D3] w-[35px] h-[35px] rounded-full shrink-0 grid place-items-center">
+            <Share2 className="text-[#646468] w-[17px] h-[17px]" aria-hidden="true" />
+          </button>
         </div>
         {isSoldOut ? (
           <p className="text-xs font-semibold text-[#B42318] dark:text-[#F97066]" aria-live="polite">
@@ -44,15 +46,15 @@ function TrendingEventCard({ card }: { card: (typeof dummyEvents)[number] }) {
         )}
         <div className="flex flex-col gap-2 text-[#6C6C6C] text-[14.95px]">
           <p className="flex items-center justify-start gap-2.5">
-            <CalendarDays className="w-4 h-4 shrink-0" />
+            <CalendarDays className="w-4 h-4 shrink-0" aria-hidden="true" />
             <span>{card.date}</span>
           </p>
           <p className="flex items-center justify-start gap-1.5">
-            <Clock5 className="w-4 h-4 shrink-0" />
+            <Clock5 className="w-4 h-4 shrink-0" aria-hidden="true" />
             <span>{card.time}</span>
           </p>
           <p className="flex items-center justify-start gap-1.5">
-            <MapPin className="w-4 h-4 shrink-0" />
+            <MapPin className="w-4 h-4 shrink-0" aria-hidden="true" />
             <span>{card.location}</span>
           </p>
         </div>
@@ -61,7 +63,7 @@ function TrendingEventCard({ card }: { card: (typeof dummyEvents)[number] }) {
 
         <div className="flex justify-between items-center gap-2">
           <p className="flex gap-1.5 items-center justify-start text-[21.36px]">
-            <TicketPercent className="text-gray-600 w-4 h-4 -rotate-45 shrink-0" />
+            <TicketPercent className="text-gray-600 w-4 h-4 -rotate-45 shrink-0" aria-hidden="true" />
             <span className="font-bold">{priceLabel}</span>
           </p>
           {isSoldOut ? (
@@ -75,7 +77,7 @@ function TrendingEventCard({ card }: { card: (typeof dummyEvents)[number] }) {
               aria-label={`Get tickets for ${card.title}`}
             >
               <span>Get Ticket</span>
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4" aria-hidden="true" />
             </Link>
           )}
         </div>
@@ -136,11 +138,11 @@ export default function ZicketTrending() {
   };
 
   return (
-    <div className="flex flex-col gap-6 text-black px-2 md:pl-30 py-15">
+    <section className="flex flex-col gap-6 text-black px-2 md:pl-30 py-15" aria-labelledby="zicket-trending-heading">
       <div className="flex justify-between items-center my-5 w-[88%]">
-        <h1 className="text-[24px] md:text-2xl font-semibold text-[#2C0A4A] dark:text-[#D7B5F5]">
+        <h2 id="zicket-trending-heading" className="text-[24px] md:text-2xl font-semibold text-[#2C0A4A] dark:text-[#D7B5F5]">
           Trending Now on Zicket
-        </h1>
+        </h2>
 
         <div className="flex gap-0.5 md:gap-2">
           <button
@@ -149,8 +151,10 @@ export default function ZicketTrending() {
               scrollBy("left");
             }}
             disabled={!showLeftChevron}
+            aria-label="Scroll trending events left"
+            aria-disabled={!showLeftChevron}
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-4 h-4" aria-hidden="true" />
           </button>
           <button
             className="px-3 py-2 rounded-full border-gray-100 dark:border-0 border hover:border-[#6917AF] hover:bg-white bg-[#6917AF] text-white dark:bg-[#0D0D0D] hover:text-[#6917AF]"
@@ -158,8 +162,10 @@ export default function ZicketTrending() {
               scrollBy("right");
             }}
             disabled={!showRightChevron}
+            aria-label="Scroll trending events right"
+            aria-disabled={!showRightChevron}
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -173,6 +179,6 @@ export default function ZicketTrending() {
           <TrendingEventCard key={card.id} card={card} />
         ))}
       </div>
-    </div>
+    </section>
   );
 }

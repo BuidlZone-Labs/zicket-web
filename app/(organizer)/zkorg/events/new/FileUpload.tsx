@@ -87,6 +87,7 @@ export function FileUpload({
   return (
     <div className={cn("space-y-1.5", className)}>
       <input
+        id="cover-image-upload"
         ref={inputRef}
         type="file"
         accept="image/png,image/jpeg,image/jpg"
@@ -94,6 +95,7 @@ export function FileUpload({
         onBlur={onBlur}
         className="hidden"
         aria-invalid={!!error}
+        aria-describedby="cover-image-upload-help cover-image-upload-error"
       />
       <div
         onDrop={handleDrop}
@@ -106,8 +108,8 @@ export function FileUpload({
           disabled && "pointer-events-none opacity-50"
         )}
       >
-        <Upload className="size-10 text-[#667085] dark:text-[#808080]" />
-        <p className="text-sm text-[#667085] dark:text-[#808080]">
+        <Upload className="size-10 text-[#667085] dark:text-[#808080]" aria-hidden="true" />
+        <p id="cover-image-upload-help" className="text-sm text-[#667085] dark:text-[#808080]">
           Max 120 MB, PNG, JPEG
         </p>
         <Button
@@ -122,7 +124,7 @@ export function FileUpload({
         </Button>
       </div>
       {(error ?? validationError) && (
-        <p className="text-xs text-destructive">{error ?? validationError}</p>
+        <p id="cover-image-upload-error" className="text-xs text-destructive" role="alert">{error ?? validationError}</p>
       )}
     </div>
   )
