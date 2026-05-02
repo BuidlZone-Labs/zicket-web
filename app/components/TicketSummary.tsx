@@ -2,15 +2,30 @@ import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
 
-const TicketSummary = () => {
+interface TicketSummaryProps {
+  status?: 'active' | 'used';
+}
+
+const TicketSummary = ({ status = 'active' }: TicketSummaryProps) => {
   return (
     <section className='border-1 lg:w-2/5 border-[#E9E9E9] rounded-xl p-4'>
-      <h1 className='text-2xl mb-8 font-semibold text-[#1F1F1F] pb-4 border-b-1 border-[#E9E9E9]'>
-        Ticket Summary
-      </h1>
+      <div className='flex justify-between items-center mb-8 pb-4 border-b-1 border-[#E9E9E9]'>
+        <h1 className='text-2xl font-semibold text-[#1F1F1F]'>
+          Ticket Summary
+        </h1>
+        <span
+          className={`px-3 py-1 text-xs font-semibold rounded-full ${
+            status === 'used'
+              ? 'bg-gray-100 text-gray-500'
+              : 'bg-[#F2FFF2] text-[#0ABA2A]'
+          }`}
+        >
+          {status === 'used' ? 'Used' : 'Active'}
+        </span>
+      </div>
 
-      {/* ticet details */}
-      <div className='flex flex-col md:flex-row gap-5'>
+      {/* ticket details */}
+      <div className={`flex flex-col md:flex-row gap-5 ${status === 'used' ? 'opacity-60 grayscale' : ''}`}>
         <div>
           <Image
             src='/images/demo_ticket.png'
