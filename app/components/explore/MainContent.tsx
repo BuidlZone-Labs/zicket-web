@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Card from "./card";
 import { EmptyStateIcon } from "@/public/svg/svg";
 import CustomDropdown from "./CustomDropdown";
-import SkeletonCard from "./SkeletonCard";
 import type { EventType, Event } from "@/lib/dummyEvents/events";
 
 interface MainContentProps {
@@ -12,6 +11,7 @@ interface MainContentProps {
 }
 
 function MainContent({ initialEvents = [] }: MainContentProps) {
+  const PAGE_SIZE = 8;
   const [events] = useState<Event[]>(initialEvents);
   const [selectedPrivacy, setSelectedPrivacy] = useState<string | null>(null);
   const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
@@ -20,9 +20,9 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
   const [selectedEventType, setSelectedEventType] = useState<EventType | null>(
     null
   );
-  const [showCount, setShowCount] = useState(8);
-  const [loading, setLoading] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [mobilePrivacy, setMobilePrivacy] = useState<string | null>(
     selectedPrivacy
   );
@@ -106,70 +106,76 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
 
   const sortOptions = ["Popular", "Date", "Name", "Price"];
   const [selectedSort, setSelectedSort] = useState<string>(sortOptions[0]);
-  const filteredEvents = events.filter((event) => {
-    const matchLocation =
-      !selectedLocation || event.location === selectedLocation;
-    const matchPrice =
-      !selectedPrice ||
-      (selectedPrice === "Free Events Only" && event.price === 0) ||
-      (selectedPrice === "Paid Events Only" && event.price > 0);
-    let matchDate = true;
-    if (selectedDate === "Today") {
-      const eventDate = new Date(event.date);
-      const today = new Date();
-      matchDate =
-        eventDate.getDate() === today.getDate() &&
-        eventDate.getMonth() === today.getMonth() &&
-        eventDate.getFullYear() === today.getFullYear();
-    } else if (selectedDate === "This Week") {
-      const eventDate = new Date(event.date);
-      const today = new Date();
-      const firstDayOfWeek = new Date(today);
-      firstDayOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
-      const lastDayOfWeek = new Date(today);
-      lastDayOfWeek.setDate(today.getDate() + (6 - today.getDay())); // Saturday
-      matchDate = eventDate >= firstDayOfWeek && eventDate <= lastDayOfWeek;
-    } else if (selectedDate === "This Month") {
-      const eventDate = new Date(event.date);
-      const today = new Date();
-      matchDate =
-        eventDate.getMonth() === today.getMonth() &&
-        eventDate.getFullYear() === today.getFullYear();
-    } else if (selectedDate) {
-      matchDate = event.date === selectedDate;
-    }
-    const matchType =
-      !selectedEventType ||
-      (event.type &&
-        selectedEventType &&
-        event.type.toString().trim().toLowerCase() ===
-          selectedEventType.toString().trim().toLowerCase());
-    const matchPrivacy =
-      !selectedPrivacy || event.privacyLevel[0] === selectedPrivacy;
-    return (
-      matchLocation && matchPrice && matchDate && matchType && matchPrivacy
-    );
-  });
+  const filteredEvents = useMemo(
+    () =>
+      events.filter((event) => {
+        const matchLocation =
+          !selectedLocation || event.location === selectedLocation;
+        const matchPrice =
+          !selectedPrice ||
+          (selectedPrice === "Free Events Only" && event.price === 0) ||
+          (selectedPrice === "Paid Events Only" && event.price > 0);
+        let matchDate = true;
+        if (selectedDate === "Today") {
+          const eventDate = new Date(event.date);
+          const today = new Date();
+          matchDate =
+            eventDate.getDate() === today.getDate() &&
+            eventDate.getMonth() === today.getMonth() &&
+            eventDate.getFullYear() === today.getFullYear();
+        } else if (selectedDate === "This Week") {
+          const eventDate = new Date(event.date);
+          const today = new Date();
+          const firstDayOfWeek = new Date(today);
+          firstDayOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
+          const lastDayOfWeek = new Date(today);
+          lastDayOfWeek.setDate(today.getDate() + (6 - today.getDay())); // Saturday
+          matchDate = eventDate >= firstDayOfWeek && eventDate <= lastDayOfWeek;
+        } else if (selectedDate === "This Month") {
+          const eventDate = new Date(event.date);
+          const today = new Date();
+          matchDate =
+            eventDate.getMonth() === today.getMonth() &&
+            eventDate.getFullYear() === today.getFullYear();
+        } else if (selectedDate) {
+          matchDate = event.date === selectedDate;
+        }
+        const matchType =
+          !selectedEventType ||
+          (event.type &&
+            selectedEventType &&
+            event.type.toString().trim().toLowerCase() ===
+              selectedEventType.toString().trim().toLowerCase());
+        const matchPrivacy =
+          !selectedPrivacy || event.privacyLevel[0] === selectedPrivacy;
+        return (
+          matchLocation && matchPrice && matchDate && matchType && matchPrivacy
+        );
+      }),
+    [events, selectedLocation, selectedPrice, selectedDate, selectedEventType, selectedPrivacy]
+  );
 
-  const sortedEvents = [...filteredEvents].sort((a, b) => {
-    switch (selectedSort) {
-      case "Date":
-        return new Date(a.date).getTime() - new Date(b.date).getTime();
-      case "Name":
-        return a.title.localeCompare(b.title);
-      case "Price":
-        return a.price - b.price;
-      case "Popular":
-      default:
-        return 0; // keep original order for now
-    }
-  });
+  const sortedEvents = useMemo(() => {
+    return [...filteredEvents].sort((a, b) => {
+      switch (selectedSort) {
+        case "Date":
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        case "Name":
+          return a.title.localeCompare(b.title);
+        case "Price":
+          return a.price - b.price;
+        case "Popular":
+        default:
+          return 0; // keep original order for now
+      }
+    });
+  }, [filteredEvents, selectedSort]);
 
-  const handleShowMore = () => {
-    setShowCount((prev) => prev + 8);
-  };
+  const handleShowMore = useCallback(() => {
+    setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, sortedEvents.length));
+  }, [PAGE_SIZE, sortedEvents.length]);
   const handleShowLess = () => {
-    setShowCount(8);
+    setVisibleCount(PAGE_SIZE);
   };
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
@@ -191,20 +197,32 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
   };
 
   useEffect(() => {
-    const showTimer = setTimeout(() => setLoading(true), 0);
-    const hideTimer = setTimeout(() => setLoading(false), 1000);
-    return () => {
-      clearTimeout(showTimer);
-      clearTimeout(hideTimer);
-    };
+    setVisibleCount(PAGE_SIZE);
   }, [
+    PAGE_SIZE,
     selectedPrivacy,
     selectedPrice,
     selectedLocation,
     selectedDate,
     selectedEventType,
-    showCount,
+    selectedSort,
   ]);
+
+  useEffect(() => {
+    if (!loadMoreRef.current || visibleCount >= sortedEvents.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          handleShowMore();
+        }
+      },
+      { rootMargin: "120px 0px" }
+    );
+
+    observer.observe(loadMoreRef.current);
+    return () => observer.disconnect();
+  }, [visibleCount, sortedEvents.length, handleShowMore]);
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4">
@@ -398,21 +416,11 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
           )}
         </div>
         <div className="text-xs text-[#6B7280] ml-auto">
-          Showing 1 - {Math.min(showCount, filteredEvents.length)} of{" "}
+          Showing 1 - {Math.min(visibleCount, filteredEvents.length)} of{" "}
           {filteredEvents.length} results
         </div>
       </div>
-      {loading ? (
-        <div className="space-y-10">
-          <div className="grid-cols-1 grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 ">
-            {Array.from({
-              length: Math.min(showCount, filteredEvents.length || 8),
-            }).map((_, idx) => (
-              <SkeletonCard key={idx} />
-            ))}
-          </div>
-        </div>
-      ) : filteredEvents.length === 0 ? (
+      {filteredEvents.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24">
           <EmptyStateIcon />
           <p className="text-lg font-semibold text-gray-700 mb-2">
@@ -425,21 +433,24 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
       ) : (
         <div className="space-y-10">
           <div className="grid-cols-1 grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 ">
-            {sortedEvents.slice(0, showCount).map((event) => (
+            {sortedEvents.slice(0, visibleCount).map((event) => (
               <Card key={event.id} {...event} />
             ))}
           </div>
+          {visibleCount < filteredEvents.length && (
+            <div ref={loadMoreRef} className="h-2 w-full" />
+          )}
           <div className="flex items-center justify-center relative mt-8">
             <button
               onClick={
-                filteredEvents.length > showCount
+                filteredEvents.length > visibleCount
                   ? handleShowMore
                   : handleShowLess
               }
               className="text-xs py-2 pl-4 pr-3 space-x-2 text-[#1E1E1E] bg-[#F6F6F6] hover:bg-[#F6F6F6]/10 rounded-full font-bold flex items-center cursor-pointer"
             >
               <span>
-                {filteredEvents.length > showCount ? "Show more" : "Show less"}
+                {filteredEvents.length > visibleCount ? "Load more" : "Show less"}
               </span>
             </button>
             <button
