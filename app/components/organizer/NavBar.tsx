@@ -14,6 +14,7 @@ import Link from "next/link";
 import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
 import { useUserSessionSync } from '@/lib/user-session-sync';
 import { useDebounce } from '@/hooks/useDebounce';
+import WalletConnectionIndicator from '../WalletConnectionIndicator';
 
 const NavBar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -108,6 +109,9 @@ const NavBar = () => {
               <Cog6ToothIcon className="h-5 w-5" />
             </button>
 
+            {/* Wallet Connection Indicator */}
+            <WalletConnectionIndicator variant="organizer" />
+
             {/* Connect Wallet Button */}
             <button
               onClick={connectWallet}
@@ -167,6 +171,11 @@ const NavBar = () => {
                     {link.name}
                   </a>
                 ))}
+              </div>
+
+              {/* Mobile Wallet Connection Indicator */}
+              <div className="pt-2">
+                <WalletConnectionIndicator variant="organizer" />
               </div>
 
               {/* Mobile Connect Wallet Button */}
