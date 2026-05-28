@@ -438,15 +438,11 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
           )}
         </div>
         <div className="text-xs text-[#6B7280] ml-auto">
-<<<<<<< HEAD
           <span className="sr-only" aria-live="polite">
-            Showing {Math.min(showCount, filteredEvents.length)} of{" "}
+            Showing {Math.min(visibleCount, filteredEvents.length)} of{" "}
             {filteredEvents.length} results
           </span>
-          Showing 1 - {Math.min(showCount, filteredEvents.length)} of{" "}
-=======
           Showing 1 - {Math.min(visibleCount, filteredEvents.length)} of{" "}
->>>>>>> upstream/main
           {filteredEvents.length} results
         </div>
       </div>
