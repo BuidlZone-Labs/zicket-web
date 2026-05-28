@@ -13,7 +13,7 @@ function Footer() {
           <div className="w-80">
             <Image
               src={LogoWhite}
-              alt="Zicket"
+              alt="Zicket logo"
               className="h-8 w-auto"
               height={32}
               width={120}
@@ -33,14 +33,17 @@ function Footer() {
                 placeholder="Subscribe to our newsletter..."
                 className="w-full outline-0 p-3 text-[#FCFDFD] text-xs"
               />
-              <button className="bg-[#6917AF] rounded-full flex gap-2 justify-center items-center text-white py-3 px-6 w-max text-sm whitespace-nowrap">
+              <button
+                className="bg-[#6917AF] rounded-full flex gap-2 justify-center items-center text-white py-3 px-6 w-max text-sm whitespace-nowrap transition-all duration-200 hover:bg-purple-700 hover:scale-[1.03] active:scale-[0.97]"
+                aria-label="Subscribe to newsletter"
+              >
                 Join Now
                 <ArrowUpRight className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
             <p className="text-xs text-[#CECECE] mt-5">
               By subscribing you agree to with our{" "}
-              <button type="button" className="underline hover:text-white">
+              <button type="button" className="underline hover:text-white" aria-label="Read our privacy policy">
                 Privacy Policy
               </button>
             </p>

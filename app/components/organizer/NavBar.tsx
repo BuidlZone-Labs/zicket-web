@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   MagnifyingGlassIcon, 
   BellIcon, 
@@ -14,12 +14,24 @@ import Link from "next/link";
 import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
 import { useUserSessionSync } from '@/lib/user-session-sync';
 import { usePathname } from 'next/navigation';
+import { useDebounce } from '@/hooks/useDebounce';
+import WalletConnectionIndicator from '../WalletConnectionIndicator';
 
 const NavBar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const { walletConnected, setWalletConnected } = useUserSessionSync();
   const pathname = usePathname();
+
+  // Use debounced search query for API calls
+  useEffect(() => {
+    if (debouncedSearchQuery) {
+      // TODO: Replace with actual search API call
+      console.log('Searching for:', debouncedSearchQuery);
+      // Example: searchEvents(debouncedSearchQuery);
+    }
+  }, [debouncedSearchQuery]);
 
   const connectWallet = () => {
     trackAnalyticsEvent('wallet_connect_cta_clicked', { source: 'organizer_navbar' });
@@ -102,6 +114,9 @@ const NavBar = () => {
               <Cog6ToothIcon className="h-5 w-5" aria-hidden="true" />
             </button>
 
+            {/* Wallet Connection Indicator */}
+            <WalletConnectionIndicator variant="organizer" />
+
             {/* Connect Wallet Button */}
             <button
               onClick={connectWallet}
@@ -168,6 +183,11 @@ const NavBar = () => {
                     {link.name}
                   </a>
                 ))}
+              </div>
+
+              {/* Mobile Wallet Connection Indicator */}
+              <div className="pt-2">
+                <WalletConnectionIndicator variant="organizer" />
               </div>
 
               {/* Mobile Connect Wallet Button */}
