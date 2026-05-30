@@ -41,9 +41,9 @@ export function RelatedArticles({ articles }: RelatedArticlesProps) {
   }
 
   return (
-    <section className="w-full py-20 gap-15 px-5 flex flex-col items-center justify-center">
+    <section className="w-full py-20 gap-15 px-5 flex flex-col items-center justify-center" aria-labelledby="related-articles-heading">
       <div className="flex lg:hidden justify-between items-end w-full">
-        <h2 className="text-2xl font-bold font-satoshi dark:text-white text-text-detail tracking-[-1.2px]">
+        <h2 id="related-articles-heading" className="text-2xl font-bold font-satoshi dark:text-white text-text-detail tracking-[-1.2px]">
           Trending News
         </h2>
         <Link
@@ -63,6 +63,8 @@ export function RelatedArticles({ articles }: RelatedArticlesProps) {
           <button
             onClick={handlePrev}
             disabled={currentPage === 0}
+            aria-label="Show previous related articles"
+            aria-disabled={currentPage === 0}
             className={`flex items-center justify-center gap-[3.333px] pr-[13.333px] pl-2.5 py-2.5 rounded-[83.333px] transition-colors ${
               currentPage === 0
                 ? "border-[0.833px] dark:border-white border-black opacity-50 cursor-not-allowed"
@@ -78,6 +80,8 @@ export function RelatedArticles({ articles }: RelatedArticlesProps) {
           <button
             onClick={handleNext}
             disabled={currentPage === totalPages - 1}
+            aria-label="Show next related articles"
+            aria-disabled={currentPage === totalPages - 1}
             className={`flex items-center justify-center gap-[3.333px] pl-[13.333px] pr-2.5 py-2.5 rounded-[83.333px] transition-colors ${
               currentPage === totalPages - 1
                 ? "border-[0.833px] dark:border-white border-black opacity-50 cursor-not-allowed"

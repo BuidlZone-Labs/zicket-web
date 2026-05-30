@@ -46,18 +46,20 @@ export default function EventCard({
           </span>
           <button
             className="rounded-full flex items-center justify-center w-screen h-screen max-w-[34px] max-h-[34px] cursor-pointer transition-transform duration-200 hover:scale-110"
-            title="Share"
+            aria-label={`Share ${title}`}
           >
             <Image
               src="/assets/icons/shareIcon.svg"
-              alt="Share"
+              alt=""
+              aria-hidden="true"
               width={34}
               height={34}
               className="dark:hidden"
             />
             <Image
               src="/assets/icons/shareDarkIcon.svg"
-              alt="Share"
+              alt=""
+              aria-hidden="true"
               width={34}
               height={34}
               className="hidden dark:block"
@@ -68,7 +70,8 @@ export default function EventCard({
           <div className="flex items-center gap-2">
             <Image
               src="/assets/icons/calendarIcon.svg"
-              alt="Date"
+              alt=""
+              aria-hidden="true"
               width={16}
               height={16}
             />
@@ -77,7 +80,8 @@ export default function EventCard({
           <div className="flex items-center gap-2">
             <Image
               src="/assets/icons/clockIcon.svg"
-              alt="Time"
+              alt=""
+              aria-hidden="true"
               width={16}
               height={16}
             />
@@ -86,7 +90,8 @@ export default function EventCard({
           <div className="flex items-center gap-2">
             <Image
               src="/assets/icons/locationIcon.svg"
-              alt="Location"
+              alt=""
+              aria-hidden="true"
               width={16}
               height={16}
             />
@@ -117,7 +122,8 @@ export default function EventCard({
           <div className="flex items-center gap-1 font-bold text-[18px] text-black dark:text-white">
             <Image
               src="/assets/icons/ticketIcon.svg"
-              alt="Ticket"
+              alt=""
+              aria-hidden="true"
               width={20}
               height={20}
             />
@@ -129,16 +135,19 @@ export default function EventCard({
               className="flex items-center gap-1 text-[14px] font-semibold [color:var(--color-text-detail)] dark:[color:var(--color-text-main-dark)] cursor-pointer transition-all duration-200 hover:gap-2"
             >
               Get Ticket
+              Get Ticket
               <Image
                 src="/assets/icons/arrowRightIcon.svg"
-                alt="arrow"
+                alt=""
+                aria-hidden="true"
                 width={18}
                 height={18}
                 className="dark:hidden"
               />
               <Image
                 src="/assets/icons/arrowRightDarkIcon.svg"
-                alt="arrow"
+                alt=""
+                aria-hidden="true"
                 width={18}
                 height={18}
                 className="hidden dark:block"
@@ -149,18 +158,23 @@ export default function EventCard({
               Sold out
             </span>
           ) : (
-            <button className="flex items-center gap-1 text-[14px] font-semibold [color:var(--color-text-detail)] dark:[color:var(--color-text-main-dark)] cursor-pointer transition-all duration-200 hover:gap-2">
+            <button
+              className="flex items-center gap-1 text-[14px] font-semibold [color:var(--color-text-detail)] dark:[color:var(--color-text-main-dark)] cursor-pointer transition-all duration-200 hover:gap-2"
+              aria-label={`Get tickets for ${title}`}
+            >
               Get Ticket
               <Image
                 src="/assets/icons/arrowRightIcon.svg"
-                alt="arrow"
+                alt=""
+                aria-hidden="true"
                 width={18}
                 height={18}
                 className="dark:hidden"
               />
               <Image
                 src="/assets/icons/arrowRightDarkIcon.svg"
-                alt="arrow"
+                alt=""
+                aria-hidden="true"
                 width={18}
                 height={18}
                 className="hidden dark:block"

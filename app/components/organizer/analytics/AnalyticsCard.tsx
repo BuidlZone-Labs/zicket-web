@@ -8,9 +8,9 @@ interface AnalyticsCardProps {
 
 function AnalyticsCard({ title, value, percentage }: AnalyticsCardProps) {
     return (
-        <div
-            tabIndex={0}
-            className="flex flex-row items-start p-5 gap-3 w-full sm:w-[280px] h-[89px] bg-[#F8F8F8] dark:bg-[#1E1E1E] border border-[#E3E3E3] dark:border-[#2C2C2C] rounded-lg flex-none order-0 flex-grow transition-all duration-200 hover:border-[#6917AF] dark:hover:border-[#8B5CF6] focus:outline-none focus:ring-2 focus:ring-[#6917AF] dark:focus:ring-[#8B5CF6] cursor-pointer group"
+        <article
+            aria-label={`${title}: ${value}, ${percentage}`}
+            className="flex flex-row items-start p-5 gap-3 w-full sm:w-[280px] h-[89px] bg-[#F8F8F8] dark:bg-[#1E1E1E] border border-[#E3E3E3] dark:border-[#2C2C2C] rounded-lg flex-none order-0 flex-grow transition-all duration-200 hover:border-[#6917AF] dark:hover:border-[#8B5CF6] group"
         >
             {/* Icon placeholder (display: none as per design) */}
             <div className="hidden w-12 h-12 bg-[#6917AF] border border-[#E3E3E3] rounded-full flex-none order-0 flex-grow-0"></div>
@@ -32,7 +32,7 @@ function AnalyticsCard({ title, value, percentage }: AnalyticsCardProps) {
                     </div>
                 </div>
             </div>
-        </div>
+        </article>
     );
 }
 

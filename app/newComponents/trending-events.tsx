@@ -111,10 +111,10 @@ export function TrendingEvents() {
   };
 
   return (
-    <section className="py-8 lg:py-20 bg-white">
+    <section className="py-8 lg:py-20 bg-white" aria-labelledby="trending-events-heading">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 md:mb-12 gap-4">
-          <h2 className="text-2xl sm:text-3xl lg:text-[32px] text-[#2C0A4A] font-bold">
+          <h2 id="trending-events-heading" className="text-2xl sm:text-3xl lg:text-[32px] text-[#2C0A4A] font-bold">
             Trending Now on Zicket
           </h2>
           <button className="bg-none border-b border-[#2C0A4A] text-sm sm:text-base font-bold text-[#2C0A4A] flex items-center hover:opacity-80 transition-opacity">
@@ -130,16 +130,20 @@ export function TrendingEvents() {
             onClick={goToPrevious}
             className="absolute left-0 sm:-left-4 lg:-left-6 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg rounded-full p-2 sm:p-3 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={currentIndex === 0}
+            aria-label="Show previous trending events"
+            aria-disabled={currentIndex === 0}
           >
-            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-[#2C0A4A]" />
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-[#2C0A4A]" aria-hidden="true" />
           </button>
 
           <button
             onClick={goToNext}
             className="absolute right-0 sm:-right-4 lg:-right-6 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg rounded-full p-2 sm:p-3 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={currentIndex === maxIndex}
+            aria-label="Show next trending events"
+            aria-disabled={currentIndex === maxIndex}
           >
-            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-[#2C0A4A]" />
+            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-[#2C0A4A]" aria-hidden="true" />
           </button>
 
           {/* Carousel Track */}
@@ -183,28 +187,28 @@ export function TrendingEvents() {
                       </h3>
                       <div className="flex flex-col border-b border-[#E9E9E9] text-xs sm:text-sm text-gray-600 space-y-1 sm:space-y-2 pb-3">
                         <span className="flex items-center">
-                          <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
+                          <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" aria-hidden="true" />
                           <span className="truncate">
                             {event.date} attending
                           </span>
                         </span>
                         <span className="flex items-center">
-                          <Timer className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
+                          <Timer className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" aria-hidden="true" />
                           <span className="truncate">{event.time}</span>
                         </span>
                         <span className="flex items-center">
-                          <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
+                          <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" aria-hidden="true" />
                           <span className="truncate">{event.location}</span>
                         </span>
                       </div>
                       <div className="flex justify-between items-center mt-3 sm:mt-4 text-[#5C6170]">
                         <div className="flex items-center gap-1 sm:gap-2">
-                          <Ticket className="w-4 h-4 sm:w-5 sm:h-5" />
+                          <Ticket className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
                           <p className="text-sm sm:text-base">Free</p>
                         </div>
                         <button className="flex text-[#2C0A4A] text-xs sm:text-sm cursor-pointer items-center gap-1 font-bold hover:opacity-80 transition-opacity">
                           Get Ticket
-                          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
                         </button>
                       </div>
                     </CardContent>
@@ -221,6 +225,8 @@ export function TrendingEvents() {
                 <button
                   key={index}
                   onClick={() => goToSlide(index)}
+                  aria-label={`Show trending events page ${index + 1}`}
+                  aria-current={index === currentIndex ? "true" : undefined}
                   className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-colors ${
                     index === currentIndex
                       ? "bg-[#2C0A4A]"

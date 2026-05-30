@@ -54,9 +54,9 @@ function Tag({
           type="button"
           onClick={onRemove}
           className="ml-0.5 rounded-full p-0.5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer"
-          aria-label="Remove tag"
+          aria-label={`Remove ${typeof children === "string" ? children : "tag"}`}
         >
-          <X className="size-3" />
+          <X className="size-3" aria-hidden="true" />
         </button>
       )}
     </span>

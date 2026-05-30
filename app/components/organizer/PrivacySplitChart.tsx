@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { ChevronDown } from "lucide-react";
 
@@ -61,6 +61,7 @@ export default function PrivacySplitChart({
 }: PrivacySplitChartProps) {
   const [selectedFilter, setSelectedFilter] = useState("this_month");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const menuId = useId();
 
   const hasRealData =
     !empty && data.length > 0 && data.some((item) => item.value > 0);
@@ -82,20 +83,21 @@ export default function PrivacySplitChart({
   };
 
   return (
-    <div className="w-full rounded-2xl border bg-white p-6 shadow">
+    <section className="w-full rounded-2xl border bg-white p-6 shadow" aria-labelledby="privacy-split-title">
       {/* Header row */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="rounded-full bg-gray-100 p-2">
             <Image
               src="/images/security-lock.png"
-              alt="Privacy"
+              alt=""
+              aria-hidden="true"
               width={20}
               height={20}
               className="h-5 w-5"
             />
           </div>
-          <h2 className="text-base font-medium text-gray-900">{title}</h2>
+          <h2 id="privacy-split-title" className="text-base font-medium text-gray-900">{title}</h2>
         </div>
 
         {/* Filter dropdown */}
@@ -104,17 +106,22 @@ export default function PrivacySplitChart({
             type="button"
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="flex items-center gap-1 rounded-full border border-gray-300 px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+            aria-haspopup="menu"
+            aria-expanded={dropdownOpen}
+            aria-controls={dropdownOpen ? menuId : undefined}
           >
             {currentFilterLabel}
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="h-4 w-4" aria-hidden="true" />
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 top-full z-10 mt-1 min-w-[140px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+            <div id={menuId} role="menu" className="absolute right-0 top-full z-10 mt-1 min-w-[140px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
               {FILTER_OPTIONS.map((option) => (
                 <button
                   key={option.value}
                   type="button"
+                  role="menuitemradio"
+                  aria-checked={selectedFilter === option.value}
                   onClick={() => handleFilterSelect(option.value)}
                   className={`block w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${selectedFilter === option.value
                     ? "bg-gray-50 font-medium text-gray-900"
@@ -132,7 +139,7 @@ export default function PrivacySplitChart({
       {/* Chart and legend */}
       <div className="flex flex-col items-center gap-4 md:flex-row md:items-center">
         {/* Chart container - aligned to left */}
-        <div className="relative h-48 w-48 flex-shrink-0">
+        <div className="relative h-48 w-48 flex-shrink-0" aria-hidden="true">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -170,6 +177,10 @@ export default function PrivacySplitChart({
         <div className="flex-1">
           {hasRealData ? (
             <div className="space-y-3 text-sm">
+              <p className="sr-only">
+                Privacy split total {legendTotal}.{" "}
+                {data.map((item) => `${item.name}: ${item.value}`).join(", ")}.
+              </p>
               {data.map((item) => {
                 const config = CATEGORY_CONFIG[item.name];
                 if (!config) return null;
@@ -183,7 +194,8 @@ export default function PrivacySplitChart({
                   <div key={item.name} className="flex items-center gap-2">
                     <Image
                       src={config.iconSrc}
-                      alt={config.label}
+                      alt=""
+                      aria-hidden="true"
                       width={20}
                       height={20}
                       className="h-5 w-5"
@@ -206,6 +218,6 @@ export default function PrivacySplitChart({
           )}
         </div>
       </div>
-    </div>
+    </section>
   );
 }

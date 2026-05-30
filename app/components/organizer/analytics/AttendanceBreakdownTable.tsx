@@ -52,16 +52,17 @@ export default function AttendanceBreakdownTable({
   title = "Attendance breakdown",
 }: AttendanceBreakdownTableProps) {
   return (
-    <section className="max-w-300 m-auto my-4 px-4 lg:px-0">
+    <section className="max-w-300 m-auto my-4 px-4 lg:px-0" aria-labelledby="attendance-breakdown-title">
       <div className="border border-[#E3E3E3] dark:border-[#2A2A2A] rounded-[12px] overflow-hidden">
         {title && (
           <div className="px-4 py-3 border-b border-[#E3E3E3] dark:border-[#2A2A2A]">
-            <p className="text-base font-medium text-[#344054] dark:text-[#D0D0D0]">
+            <h2 id="attendance-breakdown-title" className="text-base font-medium text-[#344054] dark:text-[#D0D0D0]">
               {title}
-            </p>
+            </h2>
           </div>
         )}
         <Table>
+          <caption className="sr-only">{title}</caption>
           <TableHeader>
             <TableRow className="hover:bg-transparent border-[#E3E3E3] dark:border-[#2A2A2A]">
               <TableHead className="text-left">Attendance Type</TableHead>

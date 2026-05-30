@@ -4,7 +4,8 @@ import React, { useMemo } from 'react'
 import {
   Dialog,
   DialogContent,
-  DialogOverlay
+  DialogDescription,
+  DialogTitle
 } from '@/components/ui/dialog'
 import { X, Tag } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
@@ -46,24 +47,28 @@ export function QRCodeModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogOverlay className="fixed inset-0 z-50 bg-white/40 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
       <DialogContent
         className="fixed left-[50%] top-[50%] z-50 gap-0 w-full bg-white max-w-[90vw] md:max-w-[480px] md:mx-4 translate-x-[-50%] translate-y-[-50%] rounded-2xl shadow-lg p-6 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-200 border-0 sm:mx-0 font-work-sans"
         showCloseButton={false}
+        overlayClassName="bg-white/40 backdrop-blur-md"
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6 border-b border-gray-200 pb-4">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-medium text-gray-900">Scan Code</span>
+            <DialogTitle className="text-lg font-medium text-gray-900">Scan Code</DialogTitle>
           </div>
           <button
             onClick={onClose}
             className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none cursor-pointer"
+            aria-label="Close QR code modal"
           >
             <X className="h-5 w-5" color="#6917AF" />
             <span className="sr-only">Close</span>
           </button>
         </div>
+        <DialogDescription className="sr-only">
+          Scan this QR code or use the access code to verify this ticket.
+        </DialogDescription>
 
         {/* QR Code */}
         <div className="flex flex-col items-center space-y-6">

@@ -35,10 +35,10 @@ export function FAQSection() {
   };
 
   return (
-    <section className="py-8 lg:py-20">
+    <section id="faqs" className="py-8 lg:py-20" aria-labelledby="faq-heading">
       <div className="container mx-auto px-4 max-w-3xl">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#2C0A4A] dark:text-[#D7B5F5]">FAQs</h2>
+          <h2 id="faq-heading" className="text-3xl md:text-4xl font-bold mb-4 text-[#2C0A4A] dark:text-[#D7B5F5]">FAQs</h2>
           <p className="text-[#6C6C6C] text-[16px]">
             Everything you need to know about using Zicket—how it works, what
             makes it private, and how you can join or host your next event.
@@ -52,21 +52,24 @@ export function FAQSection() {
             >
               <button
                 onClick={() => toggleItem(index)}
-                className="w-full flex justify-between items-center text-left"
+                className="w-full flex justify-between items-center text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6917AF] focus-visible:ring-offset-2 rounded-md"
+                aria-expanded={openItem === index}
+                aria-controls={`faq-panel-${index}`}
+                id={`faq-trigger-${index}`}
               >
                 <h3 className="font-semibold text-[#121212] dark:text-[#D7B5F5] text-[20px]">{faq.question}</h3>
                 {openItem === index ? (
-                  <span className="flex items-center bg-[#6917AF] rounded-full p-1">
-                    <Minus className="w-5 h-5 text-white transition-transform duration-200" />
+                  <span className="flex items-center bg-[#6917AF] rounded-full p-1" aria-hidden="true">
+                    <Minus className="w-5 h-5 text-white transition-transform duration-200" aria-hidden="true" />
                   </span>
                 ) : (
-                  <span className="flex items-center bg-[#6917AF] rounded-full p-1">
-                    <Plus className="w-5 h-5 text-white transition-transform duration-200" />
+                  <span className="flex items-center bg-[#6917AF] rounded-full p-1" aria-hidden="true">
+                    <Plus className="w-5 h-5 text-white transition-transform duration-200" aria-hidden="true" />
                   </span>
                 )}
               </button>
               {openItem === index && (
-                <div className="overflow-hidden border-t py-6">
+                <div id={`faq-panel-${index}`} role="region" aria-labelledby={`faq-trigger-${index}`} className="overflow-hidden border-t py-6">
                   <p className="text-[#121212] dark:text-[#D7B5F5] text-[16px] animate-in slide-in-from-top-2 duration-200">
                     {faq.answer}
                   </p>

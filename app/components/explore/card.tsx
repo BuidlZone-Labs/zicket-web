@@ -7,36 +7,30 @@ import {
   ShareIcon,
   TicketIcon,
 } from "@/public/svg/svg";
-import { useRouter } from "next/navigation";
 import { Event, PrivacyLevel } from "@/lib/dummyEvents/events";
 import { explorePathForEventTitle } from "@/lib/dummyEvents/explorePath";
 import { useSimulatedAvailability } from "@/lib/hooks/useSimulatedAvailability";
 import Image from "next/image";
+import Link from "next/link";
 
 function Card({ id, title, date, time, location, price, image, privacyLevel }: Event) {
-  const router = useRouter();
   const { slotsLeft, isSoldOut } = useSimulatedAvailability(id);
-
-  const handleNavigate = () => {
-    if (isSoldOut) return;
-    router.push(explorePathForEventTitle(title));
-  };
 
   const getPrivacyLevel = (privacyLevel: PrivacyLevel) => {
     switch (privacyLevel) {
       case "Anonymous":
         return <span className="flex gap-2 items-center bg-[#FFFFFF99] text-[#1E1E1E] px-2 py-1 rounded-[8px] text-xs font-semibold">
-          <Image src="/images/explore/privacy/shield.svg" alt="Anonymous" width={16} height={16} />
+          <Image src="/images/explore/privacy/shield.svg" alt="" aria-hidden="true" width={16} height={16} />
           Anonymous
           </span>;
       case "Verified Access":
         return <span className="flex gap-2 items-center bg-[#FFFFFF99] text-[#1E1E1E] px-2 py-1 rounded-[8px] text-xs font-semibold">
-          <Image src="/images/explore/privacy/lock.svg" alt=" Verified Access" width={16} height={16} />
+          <Image src="/images/explore/privacy/lock.svg" alt="" aria-hidden="true" width={16} height={16} />
           Verified Access
           </span>;
       case "Wallet Required":
         return <span className="flex gap-2 items-center bg-[#FFFFFF99] text-[#1E1E1E] px-2 py-1 rounded-[8px] text-xs font-semibold">
-          <Image src="/images/explore/privacy/key.svg" alt="Wallet Required" width={16} height={16} />
+          <Image src="/images/explore/privacy/key.svg" alt="" aria-hidden="true" width={16} height={16} />
           Wallet Required
           </span>;
     }
@@ -54,7 +48,7 @@ function Card({ id, title, date, time, location, price, image, privacyLevel }: E
       <div className="relative w-full aspect-[4/3] overflow-hidden rounded-xl border border-[#E9E9E9]">
         <Image
           src={image}
-          alt=""
+          alt={title}
           fill
           className="object-cover rounded-xl"
           sizes="(max-width: 24rem) 100vw, 384px"
@@ -69,9 +63,13 @@ function Card({ id, title, date, time, location, price, image, privacyLevel }: E
             <p className="text-base font-semibold text-black max-w-[22ch] truncate">
               {title}
             </p>
-            <div className="bg-[#FBE7D3] size-9 rounded-full flex items-center justify-center">
+            <button
+              type="button"
+              className="bg-[#FBE7D3] size-9 rounded-full flex items-center justify-center"
+              aria-label={`Share ${title}`}
+            >
               <ShareIcon />
-            </div>
+            </button>
           </div>
           <div className="space-y-3">
             <div className="gap-2 flex items-center">
@@ -105,17 +103,16 @@ function Card({ id, title, date, time, location, price, image, privacyLevel }: E
             {isSoldOut ? (
               <span className="text-base font-semibold text-[#98A2B3] cursor-default">Sold out</span>
             ) : (
-              <button
-                type="button"
-                role="link"
+              <Link
+                href={explorePathForEventTitle(title)}
                 className="cursor-pointer flex items-center text-base font-semibold text-[#2C0A4A] group w-fit"
-                onClick={handleNavigate}
+                aria-label={`Get tickets for ${title}`}
               >
                 Get Ticket{" "}
                 <span className="group-hover:translate-x-1 transition ease-in-out duration-150">
                   <ArrowRightIcon />
                 </span>
-              </button>
+              </Link>
             )}
           </div>
         </div>

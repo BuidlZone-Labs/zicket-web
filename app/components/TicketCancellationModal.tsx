@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { X, Ticket } from 'lucide-react'
 import { trackAnalyticsEvent } from '@/lib/privacyAnalytics'
@@ -99,9 +99,9 @@ export function TicketCancellationModal({
             </div>
 
             <div className="mb-5">
-              <p className="text-gray-700 text-base leading-relaxed">
+              <DialogDescription className="text-gray-700 text-base leading-relaxed">
                 Are you sure you want to cancel your registration. We&apos;ll let the host know that you can&apos;t make it.
-              </p>
+              </DialogDescription>
             </div>
 
             <div className="flex flex-col-reverse gap-3 sm:flex-row">
@@ -125,7 +125,7 @@ export function TicketCancellationModal({
           </>
         ) : (
           /* Success message */
-          <div className="text-center py-8">
+          <div className="text-center py-8" role="status" aria-live="polite">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

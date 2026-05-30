@@ -3,16 +3,17 @@ import Image from "next/image";
 import LogoWhite from "../../public/images/LogoWhite.png";
 import { LinkedInIcon, TwitterIcon } from "@/public/svg/svg";
 import { ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 
 function Footer() {
   return (
-    <div className="p-5 text-white">
+    <footer className="p-5 text-white">
       <div className="w-full bg-[#1E1E1E] px-5 sm:px-25 py-4 sm:py-12 rounded-[24px]">
         <div className="flex flex-wrap gap-10 justify-between">
           <div className="w-80">
             <Image
               src={LogoWhite}
-              alt="Logo"
+              alt="Zicket logo"
               className="h-8 w-auto"
               height={32}
               width={120}
@@ -23,59 +24,60 @@ function Footer() {
           </div>
           <div className="w-full max-w-108">
             <div className="w-full flex max-w-108 h-11 border border-[#606163] rounded-full overflow-hidden p-1">
+              <label htmlFor="newsletter-email" className="sr-only">
+                Email address for newsletter
+              </label>
               <input
+                id="newsletter-email"
                 type="email"
                 placeholder="Subscribe to our newsletter..."
                 className="w-full outline-0 p-3 text-[#FCFDFD] text-xs"
               />
-              <button className="bg-[#6917AF] rounded-full flex gap-2 justify-center items-center text-white py-3 px-6 w-max text-sm whitespace-nowrap transition-all duration-200 hover:bg-purple-700 hover:scale-[1.03] active:scale-[0.97]">
+              <button
+                className="bg-[#6917AF] rounded-full flex gap-2 justify-center items-center text-white py-3 px-6 w-max text-sm whitespace-nowrap transition-all duration-200 hover:bg-purple-700 hover:scale-[1.03] active:scale-[0.97]"
+                aria-label="Subscribe to newsletter"
+              >
                 Join Now
-                <ArrowUpRight className="w-5 h-5" />
+                <ArrowUpRight className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
             <p className="text-xs text-[#CECECE] mt-5">
               By subscribing you agree to with our{" "}
-              <span className="cursor-pointer underline transition-opacity duration-200 hover:opacity-70">
+              <button type="button" className="underline hover:text-white" aria-label="Read our privacy policy">
                 Privacy Policy
-              </span>
+              </button>
             </p>
-            <h4 className="flex gap-4 items-center mt-5">
-              Connect with Us:
-              <span className="flex gap-2 items-center">
-                <span className="transition-transform duration-200 hover:scale-110 cursor-pointer">
+            <div className="flex gap-4 items-center mt-5">
+              <h2 className="text-base font-semibold">Connect with Us:</h2>
+              <div className="flex gap-2 items-center">
+                <Link href="https://x.com" aria-label="Follow Zicket on X" className="inline-flex">
                   <TwitterIcon />
-                </span>
-                <span className="transition-transform duration-200 hover:scale-110 cursor-pointer">
+                </Link>
+                <Link
+                  href="https://www.linkedin.com"
+                  aria-label="Follow Zicket on LinkedIn"
+                  className="inline-flex"
+                >
                   <LinkedInIcon />
-                </span>
-              </span>
-            </h4>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
         <div className="flex flex-wrap gap-10 justify-between pt-9 border-t mt-10 sm:mt-20 border-[#5E5E5E]">
-          <div className="flex w-full max-w-89 justify-between text-xs">
-            <p className="cursor-pointer transition-colors duration-200 hover:text-white text-[#A8A8A8]">
-              Explore
-            </p>
-            <p className="cursor-pointer transition-colors duration-200 hover:text-white text-[#A8A8A8]">
-              Host Event
-            </p>
-            <p className="cursor-pointer transition-colors duration-200 hover:text-white text-[#A8A8A8]">
-              How It Works
-            </p>
-            <p className="cursor-pointer transition-colors duration-200 hover:text-white text-[#A8A8A8]">
-              About
-            </p>
-            <p className="cursor-pointer transition-colors duration-200 hover:text-white text-[#A8A8A8]">
-              FAQs
-            </p>
-          </div>
+          <nav className="flex w-full max-w-89 justify-between text-xs" aria-label="Footer navigation">
+            <Link href="/explore">Explore</Link>
+            <Link href="/login">Host Event</Link>
+            <Link href="/how-it-works">How It Works</Link>
+            <Link href="/about">About</Link>
+            <Link href="/#faqs">FAQs</Link>
+          </nav>
           <div>
-            <p className="text-sm">© 2025 Zicket. All rights reserved.</p>
+            <p className="text-sm">&copy; 2025 Zicket. All rights reserved.</p>
           </div>
         </div>
       </div>
-    </div>
+    </footer>
   );
 }
 
