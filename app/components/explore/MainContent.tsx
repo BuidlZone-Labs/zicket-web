@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Card from "./card";
 import { EmptyStateIcon } from "@/public/svg/svg";
 import CustomDropdown from "./CustomDropdown";
@@ -11,14 +12,26 @@ interface MainContentProps {
 }
 
 function MainContent({ initialEvents = [] }: MainContentProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const PAGE_SIZE = 8;
   const [events] = useState<Event[]>(initialEvents);
-  const [selectedPrivacy, setSelectedPrivacy] = useState<string | null>(null);
-  const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
-  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  
+  // Initialize state from URL parameters
+  const [selectedPrivacy, setSelectedPrivacy] = useState<string | null>(
+    searchParams.get("privacy")
+  );
+  const [selectedPrice, setSelectedPrice] = useState<string | null>(
+    searchParams.get("price")
+  );
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(
+    searchParams.get("location")
+  );
+  const [selectedDate, setSelectedDate] = useState<string | null>(
+    searchParams.get("date")
+  );
   const [selectedEventType, setSelectedEventType] = useState<EventType | null>(
-    null
+    searchParams.get("eventType") as EventType | null
   );
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -105,7 +118,37 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
   ];
 
   const sortOptions = ["Popular", "Date", "Name", "Price"];
-  const [selectedSort, setSelectedSort] = useState<string>(sortOptions[0]);
+  const [selectedSort, setSelectedSort] = useState<string>(
+    searchParams.get("sort") || sortOptions[0]
+  );
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    
+    if (selectedPrivacy) params.set("privacy", selectedPrivacy);
+    if (selectedPrice) params.set("price", selectedPrice);
+    if (selectedLocation) params.set("location", selectedLocation);
+    if (selectedDate) params.set("date", selectedDate);
+    if (selectedEventType) params.set("eventType", selectedEventType);
+    if (selectedSort && selectedSort !== "Popular") params.set("sort", selectedSort);
+    
+    const queryString = params.toString();
+    const newUrl = queryString ? `/explore?${queryString}` : "/explore";
+    
+    // Only update if the URL actually changed
+    if (window.location.pathname + window.location.search !== newUrl) {
+      router.replace(newUrl, { scroll: false });
+    }
+  }, [
+    selectedPrivacy,
+    selectedPrice,
+    selectedLocation,
+    selectedDate,
+    selectedEventType,
+    selectedSort,
+    router,
+  ]);
   const filteredEvents = useMemo(
     () =>
       events.filter((event) => {
