@@ -12,7 +12,8 @@ import {
   MinusIcon,
   ShiedIcon,
 } from "@/public/svg/svg";
-import { TicketType } from "@/lib/dummyEvents/events";
+import { TicketType, PrivacyLevel } from "@/lib/dummyEvents/events";
+import { PrivacyLevelExplanationModal } from "../PrivacyLevelInfo";
 import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
 import { useUserSessionSync } from "@/lib/user-session-sync";
 
@@ -372,8 +373,11 @@ export const TicketInfo: FC<TicketInfoProps> = ({
               </div>
             </div>
           </div>
-          <div className="flex gap-6 items-center">
-            <p className="font-medium text-[#7D7D7D]">Privacy Level:</p>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <p className="font-medium text-[#7D7D7D]">Privacy Level:</p>
+              <PrivacyLevelExplanationModal privacyLevels={privacyLevel as PrivacyLevel[]} />
+            </div>
             <div className="flex gap-4 flex-wrap">
               {privacyLevel.map((level) => (
                 <div
