@@ -18,10 +18,10 @@ export const PurchasedStage: FC<PurchasedStageProps> = ({
   return (
     <div className="p-8 border border-[#E9E9E9] rounded-2xl dark:border-[#232323] w-full bg-white dark:bg-[#0A0A0A] shadow-[0_4px_20px_rgba(0,0,0,0.03)] font-work-sans">
       {isConfirming && (
-        <div className="flex items-center gap-2 mb-5 bg-[#FFF8E7] border border-[#F6C90E] text-[#856404] py-3 px-4 rounded-lg">
+        <div className="flex items-center gap-2 mb-5 bg-[#F5EEFF] dark:bg-[#1C0F2E] border border-[#D4ADFC] dark:border-[#4A1F7A] text-[#6917AF] dark:text-[#D7B5F5] py-3 px-4 rounded-lg">
           <Loader2 className="animate-spin shrink-0" size={16} />
           <p className="text-xs font-medium">
-            Confirming on-chain… your ticket is reserved.
+            Confirming on-chain&hellip; your ticket is reserved.
           </p>
         </div>
       )}
