@@ -15,6 +15,8 @@ import {
 import { TicketType } from "@/lib/dummyEvents/events";
 import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
 import { useUserSessionSync } from "@/lib/user-session-sync";
+import { useCooldown } from "@/hooks/useCooldown";
+import { CooldownMessage } from "@/app/components/AntiSpam/CooldownMessage";
 
 type TxStatus = "idle" | "pending" | "confirmed" | "failed";
 type PaymentStatus = "idle" | "processing" | "failed";
@@ -132,6 +134,8 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     attempts: 0,
   });
 
+  const { isOnCooldown, remainingSeconds, startCooldown } = useCooldown({ duration: 8 });
+
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const stopPolling = () => {
@@ -188,7 +192,9 @@ export const TicketInfo: FC<TicketInfoProps> = ({
   useEffect(() => () => stopPolling(), []);
 
   const handlePrimaryClick = async () => {
-    if (isProcessingPayment || txState.status === "pending") return;
+    if (isProcessingPayment || txState.status === "pending" || isOnCooldown) return;
+
+    startCooldown();
 
     setWalletState({ isLoading: true, error: null });
     setTxState({ status: "idle", txHash: null, error: null, attempts: 0 });
@@ -221,7 +227,8 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     walletState.isLoading ||
     isProcessingPayment ||
     txState.status === "pending" ||
-    txState.status === "confirmed";
+    txState.status === "confirmed" ||
+    isOnCooldown;
 
   const buttonLabel = () => {
     if (walletState.isLoading)
@@ -253,6 +260,14 @@ export const TicketInfo: FC<TicketInfoProps> = ({
         <>
           <CheckCircle2 size={20} />
           Ticket Confirmed
+        </>
+      );
+
+    if (isOnCooldown)
+      return (
+        <>
+          <Loader2 className="animate-spin" size={20} />
+          Please wait {remainingSeconds}s
         </>
       );
 
@@ -395,6 +410,9 @@ export const TicketInfo: FC<TicketInfoProps> = ({
 
           {/* Tx banner */}
           <TxBanner txState={txState} />
+
+          {/* Cooldown message */}
+          <CooldownMessage remainingSeconds={remainingSeconds} />
 
           {/* Payment error */}
           {hasPaymentFailed && (

@@ -1,15 +1,22 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useCooldown } from "@/hooks/useCooldown";
+import { CooldownMessage, ErrorBanner } from "@/app/components/AntiSpam/CooldownMessage";
 
 const VerifyPage = () => {
   const inputLength = 5;
   const [code, setCode] = useState(Array(inputLength).fill(""));
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const { isOnCooldown, remainingSeconds, startCooldown } = useCooldown({ duration: 15 });
+  const router = useRouter();
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -41,6 +48,29 @@ const VerifyPage = () => {
       }
     }
   };
+
+  const handleVerify = useCallback(async () => {
+    if (isOnCooldown || isSubmitting) return;
+
+    const fullCode = code.join("");
+    if (fullCode.length !== inputLength) {
+      setError("Please enter the complete verification code.");
+      return;
+    }
+
+    setError("");
+    setIsSubmitting(true);
+    startCooldown();
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      router.push("/dashboard");
+    } catch {
+      setError("Verification failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [code, isOnCooldown, isSubmitting, router, startCooldown]);
 
   return (
     <div
@@ -93,26 +123,37 @@ const VerifyPage = () => {
                 ))}
               </div>
             </div>
-            <div className="flex flex-col gap-6">
-              <Link href="">
-                <Button
-                  className="w-full text-lg cursor-pointer bg-[#751AC6] hover:from-purple-700 hover:to-purple-600 text-white h-14 rounded-lg font-medium"
-                  onClick={() => {}}
-                >
-                  <Image
-                    src="/images/security.png"
-                    alt="Security"
-                    width={24}
-                    height={24}
-                    className="w-6 h-6 mr-2"
-                  />
-                  Go To Dashboard
-                </Button>
-              </Link>
+            <div className="flex flex-col gap-4">
+              <Button
+                disabled={isOnCooldown || isSubmitting}
+                onClick={handleVerify}
+                className="w-full text-lg cursor-pointer bg-[#751AC6] hover:from-purple-700 hover:to-purple-600 text-white h-14 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Verifying...
+                  </>
+                ) : isOnCooldown ? (
+                  <>Please wait {remainingSeconds}s</>
+                ) : (
+                  <>
+                    <Image
+                      src="/images/security.png"
+                      alt="Security"
+                      width={24}
+                      height={24}
+                      className="w-6 h-6 mr-2"
+                    />
+                    Go To Dashboard
+                  </>
+                )}
+              </Button>
+              <CooldownMessage remainingSeconds={remainingSeconds} />
+              <ErrorBanner message={error} />
               <Link href="../login">
                 <button
                   className="flex items-center gap-2 justify-center w-full text-[#FFFFFF] text-[14px] font-bold transition-colors cursor-pointer"
-                  onClick={() => {}}
                 >
                   <ChevronLeft size={21} />
                   Go Back
