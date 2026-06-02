@@ -7,34 +7,15 @@ import {
   ShareIcon,
   TicketIcon,
 } from "@/public/svg/svg";
-import { Event, PrivacyLevel } from "@/lib/dummyEvents/events";
+import { Event } from "@/lib/dummyEvents/events";
 import { explorePathForEventTitle } from "@/lib/dummyEvents/explorePath";
 import { useSimulatedAvailability } from "@/lib/hooks/useSimulatedAvailability";
 import Image from "next/image";
 import Link from "next/link";
+import { PrivacyLevelBadge } from "./PrivacyLevelInfo";
 
 function Card({ id, title, date, time, location, price, image, privacyLevel }: Event) {
   const { slotsLeft, isSoldOut } = useSimulatedAvailability(id);
-
-  const getPrivacyLevel = (privacyLevel: PrivacyLevel) => {
-    switch (privacyLevel) {
-      case "Anonymous":
-        return <span className="flex gap-2 items-center bg-[#FFFFFF99] text-[#1E1E1E] px-2 py-1 rounded-[8px] text-xs font-semibold">
-          <Image src="/images/explore/privacy/shield.svg" alt="" aria-hidden="true" width={16} height={16} />
-          Anonymous
-          </span>;
-      case "Verified Access":
-        return <span className="flex gap-2 items-center bg-[#FFFFFF99] text-[#1E1E1E] px-2 py-1 rounded-[8px] text-xs font-semibold">
-          <Image src="/images/explore/privacy/lock.svg" alt="" aria-hidden="true" width={16} height={16} />
-          Verified Access
-          </span>;
-      case "Wallet Required":
-        return <span className="flex gap-2 items-center bg-[#FFFFFF99] text-[#1E1E1E] px-2 py-1 rounded-[8px] text-xs font-semibold">
-          <Image src="/images/explore/privacy/key.svg" alt="" aria-hidden="true" width={16} height={16} />
-          Wallet Required
-          </span>;
-    }
-  };
 
   const getPrice = (price: number) => {
     if (price === 0) {
@@ -54,7 +35,7 @@ function Card({ id, title, date, time, location, price, image, privacyLevel }: E
           sizes="(max-width: 24rem) 100vw, 384px"
         />
         <div className="absolute top-2 left-2">
-          {getPrivacyLevel(privacyLevel[0])}
+          <PrivacyLevelBadge privacyLevel={privacyLevel[0]} />
         </div>
       </div>
       <div className="p-4  w-full space-y-4">
