@@ -16,6 +16,8 @@ import { TicketType, PrivacyLevel } from "@/lib/dummyEvents/events";
 import { PrivacyLevelExplanationModal } from "../PrivacyLevelInfo";
 import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
 import { useUserSessionSync } from "@/lib/user-session-sync";
+import { useCooldown } from "@/hooks/useCooldown";
+import { CooldownMessage } from "@/app/components/AntiSpam/CooldownMessage";
 import { TransactionStatusBanner } from "@/components/TransactionStatusBanner";
 import type { TransactionStatus } from "@/hooks/useTransactionStatus";
 
@@ -85,6 +87,8 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     error: null,
     attempts: 0,
   });
+
+  const { isOnCooldown, remainingSeconds, startCooldown } = useCooldown({ duration: 8 });
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -170,7 +174,9 @@ export const TicketInfo: FC<TicketInfoProps> = ({
   useEffect(() => () => stopPolling(), []);
 
   const handlePrimaryClick = async () => {
-    if (isProcessingPayment || txState.status === "pending") return;
+    if (isProcessingPayment || txState.status === "pending" || isOnCooldown) return;
+
+    startCooldown();
 
     setWalletState({ isLoading: true, error: null });
     setTxState({ status: "idle", txHash: null, error: null, attempts: 0 });
@@ -210,7 +216,8 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     walletState.isLoading ||
     isProcessingPayment ||
     txState.status === "pending" ||
-    txState.status === "confirmed";
+    txState.status === "confirmed" ||
+    isOnCooldown;
 
   const buttonLabel = () => {
     if (walletState.isLoading)
@@ -242,6 +249,14 @@ export const TicketInfo: FC<TicketInfoProps> = ({
         <>
           <CheckCircle2 size={20} />
           Ticket Confirmed
+        </>
+      );
+
+    if (isOnCooldown)
+      return (
+        <>
+          <Loader2 className="animate-spin" size={20} />
+          Please wait {remainingSeconds}s
         </>
       );
 
@@ -394,6 +409,9 @@ export const TicketInfo: FC<TicketInfoProps> = ({
               onRetry={txState.status === "failed" ? handleRetry : undefined}
             />
           )}
+
+          {/* Cooldown message */}
+          <CooldownMessage remainingSeconds={remainingSeconds} />
 
           {/* Payment error from parent (e.g. sold out, reconcile failure) */}
           {hasPaymentFailed && txState.status === "idle" && (

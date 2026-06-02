@@ -3,8 +3,10 @@
 import React, { useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { X, Ticket } from 'lucide-react'
+import { X, Ticket, Loader2 } from 'lucide-react'
 import { trackAnalyticsEvent } from '@/lib/privacyAnalytics'
+import { useCooldown } from '@/hooks/useCooldown'
+import { CooldownMessage } from '@/app/components/AntiSpam/CooldownMessage'
 
 interface TicketCancellationModalProps {
   isOpen: boolean
@@ -27,13 +29,16 @@ export function TicketCancellationModal({
 }: TicketCancellationModalProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  const { isOnCooldown, remainingSeconds, startCooldown } = useCooldown({ duration: 10 })
 
   const handleDiscard = () => {
     onClose()
   }
 
   const handleConfirm = async () => {
+    if (isOnCooldown || isProcessing) return
     setIsProcessing(true)
+    startCooldown()
 
     try {
       // Placeholder: replace with real API call when backend is ready
@@ -104,6 +109,8 @@ export function TicketCancellationModal({
               </DialogDescription>
             </div>
 
+            <CooldownMessage remainingSeconds={remainingSeconds} className="mb-3" />
+
             <div className="flex flex-col-reverse gap-3 sm:flex-row">
               <Button
                 type="button"
@@ -116,10 +123,16 @@ export function TicketCancellationModal({
               <Button
                 type="button"
                 onClick={handleConfirm}
-                disabled={isProcessing}
-                className="flex-1 border-2 border-[#6917af] text-[#6917af] bg-white font-semibold py-3 px-5 sm:p-6 rounded-full cursor-pointer hover:bg-white hover:text-[#6917af] shadow-none"
+                disabled={isProcessing || isOnCooldown}
+                className="flex-1 border-2 border-[#6917af] text-[#6917af] bg-white font-semibold py-3 px-5 sm:p-6 rounded-full cursor-pointer hover:bg-white hover:text-[#6917af] shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isProcessing ? 'Processing...' : 'Yes'}
+                {isProcessing ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Processing...</>
+                ) : isOnCooldown ? (
+                  <>Wait {remainingSeconds}s</>
+                ) : (
+                  'Yes'
+                )}
               </Button>
             </div>
           </>

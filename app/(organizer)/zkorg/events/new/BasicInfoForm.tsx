@@ -21,6 +21,8 @@ import { StepIndicator } from "./StepIndicator"
 import { RichTextEditor } from "./RichTextEditor"
 import { FileUpload } from "./FileUpload"
 import { cn } from "@/lib/utils"
+import { useCooldown } from "@/hooks/useCooldown"
+import { CooldownMessage } from "@/app/components/AntiSpam/CooldownMessage"
 
 const defaultValues: BasicInfoEventFormValues = {
   title: "",
@@ -41,6 +43,8 @@ export interface BasicInfoFormProps {
 
 export function BasicInfoForm({ onSubmit, onValuesChange, className }: BasicInfoFormProps) {
   const [tagInput, setTagInput] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { isOnCooldown, remainingSeconds, startCooldown } = useCooldown({ duration: 8 })
 
   const form = useForm<BasicInfoEventFormValues>({
     resolver: zodResolver(basicInfoEventSchema),
@@ -94,7 +98,16 @@ export function BasicInfoForm({ onSubmit, onValuesChange, className }: BasicInfo
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className={cn("space-y-6", className)}>
+      <form onSubmit={form.handleSubmit((data) => {
+        if (isOnCooldown || isSubmitting) return;
+        setIsSubmitting(true);
+        startCooldown();
+        try {
+          onSubmit(data);
+        } finally {
+          setIsSubmitting(false);
+        }
+      })} className={cn("space-y-6", className)}>
         <StepIndicator
           currentStep={1}
           totalSteps={2}
@@ -275,10 +288,12 @@ export function BasicInfoForm({ onSubmit, onValuesChange, className }: BasicInfo
           type="submit"
           variant="gradient"
           className="w-full rounded-lg py-3 text-sm font-semibold"
-          disabled={!form.formState.isValid}
+          disabled={!form.formState.isValid || isOnCooldown || isSubmitting}
+          loading={isSubmitting}
         >
-          Next &gt;
+          {isOnCooldown ? `Please wait ${remainingSeconds}s` : "Next >"}
         </Button>
+        <CooldownMessage remainingSeconds={remainingSeconds} />
       </form>
     </Form>
   )
