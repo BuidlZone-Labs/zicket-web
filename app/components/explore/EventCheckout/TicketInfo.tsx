@@ -1,7 +1,7 @@
 "use client";
 
-import { FC, useState, useEffect, useRef } from "react";
-import { Check, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { FC, useState, useEffect, useRef, useCallback } from "react";
+import { Check, Loader2, CheckCircle2 } from "lucide-react";
 import { useSimulatedAvailability } from "@/lib/hooks/useSimulatedAvailability";
 import {
   DangerIcon,
@@ -12,17 +12,19 @@ import {
   MinusIcon,
   ShiedIcon,
 } from "@/public/svg/svg";
-import { TicketType } from "@/lib/dummyEvents/events";
+import { TicketType, PrivacyLevel } from "@/lib/dummyEvents/events";
+import { PrivacyLevelExplanationModal } from "../PrivacyLevelInfo";
 import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
 import { useUserSessionSync } from "@/lib/user-session-sync";
 import { useCooldown } from "@/hooks/useCooldown";
 import { CooldownMessage } from "@/app/components/AntiSpam/CooldownMessage";
+import { TransactionStatusBanner } from "@/components/TransactionStatusBanner";
+import type { TransactionStatus } from "@/hooks/useTransactionStatus";
 
-type TxStatus = "idle" | "pending" | "confirmed" | "failed";
 type PaymentStatus = "idle" | "processing" | "failed";
 
 interface TxState {
-  status: TxStatus;
+  status: TransactionStatus;
   txHash: string | null;
   error: string | null;
   attempts: number;
@@ -39,67 +41,18 @@ interface TicketInfoProps {
     isConfirmed: boolean;
     isPaid: boolean;
   }) => Promise<{ ok: boolean; error?: string }> | { ok: boolean; error?: string };
+  onResetPayment?: () => void;
 }
 
 const POLL_INTERVAL_MS = 3000;
+const MAX_POLL_ATTEMPTS = 20;
 
 async function fetchTxStatus(
   txHash: string
-): Promise<{ status: "pending" | "confirmed" | "failed"; error?: string }> {
+): Promise<{ status: TransactionStatus; error?: string }> {
   const res = await fetch(`/api/transactions/${txHash}/status`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
-}
-
-function TxBanner({ txState }: { txState: TxState }) {
-  if (txState.status === "idle") return null;
-
-  const configs = {
-    pending: {
-      icon: <Loader2 className="size-5 animate-spin text-[#6917AF]" />,
-      wrapper: "bg-[#F5EEFF] border-[#D4ADFC]",
-      text: "text-[#6917AF]",
-      title: "Transaction Pending",
-      message: "Confirming your ticket purchase on-chain…",
-    },
-    confirmed: {
-      icon: <CheckCircle2 className="size-5 text-[#039855]" />,
-      wrapper: "bg-[#ECFDF3] border-[#6CE9A6]",
-      text: "text-[#027A48]",
-      title: "Transaction Confirmed",
-      message: "Your ticket has been confirmed. You're all set!",
-    },
-    failed: {
-      icon: <XCircle className="size-5 text-[#D92D20]" />,
-      wrapper: "bg-[#FEF3F2] border-[#FDA29B]",
-      text: "text-[#B42318]",
-      title: "Transaction Failed",
-      message: txState.error ?? "Something went wrong. Please try again.",
-    },
-  } as const;
-
-  const cfg = configs[txState.status];
-  if (!cfg) return null;
-
-  return (
-    <div className={`flex gap-3 rounded-xl border px-4 py-3 ${cfg.wrapper}`}>
-      {cfg.icon}
-      <div className="flex-1 space-y-1">
-        <p className={`text-sm font-semibold ${cfg.text}`}>{cfg.title}</p>
-        <p className={`text-xs ${cfg.text}`}>{cfg.message}</p>
-
-        {txState.txHash && txState.status !== "pending" && (
-          
-          <a  href={`https://solscan.io/tx/${txState.txHash}`}
-            target="_blank"
-            className={`text-xs underline ${cfg.text}`}
-          >
-            View on Solscan ↗
-          </a>
-        )}
-      </div>
-    </div>
-  );
 }
 
 export const TicketInfo: FC<TicketInfoProps> = ({
@@ -110,6 +63,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
   paymentStatus = "idle",
   paymentError = null,
   onStatusChange,
+  onResetPayment,
 }) => {
   const { anonymousBrowsing, walletConnected, setAnonymousBrowsing, setWalletConnected } =
     useUserSessionSync();
@@ -164,22 +118,50 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     try {
       const result = await fetchTxStatus(txHash);
 
-      setTxState((s) => ({
-        ...s,
-        status: result.status,
-        error: result.error ?? null,
-        attempts: s.attempts + 1,
-      }));
+      setTxState((s) => {
+        const nextAttempts = s.attempts + 1;
 
-      if (result.status !== "pending") {
+        if (nextAttempts >= MAX_POLL_ATTEMPTS && result.status === "pending") {
+          stopPolling();
+          return {
+            ...s,
+            status: "failed" as TransactionStatus,
+            error: "Transaction is taking longer than expected. Please check your wallet and try again.",
+            attempts: nextAttempts,
+          };
+        }
+
+        return {
+          ...s,
+          status: result.status,
+          error: result.error ?? null,
+          attempts: nextAttempts,
+        };
+      });
+
+      if (result.status === "confirmed") {
         stopPolling();
         await onStatusChange?.({
-          isConfirmed: result.status === "confirmed",
+          isConfirmed: true,
           isPaid,
         });
+      } else if (result.status === "failed") {
+        stopPolling();
       }
     } catch {
-      setTxState((s) => ({ ...s, attempts: s.attempts + 1 }));
+      setTxState((s) => {
+        const nextAttempts = s.attempts + 1;
+        if (nextAttempts >= MAX_POLL_ATTEMPTS) {
+          stopPolling();
+          return {
+            ...s,
+            status: "failed" as TransactionStatus,
+            error: "Unable to verify transaction. Please check your wallet and try again.",
+            attempts: nextAttempts,
+          };
+        }
+        return { ...s, attempts: nextAttempts };
+      });
     }
   };
 
@@ -222,6 +204,13 @@ export const TicketInfo: FC<TicketInfoProps> = ({
       });
     }
   };
+
+  const handleRetry = useCallback(() => {
+    stopPolling();
+    setTxState({ status: "idle", txHash: null, error: null, attempts: 0 });
+    setWalletState({ isLoading: false, error: null });
+    onResetPayment?.();
+  }, [onResetPayment]);
 
   const isButtonDisabled =
     walletState.isLoading ||
@@ -387,8 +376,11 @@ export const TicketInfo: FC<TicketInfoProps> = ({
               </div>
             </div>
           </div>
-          <div className="flex gap-6 items-center">
-            <p className="font-medium text-[#7D7D7D]">Privacy Level:</p>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <p className="font-medium text-[#7D7D7D]">Privacy Level:</p>
+              <PrivacyLevelExplanationModal privacyLevels={privacyLevel as PrivacyLevel[]} />
+            </div>
             <div className="flex gap-4 flex-wrap">
               {privacyLevel.map((level) => (
                 <div
@@ -409,13 +401,20 @@ export const TicketInfo: FC<TicketInfoProps> = ({
           </div>
 
           {/* Tx banner */}
-          <TxBanner txState={txState} />
+          {txState.status !== "idle" && (
+            <TransactionStatusBanner
+              status={txState.status}
+              txHash={txState.txHash}
+              error={txState.error}
+              onRetry={txState.status === "failed" ? handleRetry : undefined}
+            />
+          )}
 
           {/* Cooldown message */}
           <CooldownMessage remainingSeconds={remainingSeconds} />
 
-          {/* Payment error */}
-          {hasPaymentFailed && (
+          {/* Payment error from parent (e.g. sold out, reconcile failure) */}
+          {hasPaymentFailed && txState.status === "idle" && (
             <div className="bg-[#FFF2F2] border border-[#FBCACA] text-[#B42318] py-3 px-5 rounded-lg">
               <p className="text-xs font-medium">
                 {paymentError ?? "Payment failed. Please retry."}
@@ -455,17 +454,6 @@ export const TicketInfo: FC<TicketInfoProps> = ({
             </button>
             {walletState.error && (
               <p className="mt-2 text-sm text-red-500">{walletState.error}</p>
-            )}
-            {txState.status === "failed" && (
-              <button
-                type="button"
-                onClick={() =>
-                  setTxState({ status: "idle", txHash: null, error: null, attempts: 0 })
-                }
-                className="text-sm underline mt-2"
-              >
-                Try again
-              </button>
             )}
           </div>
         </fieldset>

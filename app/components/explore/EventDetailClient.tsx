@@ -47,6 +47,8 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
   const resetPaymentAttemptState = () => {
     setPaymentStatus("idle");
     setPaymentError(null);
+    setIsOptimistic(false);
+    setAttemptId(null);
   };
 
   const createAttemptId = () => {
@@ -188,6 +190,7 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
                 paymentStatus={paymentStatus}
                 paymentError={paymentError}
                 onStatusChange={handleStatusChange}
+                onResetPayment={resetPaymentAttemptState}
               />
             </div>
           </div>

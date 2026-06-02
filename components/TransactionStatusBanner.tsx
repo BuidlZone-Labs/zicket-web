@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { CheckCircle2, XCircle, Loader2, Clock } from "lucide-react"
+import { CheckCircle2, XCircle, Loader2, RotateCcw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { TransactionStatus } from "@/hooks/useTransactionStatus"
 import Link from "next/link";
@@ -12,6 +12,8 @@ export interface TransactionStatusBannerProps {
   error?: string | null
   pendingMessage?: string
   confirmedMessage?: string
+  failedMessage?: string
+  onRetry?: () => void
   className?: string
 }
 
@@ -54,6 +56,8 @@ export function TransactionStatusBanner({
   error,
   pendingMessage = "Confirming your ticket purchase…",
   confirmedMessage = "Ticket confirmed! You're all set.",
+  failedMessage,
+  onRetry,
   className,
 }: TransactionStatusBannerProps) {
   const config = CONFIG[status]
@@ -66,7 +70,7 @@ export function TransactionStatusBanner({
       ? pendingMessage
       : status === "confirmed"
       ? confirmedMessage
-      : (error ?? "Something went wrong. Please try again.")
+      : (failedMessage ?? error ?? "Something went wrong. Please try again.")
 
   return (
     <div
@@ -113,6 +117,21 @@ export function TransactionStatusBanner({
           <p className={cn("text-xs font-mono opacity-60 truncate", config.textClass)}>
             {txHash.slice(0, 12)}…{txHash.slice(-8)}
           </p>
+        )}
+
+        {/* Retry button on failure */}
+        {status === "failed" && onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className={cn(
+              "mt-2 inline-flex items-center gap-1.5 text-xs font-semibold underline underline-offset-2",
+              config.textClass
+            )}
+          >
+            <RotateCcw size={12} />
+            Try again
+          </button>
         )}
       </div>
     </div>
