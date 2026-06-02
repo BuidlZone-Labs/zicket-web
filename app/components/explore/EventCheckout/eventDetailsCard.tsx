@@ -10,6 +10,8 @@ import {
   TagIcon,
   TicketIconSmall,
 } from "@/public/svg/svg";
+import { PrivacyLevelExplanationModal } from "../PrivacyLevelInfo";
+import type { PrivacyLevel } from "@/lib/dummyEvents/events";
 import Image from "next/image";
 import { FC } from "react";
 
@@ -21,7 +23,7 @@ interface EventDetailCardProps {
   description: string;
   tags: string[];
   price?: number;
-  privacyType: string;
+  privacyType: PrivacyLevel;
 }
 export const EventDetailCard: FC<EventDetailCardProps> = ({
   title,
@@ -77,17 +79,20 @@ export const EventDetailCard: FC<EventDetailCardProps> = ({
                 {price ? "paid" : "Free"}
               </p>
             </div>
-            <div className="flex gap-1 border-[0.5px] rounded-lg border-[#E9E9E9] px-3 py-1.5 items-center">
-              {privacyType === "Wallet Required" ? (
-                <KeyIcon />
-              ) : privacyType === "Verified Access" ? (
-                <LockIcon />
-              ) : (
-                <ShiedIcon />
-              )}
-              <p className="text-[#5C6170] text-xs font-medium">
-                {privacyType}
-              </p>
+            <div className="flex gap-3 items-center">
+              <div className="flex gap-1 border-[0.5px] rounded-lg border-[#E9E9E9] px-3 py-1.5 items-center">
+                {privacyType === "Wallet Required" ? (
+                  <KeyIcon />
+                ) : privacyType === "Verified Access" ? (
+                  <LockIcon />
+                ) : (
+                  <ShiedIcon />
+                )}
+                <p className="text-[#5C6170] text-xs font-medium">
+                  {privacyType}
+                </p>
+              </div>
+              <PrivacyLevelExplanationModal privacyLevels={[privacyType]} />
             </div>
           </div>
         </div>
