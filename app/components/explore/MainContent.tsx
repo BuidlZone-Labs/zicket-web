@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import Card from "./card";
 import { EmptyStateIcon } from "@/public/svg/svg";
 import CustomDropdown from "./CustomDropdown";
@@ -10,15 +11,61 @@ interface MainContentProps {
   initialEvents?: Event[];
 }
 
+const SORT_OPTIONS = ["Popular", "Date", "Name", "Price"];
+const PRIVACY_OPTIONS = ["Anonymous", "Verified Access", "Wallet Required"];
+const PRICE_OPTIONS = ["Free Events Only", "Paid Events Only"];
+const EVENT_TYPE_OPTIONS: EventType[] = [
+  "Music",
+  "Tech & Web3",
+  "Art & Culture",
+  "Business",
+  "Health & Wellness",
+  "Education",
+  "Community",
+];
+
+const getQueryState = (search: string) => {
+  const params = new URLSearchParams(search);
+
+  return {
+    privacy: params.get("privacy"),
+    price: params.get("price"),
+    location: params.get("location"),
+    date: params.get("date"),
+    eventType: params.get("eventType"),
+    sort: params.get("sort"),
+  };
+};
+
 function MainContent({ initialEvents = [] }: MainContentProps) {
   const PAGE_SIZE = 8;
   const [events] = useState<Event[]>(initialEvents);
-  const [selectedPrivacy, setSelectedPrivacy] = useState<string | null>(null);
-  const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
-  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+  const privacyOptions = PRIVACY_OPTIONS;
+  const priceOptions = PRICE_OPTIONS;
+  const eventTypeOptions = EVENT_TYPE_OPTIONS;
+  const initialQueryState = useMemo(
+    () => getQueryState(typeof window !== "undefined" ? window.location.search : ""),
+    []
+  );
+  const [selectedPrivacy, setSelectedPrivacy] = useState<string | null>(
+    initialQueryState.privacy
+  );
+  const [selectedPrice, setSelectedPrice] = useState<string | null>(
+    initialQueryState.price
+  );
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(
+    initialQueryState.location
+  );
+  const [selectedDate, setSelectedDate] = useState<string | null>(
+    initialQueryState.date
+  );
   const [selectedEventType, setSelectedEventType] = useState<EventType | null>(
-    null
+    initialQueryState.eventType &&
+      eventTypeOptions.includes(initialQueryState.eventType as EventType)
+      ? (initialQueryState.eventType as EventType)
+      : null
   );
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -35,8 +82,6 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
     selectedLocation
   );
 
-  const privacyOptions = ["Anonymous", "Verified Access", "Wallet Required"];
-  const priceOptions = ["Free Events Only", "Paid Events Only"];
   const locationOptions = [
     { content: "All", onClick: () => setSelectedLocation(null) },
     ...Array.from(new Set(events.map((event) => event.location))).map(
@@ -47,15 +92,6 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
     ),
   ];
   const dateOptions = ["Today", "This Week", "This Month"];
-  const eventTypeOptions: EventType[] = [
-    "Music",
-    "Tech & Web3",
-    "Art & Culture",
-    "Business",
-    "Health & Wellness",
-    "Education",
-    "Community",
-  ];
 
   const filterConfigs = [
     {
@@ -104,8 +140,73 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
     },
   ];
 
-  const sortOptions = ["Popular", "Date", "Name", "Price"];
-  const [selectedSort, setSelectedSort] = useState<string>(sortOptions[0]);
+  const [selectedSort, setSelectedSort] = useState<string>(
+    initialQueryState.sort && SORT_OPTIONS.includes(initialQueryState.sort)
+      ? initialQueryState.sort
+      : SORT_OPTIONS[0]
+  );
+  useEffect(() => {
+    const syncFiltersFromLocation = () => {
+      const queryState = getQueryState(window.location.search);
+
+      setSelectedPrivacy(queryState.privacy ?? null);
+      setSelectedPrice(queryState.price ?? null);
+      setSelectedLocation(queryState.location ?? null);
+      setSelectedDate(queryState.date ?? null);
+      setSelectedEventType(
+        queryState.eventType &&
+          eventTypeOptions.includes(queryState.eventType as EventType)
+          ? (queryState.eventType as EventType)
+          : null
+      );
+      setSelectedSort(
+        queryState.sort && SORT_OPTIONS.includes(queryState.sort)
+          ? queryState.sort
+          : SORT_OPTIONS[0]
+      );
+    };
+
+    syncFiltersFromLocation();
+    window.addEventListener("popstate", syncFiltersFromLocation);
+
+    return () => window.removeEventListener("popstate", syncFiltersFromLocation);
+  }, [eventTypeOptions]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    const setParam = (key: string, value: string | null) => {
+      if (!value) {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    };
+
+    setParam("privacy", selectedPrivacy);
+    setParam("price", selectedPrice);
+    setParam("location", selectedLocation);
+    setParam("date", selectedDate);
+    setParam("eventType", selectedEventType);
+    setParam("sort", selectedSort !== SORT_OPTIONS[0] ? selectedSort : null);
+
+    const nextQuery = params.toString();
+    const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname;
+    const currentUrl = `${pathname}${window.location.search}`;
+
+    if (currentUrl !== nextUrl) {
+      router.replace(nextUrl, { scroll: false });
+    }
+  }, [pathname, router, selectedDate, selectedEventType, selectedLocation, selectedPrice, selectedPrivacy, selectedSort]);
+
+  useEffect(() => {
+    setMobilePrivacy(selectedPrivacy);
+    setMobilePrice(selectedPrice);
+    setMobileDate(selectedDate);
+    setMobileEventType(selectedEventType);
+    setMobileLocation(selectedLocation);
+  }, [selectedDate, selectedEventType, selectedLocation, selectedPrice, selectedPrivacy]);
+
   const filteredEvents = useMemo(
     () =>
       events.filter((event) => {
