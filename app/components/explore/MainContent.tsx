@@ -9,12 +9,20 @@ import type { EventType, Event } from "@/lib/dummyEvents/events";
 
 interface MainContentProps {
   initialEvents?: Event[];
+  initialQuery?: {
+    privacy: string | null;
+    price: string | null;
+    location: string | null;
+    date: string | null;
+    eventType: string | null;
+    sort: string | null;
+  };
 }
 
-const SORT_OPTIONS = ["Popular", "Date", "Name", "Price"];
-const PRIVACY_OPTIONS = ["Anonymous", "Verified Access", "Wallet Required"];
-const PRICE_OPTIONS = ["Free Events Only", "Paid Events Only"];
-const EVENT_TYPE_OPTIONS: EventType[] = [
+const SORT_OPTIONS = ["Popular", "Date", "Name", "Price"] as const;
+const PRIVACY_OPTIONS = ["Anonymous", "Verified Access", "Wallet Required"] as const;
+const PRICE_OPTIONS = ["Free Events Only", "Paid Events Only"] as const;
+const EVENT_TYPE_OPTIONS = [
   "Music",
   "Tech & Web3",
   "Art & Culture",
@@ -22,33 +30,50 @@ const EVENT_TYPE_OPTIONS: EventType[] = [
   "Health & Wellness",
   "Education",
   "Community",
-];
+] as const;
+
+const getOptionParam = <T extends readonly string[]>(
+  params: URLSearchParams,
+  key: string,
+  options: T
+): T[number] | null => {
+  const value = params.get(key);
+  return value && options.includes(value as T[number])
+    ? (value as T[number])
+    : null;
+};
 
 const getQueryState = (search: string) => {
   const params = new URLSearchParams(search);
 
   return {
-    privacy: params.get("privacy"),
-    price: params.get("price"),
+    privacy: getOptionParam(params, "privacy", PRIVACY_OPTIONS),
+    price: getOptionParam(params, "price", PRICE_OPTIONS),
     location: params.get("location"),
     date: params.get("date"),
-    eventType: params.get("eventType"),
-    sort: params.get("sort"),
+    eventType: getOptionParam(params, "eventType", EVENT_TYPE_OPTIONS),
+    sort: getOptionParam(params, "sort", SORT_OPTIONS),
   };
 };
 
-function MainContent({ initialEvents = [] }: MainContentProps) {
+const defaultQueryState = {
+  privacy: null,
+  price: null,
+  location: null,
+  date: null,
+  eventType: null,
+  sort: null,
+};
+
+function MainContent({ initialEvents = [], initialQuery }: MainContentProps) {
   const PAGE_SIZE = 8;
   const [events] = useState<Event[]>(initialEvents);
   const router = useRouter();
   const pathname = usePathname();
-  const privacyOptions = PRIVACY_OPTIONS;
-  const priceOptions = PRICE_OPTIONS;
-  const eventTypeOptions = EVENT_TYPE_OPTIONS;
-  const initialQueryState = useMemo(
-    () => getQueryState(typeof window !== "undefined" ? window.location.search : ""),
-    []
-  );
+  const privacyOptions = Array.from(PRIVACY_OPTIONS);
+  const priceOptions = Array.from(PRICE_OPTIONS);
+  const eventTypeOptions = Array.from(EVENT_TYPE_OPTIONS) as EventType[];
+  const initialQueryState = initialQuery ?? defaultQueryState;
   const [selectedPrivacy, setSelectedPrivacy] = useState<string | null>(
     initialQueryState.privacy
   );
@@ -140,8 +165,13 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
     },
   ];
 
+  const isSortOption = (
+    value: string | null
+  ): value is (typeof SORT_OPTIONS)[number] =>
+    value !== null && (SORT_OPTIONS as readonly string[]).includes(value);
+
   const [selectedSort, setSelectedSort] = useState<string>(
-    initialQueryState.sort && SORT_OPTIONS.includes(initialQueryState.sort)
+    isSortOption(initialQueryState.sort)
       ? initialQueryState.sort
       : SORT_OPTIONS[0]
   );
@@ -347,7 +377,7 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
             <CustomDropdown
               key={f.key}
               label={f.label}
-              options={f.options}
+              options={[...f.options]}
               value={f.value}
               onChange={f.setValue}
               showAllLabel={f.showAllLabel}
@@ -455,7 +485,7 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
                 <div key={f.key}>
                   <CustomDropdown
                     label={f.label}
-                    options={f.options}
+                    options={[...f.options]}
                     value={
                       f.key === "privacy"
                         ? mobilePrivacy

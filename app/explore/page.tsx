@@ -10,13 +10,31 @@ export const metadata: Metadata = {
   keywords: "events, explore, discover, community",
 };
 
-export default async function ExplorePage() {
+const extractSearchParam = (
+  searchParams: Record<string, string | string[] | undefined>,
+  key: string
+) => {
+  const value = searchParams[key];
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+};
+
+export default async function ExplorePage({ searchParams }: any) {
   // Server-side data fetching for SSR
   const events = await getAllPublicEvents();
 
+  const initialQuery = {
+    privacy: extractSearchParam(searchParams, "privacy"),
+    price: extractSearchParam(searchParams, "price"),
+    location: extractSearchParam(searchParams, "location"),
+    date: extractSearchParam(searchParams, "date"),
+    eventType: extractSearchParam(searchParams, "eventType"),
+    sort: extractSearchParam(searchParams, "sort"),
+  };
+
   return (
     <div className="bg-white dark:bg-[#0D0D0D] min-h-screen">
-      <MainContent initialEvents={events} />
+      <MainContent initialEvents={events} initialQuery={initialQuery} />
     </div>
   );
 }
