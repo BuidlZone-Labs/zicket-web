@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import Card from "./card";
 import { EmptyStateIcon } from "@/public/svg/svg";
 import CustomDropdown from "./CustomDropdown";
@@ -8,17 +9,88 @@ import type { EventType, Event } from "@/lib/dummyEvents/events";
 
 interface MainContentProps {
   initialEvents?: Event[];
+  initialQuery?: {
+    privacy: string | null;
+    price: string | null;
+    location: string | null;
+    date: string | null;
+    eventType: string | null;
+    sort: string | null;
+  };
 }
 
-function MainContent({ initialEvents = [] }: MainContentProps) {
+const SORT_OPTIONS = ["Popular", "Date", "Name", "Price"] as const;
+const PRIVACY_OPTIONS = ["Anonymous", "Verified Access", "Wallet Required"] as const;
+const PRICE_OPTIONS = ["Free Events Only", "Paid Events Only"] as const;
+const EVENT_TYPE_OPTIONS = [
+  "Music",
+  "Tech & Web3",
+  "Art & Culture",
+  "Business",
+  "Health & Wellness",
+  "Education",
+  "Community",
+] as const;
+
+const getOptionParam = <T extends readonly string[]>(
+  params: URLSearchParams,
+  key: string,
+  options: T
+): T[number] | null => {
+  const value = params.get(key);
+  return value && options.includes(value as T[number])
+    ? (value as T[number])
+    : null;
+};
+
+const getQueryState = (search: string) => {
+  const params = new URLSearchParams(search);
+
+  return {
+    privacy: getOptionParam(params, "privacy", PRIVACY_OPTIONS),
+    price: getOptionParam(params, "price", PRICE_OPTIONS),
+    location: params.get("location"),
+    date: params.get("date"),
+    eventType: getOptionParam(params, "eventType", EVENT_TYPE_OPTIONS),
+    sort: getOptionParam(params, "sort", SORT_OPTIONS),
+  };
+};
+
+const defaultQueryState = {
+  privacy: null,
+  price: null,
+  location: null,
+  date: null,
+  eventType: null,
+  sort: null,
+};
+
+function MainContent({ initialEvents = [], initialQuery }: MainContentProps) {
   const PAGE_SIZE = 8;
   const [events] = useState<Event[]>(initialEvents);
-  const [selectedPrivacy, setSelectedPrivacy] = useState<string | null>(null);
-  const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
-  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+  const privacyOptions = Array.from(PRIVACY_OPTIONS);
+  const priceOptions = Array.from(PRICE_OPTIONS);
+  const eventTypeOptions = Array.from(EVENT_TYPE_OPTIONS) as EventType[];
+  const initialQueryState = initialQuery ?? defaultQueryState;
+  const [selectedPrivacy, setSelectedPrivacy] = useState<string | null>(
+    initialQueryState.privacy
+  );
+  const [selectedPrice, setSelectedPrice] = useState<string | null>(
+    initialQueryState.price
+  );
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(
+    initialQueryState.location
+  );
+  const [selectedDate, setSelectedDate] = useState<string | null>(
+    initialQueryState.date
+  );
   const [selectedEventType, setSelectedEventType] = useState<EventType | null>(
-    null
+    initialQueryState.eventType &&
+      eventTypeOptions.includes(initialQueryState.eventType as EventType)
+      ? (initialQueryState.eventType as EventType)
+      : null
   );
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -35,8 +107,6 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
     selectedLocation
   );
 
-  const privacyOptions = ["Anonymous", "Verified Access", "Wallet Required"];
-  const priceOptions = ["Free Events Only", "Paid Events Only"];
   const locationOptions = [
     { content: "All", onClick: () => setSelectedLocation(null) },
     ...Array.from(new Set(events.map((event) => event.location))).map(
@@ -47,15 +117,6 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
     ),
   ];
   const dateOptions = ["Today", "This Week", "This Month"];
-  const eventTypeOptions: EventType[] = [
-    "Music",
-    "Tech & Web3",
-    "Art & Culture",
-    "Business",
-    "Health & Wellness",
-    "Education",
-    "Community",
-  ];
 
   const filterConfigs = [
     {
@@ -104,8 +165,78 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
     },
   ];
 
-  const sortOptions = ["Popular", "Date", "Name", "Price"];
-  const [selectedSort, setSelectedSort] = useState<string>(sortOptions[0]);
+  const isSortOption = (
+    value: string | null
+  ): value is (typeof SORT_OPTIONS)[number] =>
+    value !== null && (SORT_OPTIONS as readonly string[]).includes(value);
+
+  const [selectedSort, setSelectedSort] = useState<string>(
+    isSortOption(initialQueryState.sort)
+      ? initialQueryState.sort
+      : SORT_OPTIONS[0]
+  );
+  useEffect(() => {
+    const syncFiltersFromLocation = () => {
+      const queryState = getQueryState(window.location.search);
+
+      setSelectedPrivacy(queryState.privacy ?? null);
+      setSelectedPrice(queryState.price ?? null);
+      setSelectedLocation(queryState.location ?? null);
+      setSelectedDate(queryState.date ?? null);
+      setSelectedEventType(
+        queryState.eventType &&
+          eventTypeOptions.includes(queryState.eventType as EventType)
+          ? (queryState.eventType as EventType)
+          : null
+      );
+      setSelectedSort(
+        queryState.sort && SORT_OPTIONS.includes(queryState.sort)
+          ? queryState.sort
+          : SORT_OPTIONS[0]
+      );
+    };
+
+    syncFiltersFromLocation();
+    window.addEventListener("popstate", syncFiltersFromLocation);
+
+    return () => window.removeEventListener("popstate", syncFiltersFromLocation);
+  }, [eventTypeOptions]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    const setParam = (key: string, value: string | null) => {
+      if (!value) {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    };
+
+    setParam("privacy", selectedPrivacy);
+    setParam("price", selectedPrice);
+    setParam("location", selectedLocation);
+    setParam("date", selectedDate);
+    setParam("eventType", selectedEventType);
+    setParam("sort", selectedSort !== SORT_OPTIONS[0] ? selectedSort : null);
+
+    const nextQuery = params.toString();
+    const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname;
+    const currentUrl = `${pathname}${window.location.search}`;
+
+    if (currentUrl !== nextUrl) {
+      router.replace(nextUrl, { scroll: false });
+    }
+  }, [pathname, router, selectedDate, selectedEventType, selectedLocation, selectedPrice, selectedPrivacy, selectedSort]);
+
+  useEffect(() => {
+    setMobilePrivacy(selectedPrivacy);
+    setMobilePrice(selectedPrice);
+    setMobileDate(selectedDate);
+    setMobileEventType(selectedEventType);
+    setMobileLocation(selectedLocation);
+  }, [selectedDate, selectedEventType, selectedLocation, selectedPrice, selectedPrivacy]);
+
   const filteredEvents = useMemo(
     () =>
       events.filter((event) => {
@@ -246,7 +377,7 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
             <CustomDropdown
               key={f.key}
               label={f.label}
-              options={f.options}
+              options={[...f.options]}
               value={f.value}
               onChange={f.setValue}
               showAllLabel={f.showAllLabel}
@@ -354,7 +485,7 @@ function MainContent({ initialEvents = [] }: MainContentProps) {
                 <div key={f.key}>
                   <CustomDropdown
                     label={f.label}
-                    options={f.options}
+                    options={[...f.options]}
                     value={
                       f.key === "privacy"
                         ? mobilePrivacy
