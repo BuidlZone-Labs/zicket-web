@@ -14,7 +14,7 @@ export default function SignupPage() {
     }}>
       <div className="flex-1 flex flex-col items-center justify-center px-5 md:px-8">
         {/* Logo */}
-        
+
           <Link href="/">
             <Image
               src="/images/Logo2.png"
@@ -24,7 +24,7 @@ export default function SignupPage() {
               className="pb-8"
             />
           </Link>
-        
+
 
         {/* Signup Form */}
         <SignupForm />
@@ -34,7 +34,7 @@ export default function SignupPage() {
           variant="secondary"
           className="w-auto md:w-auto bg-[#FFFFFF] text-[#514A4A] hover:bg-slate-100 h-16 px-8 rounded-full font-medium text-lg"
         >
-          <Link href="/login">
+          <Link href="/auth/login">
             {"Already Have an Account? "}
             <span className="text-[#8F37DA] ml-1 font-bold">Log in</span>
           </Link>

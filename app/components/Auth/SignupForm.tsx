@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { FormContainer } from "./FormContainer";
 import { FormInput } from "./FormInput";
 import { FormButton } from "./FormButton";
-import { ChevronLeft, Mail } from "lucide-react";
+import { ChevronLeft, Link, Mail } from "lucide-react";
+import {SiGoogle} from "@icons-pack/react-simple-icons";
+import { handleOauth } from "@/lib/oauth";
 
 export function SignupForm() {
   const [formData, setFormData] = useState({
@@ -61,7 +63,19 @@ export function SignupForm() {
           Verify ZicketMail
         </FormButton>
 
-        <div className="flex justify-center items-center w-full">
+        <h3 className="text-center text-gray-300">OR</h3>
+
+        <div className="w-full">
+          {/* sign with google */}
+          <FormButton
+            type="button"
+            variant="secondary"
+            onClick={() => handleOauth()}
+            icon={<SiGoogle size={20} />}
+            className="w-full flex justify-center text-lg cursor-pointer bg-[#FFFFFF] hover:bg-slate-100 text-purple-800 h-14 rounded-lg font-medium"
+          >
+              Sign in with Google
+          </FormButton>
           <FormButton
             type="button"
             variant="secondary"
