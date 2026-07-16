@@ -5,6 +5,8 @@ import { ChevronLeft, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
+import { SiGoogle } from "@icons-pack/react-simple-icons";
+import { handleOauth } from "@/lib/oauth";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -70,12 +72,24 @@ const LoginPage = () => {
                   Send Login Link
                 </Link>
               </Button>
-              <Link href="">
+
+              {/* sign with google */}
+              <Button
+                asChild
+                onClick={() => handleOauth()}
+                className="w-full text-lg cursor-pointer bg-[#FFFFFF] hover:bg-slate-100 text-[#514A4A] h-14 rounded-lg font-medium"
+              >
+                <div>
+                  <SiGoogle size={20} />
+                  Sign in with Google
+                </div>
+              </Button>
+              <button onClick={() => window.history.back()} className="w-full">
                 <button className="flex items-center gap-2 justify-center w-full text-[#FFFFFF] cursor-pointer text-[14px] font-bold transition-colors">
                   <ChevronLeft size={21} />
                   Go Back
                 </button>
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -84,7 +98,7 @@ const LoginPage = () => {
           variant="secondary"
           className="w-auto md:w-auto bg-[#FFFFFF] text-[#514A4A] hover:bg-slate-100 h-16 px-8 rounded-full font-medium text-lg"
         >
-          <Link href="../signup">
+          <Link href="/auth/signup">
             {"Don't have an account? "}
             <span className="text-[#8F37DA] ml-1 font-bold">Sign Up</span>
           </Link>
