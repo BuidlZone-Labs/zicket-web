@@ -77,6 +77,7 @@ export function RichTextEditor({
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Placeholder.configure({ placeholder }),
     ],
+    immediatelyRender: false,
     content: value || "",
     editable: !disabled,
     onUpdate: ({ editor }) => {
