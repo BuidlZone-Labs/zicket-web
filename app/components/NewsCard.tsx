@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { Article } from "@/lib/types";
+import type { Article } from "@/lib/validations/types";
 
 interface NewsCardProps {
   article: Article;
@@ -10,7 +10,7 @@ export function NewsCard({ article }: NewsCardProps) {
   return (
     <Link href={`/news/${article.slug}`}>
       <div className="dark:border dark:border-[#282828] w-fit pb-4 dark:rounded-md">
-        <div className="relative w-full min-w-[300px] md:max-w-[380px] h-[158px] md:h-[200px]">
+        <div className="relative w-full min-w-75 md:max-w-95 h-39.5 md:h-50">
           <Image
             fill
             src={article.image}

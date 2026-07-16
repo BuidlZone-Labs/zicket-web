@@ -2,7 +2,6 @@
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperClass } from "swiper";
 import "swiper/css";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
@@ -60,27 +59,29 @@ export function TrendingNews() {
   ];
 
   return (
-    <section className="max-w-[1200px] mx-auto py-20">
+    <section className="max-w-[1200px] mx-auto py-8 lg:py-20" aria-labelledby="trending-news-heading">
       <div className="mx-auto px-4">
         <div className="flex justify-between items-center mb-12">
-          <h2 className="text-3xl font-bold">Trending News</h2>
+          <h2 id="trending-news-heading" className="text-3xl font-bold text-[#2C0A4A] dark:text-[#D7B5F5]">Trending News</h2>
           <div className="flex gap-2">
             <button
               className="w-9 h-9 flex items-center justify-center rounded-full cursor-pointer group"
               onClick={() => swiperRef.current?.slidePrev()}
-              aria-label="Previous"
+              aria-label="Show previous news"
             >
               <span className="block group-hover:hidden">
                 <Image
                   src="/assets/icons/arrowLeftNormalIcon.svg"
-                  alt="Prev"
+                  alt=""
+                  aria-hidden="true"
                   width={43}
                   height={43}
                   className="dark:hidden"
                 />
                 <Image
                   src="/assets/icons/arrowLeftNormalDarkIcon.svg"
-                  alt="Prev"
+                  alt=""
+                  aria-hidden="true"
                   width={43}
                   height={43}
                   className="hidden dark:block"
@@ -89,7 +90,8 @@ export function TrendingNews() {
               <span className="hidden group-hover:block">
                 <Image
                   src="/assets/icons/arrowRightSelectedIcon.svg"
-                  alt="Prev Hover"
+                  alt=""
+                  aria-hidden="true"
                   width={43}
                   height={43}
                   style={{ transform: "rotate(180deg)" }}
@@ -97,7 +99,8 @@ export function TrendingNews() {
                 />
                 <Image
                   src="/assets/icons/arrowRightSelectedDarkIcon.svg"
-                  alt="Prev Hover"
+                  alt=""
+                  aria-hidden="true"
                   width={43}
                   height={43}
                   style={{ transform: "rotate(180deg)" }}
@@ -108,7 +111,7 @@ export function TrendingNews() {
             <button
               className="w-9 h-9 flex items-center justify-center rounded-full cursor-pointer group"
               onClick={() => swiperRef.current?.slideNext()}
-              aria-label="Next"
+              aria-label="Show next news"
             >
               <span
                 className="block group-hover:hidden"
@@ -116,14 +119,16 @@ export function TrendingNews() {
               >
                 <Image
                   src="/assets/icons/arrowLeftNormalIcon.svg"
-                  alt="Next"
+                  alt=""
+                  aria-hidden="true"
                   width={43}
                   height={43}
                   className="dark:hidden"
                 />
                 <Image
                   src="/assets/icons/arrowLeftNormalDarkIcon.svg"
-                  alt="Next"
+                  alt=""
+                  aria-hidden="true"
                   width={43}
                   height={43}
                   className="hidden dark:block"
@@ -132,14 +137,16 @@ export function TrendingNews() {
               <span className="hidden group-hover:block">
                 <Image
                   src="/assets/icons/arrowRightSelectedIcon.svg"
-                  alt="Next Hover"
+                  alt=""
+                  aria-hidden="true"
                   width={43}
                   height={43}
                   className="dark:hidden"
                 />
                 <Image
                   src="/assets/icons/arrowRightSelectedDarkIcon.svg"
-                  alt="Next Hover"
+                  alt=""
+                  aria-hidden="true"
                   width={43}
                   height={43}
                   className="hidden dark:block"
@@ -195,7 +202,8 @@ export function TrendingNews() {
                       <Image
                         src={article.avatar || "/placeholder.svg"}
                         fill
-                        alt="My Avatar"
+                        alt=""
+                        aria-hidden="true"
                         className="rounded-full object-cover"
                       />
                     </div>
@@ -210,7 +218,7 @@ export function TrendingNews() {
         </Swiper>
 
         <div className="flex justify-end mt-8">
-          <button className="bg-none border-b border-[#2C0A4A] text-[16px] font-bold text-[#2C0A4A] flex">
+          <button className="bg-none border-b border-[#2C0A4A] dark:border-[#D7B5F5] text-[16px] font-bold text-[#2C0A4A] dark:text-[#D7B5F5] flex">
             See All News <ArrowUpRight className="w-5 h-5 ml-2" />
           </button>
         </div>

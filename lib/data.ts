@@ -1,4 +1,4 @@
-import type { Article } from "./types";
+import type { Article } from "./validations/types";
 
 export const articles: Article[] = [
   {

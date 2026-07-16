@@ -18,12 +18,14 @@ const FAQAccordion = ({
         <div className="flex justify-between items-center">
             <p className="font-bold text-[14px] md:text-[16px] lg:text-[20px]">{question}</p>
 
-            <div
-                className="w-6 h-6 md:w-8 md:h-8 bg-black text-gray-300 rounded-full text-[10px] md:text-[16px] lg:text-[20px] grid place-items-center cursor-pointer"
+            <button
+                type="button"
+                className="w-6 h-6 md:w-8 md:h-8 bg-black text-gray-300 rounded-full text-[10px] md:text-[16px] lg:text-[20px] grid place-items-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6917AF] focus-visible:ring-offset-2"
                 onClick={onShowAnswer}
+                aria-expanded={showAnswer}
             >
                 {showAnswer ? (<Minus />) : (<Plus />)}
-            </div>
+            </button>
         </div>
 
         {showAnswer && (

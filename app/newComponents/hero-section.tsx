@@ -13,7 +13,7 @@ export function HeroSection() {
         backgroundRepeat: "no-repeat",
       }}
     >
-      <div className="max-w-[1200px] mx-auto flex flex-col items-center justify-center text-center px-6 py-20 md:py-32">
+      <div className="max-w-[1200px] mx-auto flex flex-col items-center justify-center text-center px-6 py-8 lg:py-20">
         <h1 className="text-4xl md:text-6xl lg:text-[64px] font-bold text-white mb-6 leading-tight">
           Public or Private Events.
           <br />
@@ -32,8 +32,10 @@ export function HeroSection() {
       </div>
 
       {/* Trust Markers */}
-      <div className="w-full flex items-center justify-center">
-        <Image src="/Buttons.svg" alt="" width="420" height="100" />
+      <div className="w-full flex items-center justify-center gap-6">
+        <div className="text-[#2C0A4A] bg-[#D1B7E6] px-4 py-2">Trust markers</div>
+        <Image src="/stellar.webp" alt="" width="70" height="70" />
+        <Image src="/aztec-logo.png" alt="" width="70" height="70" />
       </div>
     </div>
   );

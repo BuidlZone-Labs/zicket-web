@@ -1,25 +1,100 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import Card from "./card";
 import { EmptyStateIcon } from "@/public/svg/svg";
 import CustomDropdown from "./CustomDropdown";
-import { dummyEvents } from "@/lib/dummyEvents/events";
-import SkeletonCard from "./SkeletonCard";
-import type { EventType } from "@/lib/dummyEvents/events";
+import type { EventType, Event } from "@/lib/dummyEvents/events";
 
-function MainContent() {
-  const [events] = useState(dummyEvents);
-  const [selectedPrivacy, setSelectedPrivacy] = useState<string | null>(null);
-  const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
-  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedEventType, setSelectedEventType] = useState<EventType | null>(
-    null
+interface MainContentProps {
+  initialEvents?: Event[];
+  initialQuery?: {
+    privacy: string | null;
+    price: string | null;
+    location: string | null;
+    date: string | null;
+    eventType: string | null;
+    sort: string | null;
+  };
+}
+
+const SORT_OPTIONS = ["Popular", "Date", "Name", "Price"] as const;
+const PRIVACY_OPTIONS = ["Anonymous", "Verified Access", "Wallet Required"] as const;
+const PRICE_OPTIONS = ["Free Events Only", "Paid Events Only"] as const;
+const EVENT_TYPE_OPTIONS = [
+  "Music",
+  "Tech & Web3",
+  "Art & Culture",
+  "Business",
+  "Health & Wellness",
+  "Education",
+  "Community",
+] as const;
+
+const getOptionParam = <T extends readonly string[]>(
+  params: URLSearchParams,
+  key: string,
+  options: T
+): T[number] | null => {
+  const value = params.get(key);
+  return value && options.includes(value as T[number])
+    ? (value as T[number])
+    : null;
+};
+
+const getQueryState = (search: string) => {
+  const params = new URLSearchParams(search);
+
+  return {
+    privacy: getOptionParam(params, "privacy", PRIVACY_OPTIONS),
+    price: getOptionParam(params, "price", PRICE_OPTIONS),
+    location: params.get("location"),
+    date: params.get("date"),
+    eventType: getOptionParam(params, "eventType", EVENT_TYPE_OPTIONS),
+    sort: getOptionParam(params, "sort", SORT_OPTIONS),
+  };
+};
+
+const defaultQueryState = {
+  privacy: null,
+  price: null,
+  location: null,
+  date: null,
+  eventType: null,
+  sort: null,
+};
+
+function MainContent({ initialEvents = [], initialQuery }: MainContentProps) {
+  const PAGE_SIZE = 8;
+  const [events] = useState<Event[]>(initialEvents);
+  const router = useRouter();
+  const pathname = usePathname();
+  const privacyOptions = Array.from(PRIVACY_OPTIONS);
+  const priceOptions = Array.from(PRICE_OPTIONS);
+  const eventTypeOptions = Array.from(EVENT_TYPE_OPTIONS) as EventType[];
+  const initialQueryState = initialQuery ?? defaultQueryState;
+  const [selectedPrivacy, setSelectedPrivacy] = useState<string | null>(
+    initialQueryState.privacy
   );
-  const [showCount, setShowCount] = useState(8);
-  const [loading, setLoading] = useState(false);
+  const [selectedPrice, setSelectedPrice] = useState<string | null>(
+    initialQueryState.price
+  );
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(
+    initialQueryState.location
+  );
+  const [selectedDate, setSelectedDate] = useState<string | null>(
+    initialQueryState.date
+  );
+  const [selectedEventType, setSelectedEventType] = useState<EventType | null>(
+    initialQueryState.eventType &&
+      eventTypeOptions.includes(initialQueryState.eventType as EventType)
+      ? (initialQueryState.eventType as EventType)
+      : null
+  );
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [mobilePrivacy, setMobilePrivacy] = useState<string | null>(
     selectedPrivacy
   );
@@ -32,8 +107,6 @@ function MainContent() {
     selectedLocation
   );
 
-  const privacyOptions = ["Anonymous", "Verified Access", "Wallet Required"];
-  const priceOptions = ["Free Events Only", "Paid Events Only"];
   const locationOptions = [
     { content: "All", onClick: () => setSelectedLocation(null) },
     ...Array.from(new Set(events.map((event) => event.location))).map(
@@ -44,15 +117,6 @@ function MainContent() {
     ),
   ];
   const dateOptions = ["Today", "This Week", "This Month"];
-  const eventTypeOptions: EventType[] = [
-    "Music",
-    "Tech & Web3",
-    "Art & Culture",
-    "Business",
-    "Health & Wellness",
-    "Education",
-    "Community",
-  ];
 
   const filterConfigs = [
     {
@@ -101,75 +165,153 @@ function MainContent() {
     },
   ];
 
-  const sortOptions = ["Popular", "Date", "Name", "Price"];
-  const [selectedSort, setSelectedSort] = useState<string>(sortOptions[0]);
-  const filteredEvents = events.filter((event) => {
-    const matchLocation =
-      !selectedLocation || event.location === selectedLocation;
-    const matchPrice =
-      !selectedPrice ||
-      (selectedPrice === "Free Events Only" && event.price === 0) ||
-      (selectedPrice === "Paid Events Only" && event.price > 0);
-    let matchDate = true;
-    if (selectedDate === "Today") {
-      const eventDate = new Date(event.date);
-      const today = new Date();
-      matchDate =
-        eventDate.getDate() === today.getDate() &&
-        eventDate.getMonth() === today.getMonth() &&
-        eventDate.getFullYear() === today.getFullYear();
-    } else if (selectedDate === "This Week") {
-      const eventDate = new Date(event.date);
-      const today = new Date();
-      const firstDayOfWeek = new Date(today);
-      firstDayOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
-      const lastDayOfWeek = new Date(today);
-      lastDayOfWeek.setDate(today.getDate() + (6 - today.getDay())); // Saturday
-      matchDate = eventDate >= firstDayOfWeek && eventDate <= lastDayOfWeek;
-    } else if (selectedDate === "This Month") {
-      const eventDate = new Date(event.date);
-      const today = new Date();
-      matchDate =
-        eventDate.getMonth() === today.getMonth() &&
-        eventDate.getFullYear() === today.getFullYear();
-    } else if (selectedDate) {
-      matchDate = event.date === selectedDate;
-    }
-    const matchType =
-      !selectedEventType ||
-      (event.type &&
-        selectedEventType &&
-        event.type.toString().trim().toLowerCase() ===
-          selectedEventType.toString().trim().toLowerCase());
-    const matchPrivacy =
-      !selectedPrivacy || event.privacyLevel[0] === selectedPrivacy;
-    return (
-      matchLocation && matchPrice && matchDate && matchType && matchPrivacy
-    );
-  });
+  const isSortOption = (
+    value: string | null
+  ): value is (typeof SORT_OPTIONS)[number] =>
+    value !== null && (SORT_OPTIONS as readonly string[]).includes(value);
 
-  const sortedEvents = [...filteredEvents].sort((a, b) => {
-    switch (selectedSort) {
-      case "Date":
-        return new Date(a.date).getTime() - new Date(b.date).getTime();
-      case "Name":
-        return a.title.localeCompare(b.title);
-      case "Price":
-        return a.price - b.price;
-      case "Popular":
-      default:
-        return 0; // keep original order for now
-    }
-  });
+  const [selectedSort, setSelectedSort] = useState<string>(
+    isSortOption(initialQueryState.sort)
+      ? initialQueryState.sort
+      : SORT_OPTIONS[0]
+  );
+  useEffect(() => {
+    const syncFiltersFromLocation = () => {
+      const queryState = getQueryState(window.location.search);
 
-  const handleShowMore = () => {
-    setShowCount((prev) => prev + 8);
-  };
+      setSelectedPrivacy(queryState.privacy ?? null);
+      setSelectedPrice(queryState.price ?? null);
+      setSelectedLocation(queryState.location ?? null);
+      setSelectedDate(queryState.date ?? null);
+      setSelectedEventType(
+        queryState.eventType &&
+          eventTypeOptions.includes(queryState.eventType as EventType)
+          ? (queryState.eventType as EventType)
+          : null
+      );
+      setSelectedSort(
+        queryState.sort && SORT_OPTIONS.includes(queryState.sort)
+          ? queryState.sort
+          : SORT_OPTIONS[0]
+      );
+    };
+
+    syncFiltersFromLocation();
+    window.addEventListener("popstate", syncFiltersFromLocation);
+
+    return () => window.removeEventListener("popstate", syncFiltersFromLocation);
+  }, [eventTypeOptions]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    const setParam = (key: string, value: string | null) => {
+      if (!value) {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    };
+
+    setParam("privacy", selectedPrivacy);
+    setParam("price", selectedPrice);
+    setParam("location", selectedLocation);
+    setParam("date", selectedDate);
+    setParam("eventType", selectedEventType);
+    setParam("sort", selectedSort !== SORT_OPTIONS[0] ? selectedSort : null);
+
+    const nextQuery = params.toString();
+    const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname;
+    const currentUrl = `${pathname}${window.location.search}`;
+
+    if (currentUrl !== nextUrl) {
+      router.replace(nextUrl, { scroll: false });
+    }
+  }, [pathname, router, selectedDate, selectedEventType, selectedLocation, selectedPrice, selectedPrivacy, selectedSort]);
+
+  useEffect(() => {
+    setMobilePrivacy(selectedPrivacy);
+    setMobilePrice(selectedPrice);
+    setMobileDate(selectedDate);
+    setMobileEventType(selectedEventType);
+    setMobileLocation(selectedLocation);
+  }, [selectedDate, selectedEventType, selectedLocation, selectedPrice, selectedPrivacy]);
+
+  const filteredEvents = useMemo(
+    () =>
+      events.filter((event) => {
+        const matchLocation =
+          !selectedLocation || event.location === selectedLocation;
+        const matchPrice =
+          !selectedPrice ||
+          (selectedPrice === "Free Events Only" && event.price === 0) ||
+          (selectedPrice === "Paid Events Only" && event.price > 0);
+        let matchDate = true;
+        if (selectedDate === "Today") {
+          const eventDate = new Date(event.date);
+          const today = new Date();
+          matchDate =
+            eventDate.getDate() === today.getDate() &&
+            eventDate.getMonth() === today.getMonth() &&
+            eventDate.getFullYear() === today.getFullYear();
+        } else if (selectedDate === "This Week") {
+          const eventDate = new Date(event.date);
+          const today = new Date();
+          const firstDayOfWeek = new Date(today);
+          firstDayOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
+          const lastDayOfWeek = new Date(today);
+          lastDayOfWeek.setDate(today.getDate() + (6 - today.getDay())); // Saturday
+          matchDate = eventDate >= firstDayOfWeek && eventDate <= lastDayOfWeek;
+        } else if (selectedDate === "This Month") {
+          const eventDate = new Date(event.date);
+          const today = new Date();
+          matchDate =
+            eventDate.getMonth() === today.getMonth() &&
+            eventDate.getFullYear() === today.getFullYear();
+        } else if (selectedDate) {
+          matchDate = event.date === selectedDate;
+        }
+        const matchType =
+          !selectedEventType ||
+          (event.type &&
+            selectedEventType &&
+            event.type.toString().trim().toLowerCase() ===
+              selectedEventType.toString().trim().toLowerCase());
+        const matchPrivacy =
+          !selectedPrivacy || event.privacyLevel[0] === selectedPrivacy;
+        return (
+          matchLocation && matchPrice && matchDate && matchType && matchPrivacy
+        );
+      }),
+    [events, selectedLocation, selectedPrice, selectedDate, selectedEventType, selectedPrivacy]
+  );
+
+  const sortedEvents = useMemo(() => {
+    return [...filteredEvents].sort((a, b) => {
+      switch (selectedSort) {
+        case "Date":
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        case "Name":
+          return a.title.localeCompare(b.title);
+        case "Price":
+          return a.price - b.price;
+        case "Popular":
+        default:
+          return 0; // keep original order for now
+      }
+    });
+  }, [filteredEvents, selectedSort]);
+
+  const handleShowMore = useCallback(() => {
+    setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, sortedEvents.length));
+  }, [PAGE_SIZE, sortedEvents.length]);
   const handleShowLess = () => {
-    setShowCount(8);
+    setVisibleCount(PAGE_SIZE);
   };
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+
+  const closeDrawer = () => setDrawerOpen(false);
 
   const handleMobileApply = () => {
     setSelectedPrivacy(mobilePrivacy);
@@ -177,7 +319,7 @@ function MainContent() {
     setSelectedDate(mobileDate);
     setSelectedEventType(mobileEventType);
     setSelectedLocation(mobileLocation);
-    setDrawerOpen(false);
+    closeDrawer();
   };
   const handleMobileClear = () => {
     setMobilePrivacy(null);
@@ -188,17 +330,43 @@ function MainContent() {
   };
 
   useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => setLoading(false), 1000);
-    return () => clearTimeout(timer);
+    setVisibleCount(PAGE_SIZE);
   }, [
+    PAGE_SIZE,
     selectedPrivacy,
     selectedPrice,
     selectedLocation,
     selectedDate,
     selectedEventType,
-    showCount,
+    selectedSort,
   ]);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeDrawer();
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [drawerOpen]);
+
+  useEffect(() => {
+    if (!loadMoreRef.current || visibleCount >= sortedEvents.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          handleShowMore();
+        }
+      },
+      { rootMargin: "120px 0px" }
+    );
+
+    observer.observe(loadMoreRef.current);
+    return () => observer.disconnect();
+  }, [visibleCount, sortedEvents.length, handleShowMore]);
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4">
@@ -209,7 +377,7 @@ function MainContent() {
             <CustomDropdown
               key={f.key}
               label={f.label}
-              options={f.options}
+              options={[...f.options]}
               value={f.value}
               onChange={f.setValue}
               showAllLabel={f.showAllLabel}
@@ -232,6 +400,8 @@ function MainContent() {
           className="rounded-full"
           onClick={() => setDrawerOpen(true)}
           aria-label="Open filters"
+          aria-expanded={drawerOpen}
+          aria-controls="mobile-filter-drawer"
         >
           <svg
             width="40"
@@ -272,13 +442,20 @@ function MainContent() {
         <>
           <div
             className="fixed inset-0 bg-black bg-opacity-30 z-40"
-            onClick={() => setDrawerOpen(false)}
+            onClick={closeDrawer}
+            aria-hidden="true"
           />
-          <div className="fixed right-0 top-0 h-full w-11/12 max-w-xs bg-white shadow-lg p-6 flex flex-col z-50">
+          <div
+            id="mobile-filter-drawer"
+            className="fixed right-0 top-0 h-full w-11/12 max-w-xs bg-white shadow-lg p-6 flex flex-col z-50"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mobile-filter-title"
+          >
             <div className="flex items-center justify-between mb-4">
-              <span className="font-bold text-lg text-[#2C0A4A]">Filters</span>
+              <h2 id="mobile-filter-title" className="font-bold text-lg text-[#2C0A4A]">Filters</h2>
               <button
-                onClick={() => setDrawerOpen(false)}
+                onClick={closeDrawer}
                 aria-label="Close filters"
               >
                 <svg
@@ -308,7 +485,7 @@ function MainContent() {
                 <div key={f.key}>
                   <CustomDropdown
                     label={f.label}
-                    options={f.options}
+                    options={[...f.options]}
                     value={
                       f.key === "privacy"
                         ? mobilePrivacy
@@ -366,21 +543,21 @@ function MainContent() {
           </div>
         </>
       )}
-      <div className="hidden sm:flex flex-wrap items-center justify-between gap-2 mb-4 mt-1 w-full min-h-[32px]">
-        <div className="flex flex-wrap gap-2 min-h-[28px]">
+      <div className="hidden sm:flex flex-wrap items-center justify-between gap-2 mb-4 mt-1 w-full min-h-8">
+        <div className="flex flex-wrap gap-2 min-h-7">
           {filterConfigs.map(
             (f) =>
               f.value && (
                 <span
                   key={f.key}
-                  className="gap-2 justify-between align-center px-2 rounded-[8px] border border-[#7C3AED] text-[#6B7280] bg-white flex items-center text-base font-semibold h-7"
+                  className="gap-2 justify-between align-center px-2 rounded-xl border border-[#7C3AED] text-[#6B7280] bg-white flex items-center text-base font-semibold h-7"
                 >
                   {f.value}
                   <button
                     className="text-[#6B7280] text-2xl flex items-center justify-center w-2 h-7 mb-1 rounded-full cursor-pointer"
                     style={{ lineHeight: 1 }}
                     onClick={() => f.setValue(null)}
-                    aria-label="Remove filter"
+                    aria-label={`Remove ${f.value} filter`}
                   >
                     ×
                   </button>
@@ -392,21 +569,15 @@ function MainContent() {
           )}
         </div>
         <div className="text-xs text-[#6B7280] ml-auto">
-          Showing 1 - {Math.min(showCount, filteredEvents.length)} of{" "}
+          <span className="sr-only" aria-live="polite">
+            Showing {Math.min(visibleCount, filteredEvents.length)} of{" "}
+            {filteredEvents.length} results
+          </span>
+          Showing 1 - {Math.min(visibleCount, filteredEvents.length)} of{" "}
           {filteredEvents.length} results
         </div>
       </div>
-      {loading ? (
-        <div className="space-y-10">
-          <div className="grid-cols-1 grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 ">
-            {Array.from({
-              length: Math.min(showCount, filteredEvents.length || 8),
-            }).map((_, idx) => (
-              <SkeletonCard key={idx} />
-            ))}
-          </div>
-        </div>
-      ) : filteredEvents.length === 0 ? (
+      {filteredEvents.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24">
           <EmptyStateIcon />
           <p className="text-lg font-semibold text-gray-700 mb-2">
@@ -419,26 +590,30 @@ function MainContent() {
       ) : (
         <div className="space-y-10">
           <div className="grid-cols-1 grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 ">
-            {sortedEvents.slice(0, showCount).map((event, index) => (
-              <Card key={index} {...event} />
+            {sortedEvents.slice(0, visibleCount).map((event) => (
+              <Card key={event.id} {...event} />
             ))}
           </div>
+          {visibleCount < filteredEvents.length && (
+            <div ref={loadMoreRef} className="h-2 w-full" />
+          )}
           <div className="flex items-center justify-center relative mt-8">
             <button
               onClick={
-                filteredEvents.length > showCount
+                filteredEvents.length > visibleCount
                   ? handleShowMore
                   : handleShowLess
               }
               className="text-xs py-2 pl-4 pr-3 space-x-2 text-[#1E1E1E] bg-[#F6F6F6] hover:bg-[#F6F6F6]/10 rounded-full font-bold flex items-center cursor-pointer"
             >
               <span>
-                {filteredEvents.length > showCount ? "Show more" : "Show less"}
+                {filteredEvents.length > visibleCount ? "Load more" : "Show less"}
               </span>
             </button>
             <button
               onClick={scrollToTop}
               className="absolute right-0 bg-[#F6F6F6] hover:bg-[#F6F6F6]/10 rotate-270 transform p-3 rounded-full cursor-pointer"
+              aria-label="Scroll to top"
             >
               <svg
                 width="20"

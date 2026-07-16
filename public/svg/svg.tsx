@@ -702,3 +702,47 @@ export const MailSecureIcon = () => (
     />
   </svg>
 );
+export const AnalyticsIcon = () => (<svg
+  width={20}
+  height={20}
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M3.33331 7.5V16.6667"
+    stroke="#141B34"
+    strokeWidth="1.25"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  />
+  <path
+    d="M6.66669 3.33301V16.6663"
+    stroke="#141B34"
+    strokeWidth="1.25"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  />
+  <path
+    d="M10 9.16699V16.667"
+    stroke="#141B34"
+    strokeWidth="1.25"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  />
+  <path
+    d="M13.3333 5.83301V16.6663"
+    stroke="#141B34"
+    strokeWidth="1.25"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  />
+  <path
+    d="M16.6667 11.667V16.667"
+    stroke="#141B34"
+    strokeWidth="1.25"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  />
+</svg>
+)

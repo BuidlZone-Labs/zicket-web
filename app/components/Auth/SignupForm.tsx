@@ -26,6 +26,7 @@ export function SignupForm() {
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         <FormInput
+          id="display-name"
           type="text"
           label="Enter Display Name (Public)"
           placeholder="e.g. Afrowave Labs"
@@ -37,6 +38,7 @@ export function SignupForm() {
         />
 
         <FormInput
+          id="signup-email"
           type="email"
           label="Contact Email (Platform notifications only)"
           placeholder="e.g. you@email.com"
@@ -46,7 +48,7 @@ export function SignupForm() {
           }
           required
           minLength={8}
-          endIcon={<Mail className="absolute right-4 top-1/2 transform -translate-y-1/2 w-8 h-8 text-[#CBD2EB]"/>}
+          endIcon={<Mail className="absolute right-4 top-1/2 transform -translate-y-1/2 w-8 h-8 text-[#CBD2EB]" aria-hidden="true" />}
         />
 
         <FormButton

@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { TicketCancellationModal } from './TicketCancellationModal'
 import { Button } from '@/components/ui/button'
+import { trackAnalyticsEvent } from '@/lib/privacyAnalytics'
 
 /**
  * Example component showing how to use the TicketCancellationModal
@@ -30,7 +31,14 @@ export function TicketCancellationModalExample() {
   ) => {
     // Update the local state to reflect the cancellation
     setTicketState(updatedState)
-    console.log('Updated ticket state:', updatedState)
+    trackAnalyticsEvent(
+      'ticket_state_updated',
+      {
+        updatedState,
+        hasTicketReference: Boolean(ticketId)
+      },
+      { isAnonymous: !userId }
+    )
   }
 
   return (

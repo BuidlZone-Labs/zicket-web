@@ -9,10 +9,11 @@ import { FAQSection } from "./newComponents/faq-section";
 import { HostInPeace } from "./newComponents/host-in-peace";
 import { TrendingNews } from "./newComponents/trending-news";
 import { QRCodeModalExample } from "./components/QRCodeModalExample";
+import { TicketCancellationModalExample } from "./components/TicketCancellationModalExample";
 // import { Footer } from "@/components/footer"
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-[#f6f0fb]">
+    <div className="min-h-screen bg-white dark:bg-[#141414]">
       <HeroSection />
       <HowItWorks />
       <NoSignupsSection />
@@ -22,10 +23,10 @@ export default function HomePage() {
       <FAQSection />
       <HostInPeace />
       <TrendingNews />
-      
-      {/* QR Code Modal Test - Remove after testing */}
-      <div className="py-10">
+      {/* Modal demos - Remove after testing */}
+      <div className="py-10 flex flex-wrap gap-8 justify-center">
         <QRCodeModalExample />
+        <TicketCancellationModalExample />
       </div>
     </div>
   );
