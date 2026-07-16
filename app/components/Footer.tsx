@@ -19,7 +19,7 @@ function Footer() {
               width={120}
             />
             <p className="text-sm text-[#A8A8A8] mt-5">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+              One-stop platform that connects event organizers with attendees, providing a seamless experience for discovering, promoting, and managing events.
             </p>
           </div>
           <div className="w-full max-w-108">
