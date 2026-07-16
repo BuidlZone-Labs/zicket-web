@@ -43,11 +43,11 @@ export default function ConnectWalletPrompt() {
 
       <div className="flex flex-col items-center text-center gap-3">
         <h2 className="text-xl md:text-2xl font-bold text-[#1D2939]">
-          Connect you wallet
+          Connect your wallet
         </h2>
 
         <p className="text-sm md:text-base text-[#475467] leading-relaxed max-w-70">
-          Connect your Azguard wallet to receive payments from paid events.
+          Connect your wallet to receive payments from paid events.
         </p>
 
         <div className="mt-2">
