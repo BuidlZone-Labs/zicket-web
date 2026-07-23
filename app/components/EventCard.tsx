@@ -135,7 +135,6 @@ export default function EventCard({
               className="flex items-center gap-1 text-[14px] font-semibold [color:var(--color-text-detail)] dark:[color:var(--color-text-main-dark)] cursor-pointer transition-all duration-200 hover:gap-2"
             >
               Get Ticket
-              Get Ticket
               <Image
                 src="/assets/icons/arrowRightIcon.svg"
                 alt=""
