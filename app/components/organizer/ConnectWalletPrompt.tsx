@@ -2,10 +2,13 @@
 
 import Image from "next/image";
 import { ChevronRight, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
 import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
 import { useUserSessionSync } from "@/lib/user-session-sync";
+import { useFailureState } from "@/hooks/useFailureState";
+import { FailureStateModal } from "@/components/FailureStateModal";
+import { FailureStateBanner } from "@/components/FailureStateBanner";
 
 export default function ConnectWalletPrompt() {
   const [walletState, setWalletState] = useState<WalletLoadState>({
@@ -13,6 +16,22 @@ export default function ConnectWalletPrompt() {
     error: null,
   });
   const { walletConnected, setWalletConnected } = useUserSessionSync();
+
+  const {
+    failureState,
+    isOpen: isFailureModalOpen,
+    triggerFailure,
+    clearFailure,
+    downloadDiagnostics,
+  } = useFailureState();
+
+  useEffect(() => {
+    if (walletState.error) {
+      triggerFailure(walletState.error, {
+        technicalDetails: "Wallet connection load failed in organizer prompt.",
+      });
+    }
+  }, [walletState.error, triggerFailure]);
 
   async function handleConnectWallet() {
     trackAnalyticsEvent("wallet_connect_cta_clicked", { source: "organizer_prompt" });
@@ -30,7 +49,7 @@ export default function ConnectWalletPrompt() {
   }
 
   return (
-    <div className="w-full flex flex-col md:flex-row items-center justify-center gap-6 md:gap-16 border border-[#E3E3E3] rounded-2xl py-8 px-6 md:px-16 bg-white">
+    <div className="w-full flex flex-col md:flex-row items-center justify-center gap-6 md:gap-16 border border-[#E3E3E3] rounded-2xl py-8 px-6 md:px-16 bg-white dark:bg-[#121212] dark:border-[#232323]">
       <div className="shrink-0">
         <Image
           src="/images/connect-wallet-illustration.png"
@@ -42,15 +61,15 @@ export default function ConnectWalletPrompt() {
       </div>
 
       <div className="flex flex-col items-center text-center gap-3">
-        <h2 className="text-xl md:text-2xl font-bold text-[#1D2939]">
+        <h2 className="text-xl md:text-2xl font-bold text-[#1D2939] dark:text-[#E0E0E0]">
           Connect your wallet
         </h2>
 
-        <p className="text-sm md:text-base text-[#475467] leading-relaxed max-w-70">
+        <p className="text-sm md:text-base text-[#475467] dark:text-[#98A2B3] leading-relaxed max-w-70">
           Connect your wallet to receive payments from paid events.
         </p>
 
-        <div className="mt-2">
+        <div className="mt-2 flex flex-col items-center gap-3">
           <button
             onClick={handleConnectWallet}
             onMouseEnter={preloadWalletSDK}
@@ -69,11 +88,24 @@ export default function ConnectWalletPrompt() {
               </>
             )}
           </button>
-          {walletState.error && (
-            <p className="mt-2 text-sm text-red-500">{walletState.error}</p>
+          {walletState.error && failureState && (
+            <div className="w-full max-w-sm">
+              <FailureStateBanner
+                failureState={failureState}
+                onRetry={handleConnectWallet}
+              />
+            </div>
           )}
         </div>
       </div>
+
+      <FailureStateModal
+        isOpen={isFailureModalOpen}
+        onClose={clearFailure}
+        failureState={failureState}
+        onRetry={handleConnectWallet}
+        onDownloadDiagnostics={downloadDiagnostics}
+      />
     </div>
   );
 }

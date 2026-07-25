@@ -20,6 +20,9 @@ import { useCooldown } from "@/hooks/useCooldown";
 import { CooldownMessage } from "@/app/components/AntiSpam/CooldownMessage";
 import { TransactionStatusBanner } from "@/components/TransactionStatusBanner";
 import type { TransactionStatus } from "@/hooks/useTransactionStatus";
+import { useFailureState } from "@/hooks/useFailureState";
+import { FailureStateModal } from "@/components/FailureStateModal";
+import { FailureStateBanner } from "@/components/FailureStateBanner";
 
 type PaymentStatus = "idle" | "processing" | "failed";
 
@@ -89,6 +92,32 @@ export const TicketInfo: FC<TicketInfoProps> = ({
   });
 
   const { isOnCooldown, remainingSeconds, startCooldown } = useCooldown({ duration: 8 });
+
+  const {
+    failureState,
+    isOpen: isFailureModalOpen,
+    triggerFailure,
+    clearFailure,
+    downloadDiagnostics,
+  } = useFailureState();
+
+  useEffect(() => {
+    if (hasPaymentFailed && paymentError) {
+      triggerFailure(paymentError, {
+        customMessage: paymentError,
+        technicalDetails: `Checkout payment failed for event ${eventId}.`,
+      });
+    } else if (txState.status === "failed" && txState.error) {
+      triggerFailure(txState.error, {
+        txHash: txState.txHash,
+        technicalDetails: `Transaction failed after ${txState.attempts} polling attempts.`,
+      });
+    } else if (walletState.error) {
+      triggerFailure(walletState.error, {
+        technicalDetails: `Wallet connection error during checkout.`,
+      });
+    }
+  }, [hasPaymentFailed, paymentError, txState.status, txState.error, walletState.error, triggerFailure, eventId, txState.txHash, txState.attempts]);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -413,13 +442,12 @@ export const TicketInfo: FC<TicketInfoProps> = ({
           {/* Cooldown message */}
           <CooldownMessage remainingSeconds={remainingSeconds} />
 
-          {/* Payment error from parent (e.g. sold out, reconcile failure) */}
-          {hasPaymentFailed && txState.status === "idle" && (
-            <div className="bg-[#FFF2F2] border border-[#FBCACA] text-[#B42318] py-3 px-5 rounded-lg">
-              <p className="text-xs font-medium">
-                {paymentError ?? "Payment failed. Please retry."}
-              </p>
-            </div>
+          {/* Unified Failure State Banner for payment failure */}
+          {hasPaymentFailed && failureState && txState.status === "idle" && (
+            <FailureStateBanner
+              failureState={failureState}
+              onRetry={handleRetry}
+            />
           )}
 
           <div className="bg-[#F2FFF2] dark:bg-[#131313] dark:text-[#0BD330] text-[#0ABA2A] py-3 px-5 gap-4 flex">
@@ -452,12 +480,23 @@ export const TicketInfo: FC<TicketInfoProps> = ({
                 <>{buttonLabel()}</>
               )}
             </button>
-            {walletState.error && (
-              <p className="mt-2 text-sm text-red-500">{walletState.error}</p>
+            {walletState.error && failureState && (
+              <div className="mt-3">
+                <FailureStateBanner failureState={failureState} onRetry={handleRetry} />
+              </div>
             )}
           </div>
         </fieldset>
       </form>
+
+      {/* Unified Failure State Modal */}
+      <FailureStateModal
+        isOpen={isFailureModalOpen}
+        onClose={clearFailure}
+        failureState={failureState}
+        onRetry={handleRetry}
+        onDownloadDiagnostics={downloadDiagnostics}
+      />
     </div>
   );
 };
