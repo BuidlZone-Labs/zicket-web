@@ -1,6 +1,6 @@
 import React from 'react';
-import ActivitiesPanel from '../components/organizer/ActivitiesPanel';
-import { AnalyticsSummary } from '../components/organizer/analytics/AnalyticsSummary';
+import ActivitiesPanel from '../../components/organizer/ActivitiesPanel';
+import { AnalyticsSummary } from '../../components/organizer/analytics/AnalyticsSummary';
 
 const page = () => {
   return (
