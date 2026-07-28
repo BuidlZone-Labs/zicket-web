@@ -40,6 +40,7 @@ function Header() {
 
   const navLinks: NavLink[] = [
     { name: "Explore", href: "/explore" },
+    { name: "My Tickets", href: "/tickets" },
     { name: "News", href: "/news" },
     { name: "Plans", href: "/plans" },
   ];
