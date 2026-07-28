@@ -6,6 +6,7 @@ import { useState } from "react";
 import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
 import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
 import { useUserSessionSync } from "@/lib/user-session-sync";
+import { TransactionStatusBanner } from "@/components/TransactionStatusBanner";
 
 export default function ConnectWalletPrompt() {
   const [walletState, setWalletState] = useState<WalletLoadState>({
@@ -70,7 +71,12 @@ export default function ConnectWalletPrompt() {
             )}
           </button>
           {walletState.error && (
-            <p className="mt-2 text-sm text-red-500">{walletState.error}</p>
+            <TransactionStatusBanner
+              status="wallet_error"
+              error={walletState.error}
+              onRetry={handleConnectWallet}
+              className="mt-3 text-left"
+            />
           )}
         </div>
       </div>

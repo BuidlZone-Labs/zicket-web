@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 
-export type TransactionStatus = "idle" | "pending" | "confirmed" | "failed"
+export type TransactionStatus = "idle" | "pending" | "stalled" | "confirmed" | "failed"
+
+/** Consecutive network failures before we surface a "stalled" state to the user. */
+const STALL_THRESHOLD = 2
 
 export interface TransactionState {
     status: TransactionStatus
@@ -47,6 +50,7 @@ export function useTransactionStatus(options: UseTransactionStatusOptions = {}) 
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
     const stateRef = useRef(state)
     stateRef.current = state
+    const consecutiveFailuresRef = useRef(0)
 
     // Stable callbacks so the interval closure doesn't go stale
     const onConfirmedRef = useRef(onConfirmed)
@@ -71,8 +75,11 @@ export function useTransactionStatus(options: UseTransactionStatusOptions = {}) 
             current.attempts >= maxAttempts
         ) {
             stopPolling()
-            // Mark as failed if we ran out of attempts
-            if (current.attempts >= maxAttempts && current.status === "pending") {
+            // Mark as failed if we ran out of attempts while still waiting
+            if (
+                current.attempts >= maxAttempts &&
+                (current.status === "pending" || current.status === "stalled")
+            ) {
                 setState((s) => ({
                     ...s,
                     status: "failed",
@@ -86,6 +93,7 @@ export function useTransactionStatus(options: UseTransactionStatusOptions = {}) 
 
         try {
             const result = await fetchTransactionStatus(txHash)
+            consecutiveFailuresRef.current = 0
 
             setState((s) => ({
                 ...s,
@@ -103,10 +111,30 @@ export function useTransactionStatus(options: UseTransactionStatusOptions = {}) 
                 onFailedRef.current?.(result.error ?? "Transaction failed")
             }
         } catch (err) {
-            // Network error — increment attempts but keep polling
-            setState((s) => ({ ...s, attempts: s.attempts + 1 }))
+            // Network error — keep polling in the background, but surface a
+            // "stalled" state after a couple of consecutive failures so the
+            // user isn't left staring at a silent spinner.
+            consecutiveFailuresRef.current += 1
+            setState((s) => ({
+                ...s,
+                status:
+                    s.status === "pending" && consecutiveFailuresRef.current >= STALL_THRESHOLD
+                        ? "stalled"
+                        : s.status,
+                attempts: s.attempts + 1,
+            }))
         }
     }, [maxAttempts, stopPolling])
+
+    /**
+     * Fires one immediate poll without resetting the interval/attempt count.
+     * Intended for a manual "Check Connection" / "Retry Status Check" action
+     * while stalled.
+     */
+    const checkConnection = useCallback(() => {
+        const { txHash } = stateRef.current
+        if (txHash) poll(txHash)
+    }, [poll])
 
     /**
      * Call this as soon as you have a transaction hash from the wallet.
@@ -115,6 +143,7 @@ export function useTransactionStatus(options: UseTransactionStatusOptions = {}) 
     const startTracking = useCallback(
         (txHash: string) => {
             stopPolling()
+            consecutiveFailuresRef.current = 0
 
             setState({
                 status: "pending",
@@ -134,11 +163,12 @@ export function useTransactionStatus(options: UseTransactionStatusOptions = {}) 
     /** Reset everything back to idle */
     const reset = useCallback(() => {
         stopPolling()
+        consecutiveFailuresRef.current = 0
         setState(INITIAL_STATE)
     }, [stopPolling])
 
     // Cleanup on unmount
     useEffect(() => () => stopPolling(), [stopPolling])
 
-    return { ...state, startTracking, reset }
+    return { ...state, startTracking, reset, checkConnection }
 }

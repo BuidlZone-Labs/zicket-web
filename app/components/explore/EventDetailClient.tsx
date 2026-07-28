@@ -39,15 +39,17 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [attemptId, setAttemptId] = useState<string | null>(null);
 
-  const [isOptimistic, setIsOptimistic] = useState(false);
-
-  const isReallyPurchased = isConfirmed && isPaid;
-  const isPurchased = isOptimistic || isReallyPurchased;
+  // Only switch to the purchased view once the ticket is *actually*
+  // reconciled. Switching away from TicketInfo any earlier (e.g. as soon as
+  // the on-chain tx confirms) would unmount it mid-reconcile, wiping the
+  // chain status/txHash it needs to show a correct "reconcile failed —
+  // don't double-pay" message and to retry reconciliation without
+  // re-triggering a new wallet payment.
+  const isPurchased = isConfirmed && isPaid;
 
   const resetPaymentAttemptState = () => {
     setPaymentStatus("idle");
     setPaymentError(null);
-    setIsOptimistic(false);
     setAttemptId(null);
   };
 
@@ -114,13 +116,12 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
       return { ok: false, error: "Payment already in progress." };
     }
 
-    if (isReallyPurchased) {
+    if (isPurchased) {
       return { ok: false, error: "Payment already completed." };
     }
 
     if (event.slotsLeft < 1) {
       setAttemptId(null);
-      setIsOptimistic(false);
       setPaymentStatus("failed");
       setPaymentError("Tickets are sold out for this event.");
       return { ok: false, error: "Tickets are sold out for this event." };
@@ -128,7 +129,6 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
 
     const nextAttemptId = attemptId ?? createAttemptId();
     setAttemptId(nextAttemptId);
-    setIsOptimistic(true);
     setPaymentStatus("processing");
     setPaymentError(null);
 
@@ -144,12 +144,10 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
 
       setIsConfirmed(status.isConfirmed);
       setIsPaid(status.isPaid);
-      setIsOptimistic(false);
       setAttemptId(null);
       resetPaymentAttemptState();
       return { ok: true };
     } catch (error) {
-      setIsOptimistic(false);
       setIsConfirmed(false);
       setIsPaid(false);
       setPaymentStatus("failed");
@@ -198,7 +196,6 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
       ) : (
         <div className="max-w-[550px] mx-auto py-10">
           <PurchasedStage
-            isConfirming={isOptimistic && !isReallyPurchased}
             onCancelRegistration={() => setShowCancelModal(true)}
           />
         </div>
@@ -214,7 +211,6 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
         onConfirm={(_, __, updatedState) => {
           setIsConfirmed(updatedState.isConfirmed);
           setIsPaid(updatedState.isPaid);
-          setIsOptimistic(false);
           setAttemptId(null);
           resetPaymentAttemptState();
           setShowCancelModal(false);
