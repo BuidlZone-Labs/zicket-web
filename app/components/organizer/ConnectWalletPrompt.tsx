@@ -74,6 +74,7 @@ export default function ConnectWalletPrompt() {
             <TransactionStatusBanner
               status="wallet_error"
               error={walletState.error}
+              hint="Make sure your wallet extension is unlocked, then try again."
               onRetry={handleConnectWallet}
               className="mt-3 text-left"
             />

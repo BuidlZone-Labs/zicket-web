@@ -123,7 +123,10 @@ const DEFAULT_MESSAGES: Partial<Record<BannerStatus, string>> = {
   wallet_error: "Failed to load wallet. Please try again.",
 }
 
-const DEFAULT_EXPLORER_BASE_URL = "https://stellar.expert/explorer/public/tx"
+// Allows non-production environments (e.g. testnet) to point at the right
+// explorer without every call site having to pass explorerBaseUrl.
+const DEFAULT_EXPLORER_BASE_URL =
+  process.env.NEXT_PUBLIC_EXPLORER_BASE_URL ?? "https://stellar.expert/explorer/public/tx"
 const DEFAULT_EXPLORER_LABEL = "View on Stellar Expert"
 
 export function TransactionStatusBanner({
@@ -142,9 +145,8 @@ export function TransactionStatusBanner({
   className,
 }: TransactionStatusBannerProps) {
   const config = CONFIG[status]
-  if (!config) return null
-
-  const Icon = config.icon
+  const Icon = config?.icon
+  const role = config?.role ?? "status"
 
   const message =
     status === "pending"
@@ -153,7 +155,7 @@ export function TransactionStatusBanner({
       ? confirmedMessage
       : (failedMessage ?? error ?? DEFAULT_MESSAGES[status] ?? "Something went wrong. Please try again.")
 
-  const hintText = hint ?? config.hint
+  const hintText = hint ?? config?.hint
 
   const showExplorerLink = txHash && status !== "pending" && status !== "wallet_error"
   const showHashPreview = txHash && status === "pending"
@@ -162,97 +164,106 @@ export function TransactionStatusBanner({
   const showStalledRetryFallback = status === "stalled" && !onCheckConnection && onRetry
 
   return (
+    // The live-region wrapper is always mounted (even for "idle", when it's
+    // empty and visually collapses to nothing) so screen readers are already
+    // observing it before the first status text appears — a freshly-inserted
+    // role="status"/"alert" element can have its initial announcement missed.
     <div
-      role={config.role}
-      aria-live={config.role === "status" ? "polite" : undefined}
+      role={role}
+      aria-live={role === "status" ? "polite" : undefined}
       className={cn(
-        "flex items-start gap-3 rounded-xl border px-4 py-3 transition-all duration-300",
-        config.wrapperClass,
+        "flex items-start gap-3 transition-all duration-300",
+        config && "rounded-xl border px-4 py-3",
+        config?.wrapperClass,
         className
       )}
     >
-      {/* Icon */}
-      <Icon aria-hidden="true" className={cn("mt-0.5 size-5 shrink-0", config.iconClass)} />
+      {config && Icon && (
+        <>
+          {/* Icon */}
+          <Icon aria-hidden="true" className={cn("mt-0.5 size-5 shrink-0", config.iconClass)} />
 
-      {/* Body */}
-      <div className="flex-1 min-w-0 space-y-0.5">
-        <div className="flex items-center justify-between gap-2">
-          <p className={cn("text-sm font-semibold", config.textClass)}>
-            {config.heading}
-          </p>
-        </div>
+          {/* Body */}
+          <div className="flex-1 min-w-0 space-y-0.5">
+            <div className="flex items-center justify-between gap-2">
+              <p className={cn("text-sm font-semibold", config.textClass)}>
+                {config.heading}
+              </p>
+            </div>
 
-        <p className={cn("text-xs leading-relaxed", config.textClass, "opacity-90")}>
-          {message}
-        </p>
+            <p className={cn("text-xs leading-relaxed", config.textClass, "opacity-90")}>
+              {message}
+            </p>
 
-        {/* Explorer link — shown when we have a hash */}
-        {showExplorerLink && txHash && (
-          <Link
-            href={`${explorerBaseUrl}/${txHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              "inline-flex items-center gap-1 text-xs underline underline-offset-2 mt-1",
-              config.textClass
+            {/* Explorer link — shown when we have a hash */}
+            {showExplorerLink && txHash && (
+              <Link
+                href={`${explorerBaseUrl}/${txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "inline-flex items-center gap-1 text-xs underline underline-offset-2 mt-1",
+                  config.textClass
+                )}
+              >
+                {explorerLabel} ↗
+              </Link>
             )}
-          >
-            {explorerLabel} ↗
-          </Link>
-        )}
 
-        {/* Shortened hash shown while pending */}
-        {showHashPreview && txHash && (
-          <p className={cn("text-xs font-mono opacity-60 truncate", config.textClass)}>
-            {txHash.slice(0, 12)}…{txHash.slice(-8)}
-          </p>
-        )}
-
-        {/* Reassurance / caution hint, mirroring the design's "Safe to retry" note */}
-        {hintText && (
-          <div
-            className={cn(
-              "mt-2 flex items-start gap-1.5 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] px-2.5 py-1.5 text-[11px] leading-relaxed",
-              config.textClass,
-              "opacity-90"
+            {/* Shortened hash shown while pending */}
+            {showHashPreview && txHash && (
+              <p className={cn("text-xs font-mono opacity-60 truncate", config.textClass)}>
+                {txHash.slice(0, 12)}…{txHash.slice(-8)}
+              </p>
             )}
-          >
-            <ShieldCheck aria-hidden="true" className="size-3.5 shrink-0 mt-0.5" />
-            <span>{hintText}</span>
+
+            {/* Reassurance / caution hint, mirroring the design's "Safe to retry" note */}
+            {hintText && (
+              <div
+                className={cn(
+                  "mt-2 flex items-start gap-1.5 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] px-2.5 py-1.5 text-[11px] leading-relaxed",
+                  config.textClass,
+                  "opacity-90"
+                )}
+              >
+                <ShieldCheck aria-hidden="true" className="size-3.5 shrink-0 mt-0.5" />
+                <span>{hintText}</span>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex items-center gap-4 mt-2">
+              {showCheckConnection && (
+                <button
+                  type="button"
+                  onClick={onCheckConnection}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 text-xs font-semibold underline underline-offset-2",
+                    config.textClass
+                  )}
+                >
+                  <RotateCcw size={12} aria-hidden="true" />
+                  Check Connection
+                </button>
+              )}
+
+              {(showRetry || showStalledRetryFallback) && (
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 text-xs font-semibold underline underline-offset-2",
+                    config.textClass
+                  )}
+                >
+                  <RotateCcw size={12} aria-hidden="true" />
+                  {retryLabel ?? "Try again"}
+                </button>
+              )}
+            </div>
           </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex items-center gap-4 mt-2">
-          {showCheckConnection && (
-            <button
-              type="button"
-              onClick={onCheckConnection}
-              className={cn(
-                "inline-flex items-center gap-1.5 text-xs font-semibold underline underline-offset-2",
-                config.textClass
-              )}
-            >
-              <RotateCcw size={12} aria-hidden="true" />
-              Check Connection
-            </button>
-          )}
-
-          {(showRetry || showStalledRetryFallback) && (
-            <button
-              type="button"
-              onClick={onRetry}
-              className={cn(
-                "inline-flex items-center gap-1.5 text-xs font-semibold underline underline-offset-2",
-                config.textClass
-              )}
-            >
-              <RotateCcw size={12} aria-hidden="true" />
-              {retryLabel ?? "Try again"}
-            </button>
-          )}
-        </div>
-      </div>
+        </>
+      )}
     </div>
   )
 }

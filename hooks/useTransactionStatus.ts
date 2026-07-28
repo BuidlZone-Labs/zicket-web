@@ -51,6 +51,11 @@ export function useTransactionStatus(options: UseTransactionStatusOptions = {}) 
     const stateRef = useRef(state)
     stateRef.current = state
     const consecutiveFailuresRef = useRef(0)
+    // Guards against the interval poll and a manual checkConnection() call
+    // overlapping — without it, concurrent requests double-increment
+    // `attempts`/`consecutiveFailuresRef` and can burn the attempt budget
+    // early from repeated manual clicks.
+    const inFlightRef = useRef(false)
 
     // Stable callbacks so the interval closure doesn't go stale
     const onConfirmedRef = useRef(onConfirmed)
@@ -66,6 +71,7 @@ export function useTransactionStatus(options: UseTransactionStatusOptions = {}) 
     }, [])
 
     const poll = useCallback(async (txHash: string) => {
+        if (inFlightRef.current) return
         const current = stateRef.current
 
         // Guard: stop if already terminal or exceeded attempts
@@ -91,6 +97,7 @@ export function useTransactionStatus(options: UseTransactionStatusOptions = {}) 
             return
         }
 
+        inFlightRef.current = true
         try {
             const result = await fetchTransactionStatus(txHash)
             consecutiveFailuresRef.current = 0
@@ -123,6 +130,8 @@ export function useTransactionStatus(options: UseTransactionStatusOptions = {}) 
                         : s.status,
                 attempts: s.attempts + 1,
             }))
+        } finally {
+            inFlightRef.current = false
         }
     }, [maxAttempts, stopPolling])
 

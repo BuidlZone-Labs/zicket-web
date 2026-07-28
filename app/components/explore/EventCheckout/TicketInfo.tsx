@@ -19,7 +19,7 @@ import { useUserSessionSync } from "@/lib/user-session-sync";
 import { useCooldown } from "@/hooks/useCooldown";
 import { CooldownMessage } from "@/app/components/AntiSpam/CooldownMessage";
 import { TransactionStatusBanner, type BannerStatus } from "@/components/TransactionStatusBanner";
-import { useTransactionStatus } from "@/hooks/useTransactionStatus";
+import { useTransactionStatus, type TransactionStatus } from "@/hooks/useTransactionStatus";
 
 type PaymentStatus = "idle" | "processing" | "failed";
 
@@ -35,6 +35,31 @@ interface TicketInfoProps {
     isPaid: boolean;
   }) => Promise<{ ok: boolean; error?: string }> | { ok: boolean; error?: string };
   onResetPayment?: () => void;
+}
+
+/**
+ * Single derived status driving the one shared banner, in priority order, so
+ * a chain success and a reconcile failure can never render two contradictory
+ * messages at once.
+ */
+function getBannerStatus(params: {
+  walletError: string | null;
+  chainStatus: TransactionStatus;
+  hasPaymentFailed: boolean;
+  isReconciling: boolean;
+}): BannerStatus {
+  const { walletError, chainStatus, hasPaymentFailed, isReconciling } = params;
+
+  if (walletError) return "wallet_error";
+  if (chainStatus === "failed") return "failed";
+  if (chainStatus === "confirmed" && hasPaymentFailed) return "reconcile_failed";
+  if (chainStatus === "confirmed" && isReconciling) return "reconciling";
+  if (chainStatus === "stalled") return "stalled";
+  if (chainStatus === "pending") return "pending";
+  if (chainStatus === "confirmed") return "confirmed";
+  // Pre-flight failure (e.g. sold out) — no tx was ever attempted.
+  if (hasPaymentFailed) return "failed";
+  return "idle";
 }
 
 export const TicketInfo: FC<TicketInfoProps> = ({
@@ -110,12 +135,12 @@ export const TicketInfo: FC<TicketInfoProps> = ({
       return;
     }
 
+    if (isSoldOut) return;
+
     startCooldown();
 
     setWalletState({ isLoading: true, error: null });
     resetChainTracking();
-
-    if (isSoldOut || isProcessingPayment) return;
 
     try {
       if (isPaid) {
@@ -182,7 +207,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
       return (
         <>
           <WifiOff size={20} />
-          Checking connection…
+          Connection issue…
         </>
       );
 
@@ -240,26 +265,12 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     );
   };
 
-  // Single derived status drives the one shared banner below, so a chain
-  // success and a reconcile failure can never render two contradictory
-  // messages at once.
-  const bannerStatus: BannerStatus = walletState.error
-    ? "wallet_error"
-    : chainStatus === "failed"
-      ? "failed"
-      : chainStatus === "confirmed" && hasPaymentFailed
-        ? "reconcile_failed"
-        : chainStatus === "confirmed" && isProcessingPayment
-          ? "reconciling"
-          : chainStatus === "stalled"
-            ? "stalled"
-            : chainStatus === "pending"
-              ? "pending"
-              : chainStatus === "confirmed"
-                ? "confirmed"
-                : hasPaymentFailed
-                  ? "failed" // pre-flight failure (e.g. sold out) — no tx was ever attempted
-                  : "idle";
+  const bannerStatus = getBannerStatus({
+    walletError: walletState.error,
+    chainStatus,
+    hasPaymentFailed,
+    isReconciling: isProcessingPayment,
+  });
 
   const bannerError =
     bannerStatus === "wallet_error"
@@ -270,7 +281,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
 
   const bannerRetry =
     bannerStatus === "wallet_error"
-      ? handlePrimaryClick
+      ? (isOnCooldown ? undefined : handlePrimaryClick)
       : bannerStatus === "reconcile_failed"
         ? () => void onStatusChange?.({ isConfirmed: true, isPaid })
         : bannerStatus === "failed"
@@ -394,54 +405,57 @@ export const TicketInfo: FC<TicketInfoProps> = ({
               ))}
             </div>
           </div>
-
-          {/* Unified failure/status banner — covers wallet errors, chain
-              delays, stalled connections, on-chain failures, and partial
-              (on-chain-ok-but-not-reconciled) confirmations in one place. */}
-          <TransactionStatusBanner
-            status={bannerStatus}
-            txHash={chainTxHash}
-            error={bannerError}
-            retryLabel={bannerStatus === "reconcile_failed" ? "Retry Confirmation" : undefined}
-            onRetry={bannerRetry}
-            onCheckConnection={bannerStatus === "stalled" ? checkConnection : undefined}
-          />
-
-          {/* Cooldown message */}
-          <CooldownMessage remainingSeconds={remainingSeconds} />
-
-          <div className="bg-[#F2FFF2] dark:bg-[#131313] dark:text-[#0BD330] text-[#0ABA2A] py-3 px-5 gap-4 flex">
-            <DangerIcon />
-            <p className="text-xs font-medium">Secure & Instant Payment</p>
-          </div>
-
-          <div>
-            <button
-              type="button"
-              disabled={isSoldOut || isProcessingPayment || walletState.isLoading || isButtonDisabled}
-              onClick={handlePrimaryClick}
-              onMouseEnter={isSoldOut ? undefined : preloadWalletSDK}
-              onFocus={isSoldOut ? undefined : preloadWalletSDK}
-              className={
-                isSoldOut
-                  ? "py-4 px-6 flex w-full items-center justify-center font-bold rounded-full gap-3 duration-200 ease-in-out transition bg-[#E4E5E6] text-[#98A2B3] cursor-not-allowed dark:bg-[#232323] dark:text-[#667085]"
-                  : `py-4 px-6 bg-[#6917AF] text-[#FCFDFD] flex w-full items-center justify-center font-bold rounded-full gap-3 duration-200 ease-in-out transition dark:bg-[#751AC6] dark:text-[#0F0F0F] dark:hover:bg-[#751AC6]/95 disabled:opacity-60 disabled:cursor-not-allowed ${!(isProcessingPayment || walletState.isLoading)
-                    ? "cursor-pointer hover:bg-[#6917AF]/95"
-                    : ""
-                    }`
-              }
-            >
-              {isSoldOut ? (
-                <>
-                  <PasswordProtectedShield />
-                  <span>Sold out</span>
-                </>
-              ) : (
-                <>{buttonLabel()}</>
-              )}
-            </button>
-          </div>
         </fieldset>
+
+        {/* Unified failure/status banner — covers wallet errors, chain
+            delays, stalled connections, on-chain failures, and partial
+            (on-chain-ok-but-not-reconciled) confirmations in one place.
+            Kept outside the fieldset above: its retry/check-connection
+            actions must stay usable even if the event sells out while a
+            payment the user already made is still being reconciled. */}
+        <TransactionStatusBanner
+          status={bannerStatus}
+          txHash={chainTxHash}
+          error={bannerError}
+          retryLabel={bannerStatus === "reconcile_failed" ? "Retry Confirmation" : undefined}
+          onRetry={bannerRetry}
+          onCheckConnection={bannerStatus === "stalled" ? checkConnection : undefined}
+        />
+
+        {/* Cooldown message */}
+        <CooldownMessage remainingSeconds={remainingSeconds} />
+
+        <div className="bg-[#F2FFF2] dark:bg-[#131313] dark:text-[#0BD330] text-[#0ABA2A] py-3 px-5 gap-4 flex">
+          <DangerIcon />
+          <p className="text-xs font-medium">Secure & Instant Payment</p>
+        </div>
+
+        <div>
+          <button
+            type="button"
+            disabled={isSoldOut || isProcessingPayment || walletState.isLoading || isButtonDisabled}
+            onClick={handlePrimaryClick}
+            onMouseEnter={isSoldOut ? undefined : preloadWalletSDK}
+            onFocus={isSoldOut ? undefined : preloadWalletSDK}
+            className={
+              isSoldOut
+                ? "py-4 px-6 flex w-full items-center justify-center font-bold rounded-full gap-3 duration-200 ease-in-out transition bg-[#E4E5E6] text-[#98A2B3] cursor-not-allowed dark:bg-[#232323] dark:text-[#667085]"
+                : `py-4 px-6 bg-[#6917AF] text-[#FCFDFD] flex w-full items-center justify-center font-bold rounded-full gap-3 duration-200 ease-in-out transition dark:bg-[#751AC6] dark:text-[#0F0F0F] dark:hover:bg-[#751AC6]/95 disabled:opacity-60 disabled:cursor-not-allowed ${!(isProcessingPayment || walletState.isLoading)
+                  ? "cursor-pointer hover:bg-[#6917AF]/95"
+                  : ""
+                  }`
+            }
+          >
+            {isSoldOut ? (
+              <>
+                <PasswordProtectedShield />
+                <span>Sold out</span>
+              </>
+            ) : (
+              <>{buttonLabel()}</>
+            )}
+          </button>
+        </div>
       </form>
     </div>
   );

@@ -45,7 +45,12 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
   // chain status/txHash it needs to show a correct "reconcile failed —
   // don't double-pay" message and to retry reconciliation without
   // re-triggering a new wallet payment.
-  const isPurchased = isConfirmed && isPaid;
+  //
+  // Gate on the event's own paid-ness rather than the reconciled `isPaid`
+  // flag: free events reconcile with isPaid=false (see the anonymous path in
+  // TicketInfo), so requiring isPaid here would strand free-event purchases
+  // on the checkout view forever.
+  const isPurchased = isConfirmed && (event.isPaid ? isPaid : true);
 
   const resetPaymentAttemptState = () => {
     setPaymentStatus("idle");

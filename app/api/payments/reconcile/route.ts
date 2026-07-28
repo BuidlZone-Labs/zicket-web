@@ -37,7 +37,10 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!body.isConfirmed || !body.isPaid) {
+  // `isPaid: false` is a legitimate, expected value for free/anonymous
+  // events — only `isConfirmed` indicates the attempt isn't ready to
+  // reconcile yet.
+  if (!body.isConfirmed) {
     return NextResponse.json(
       { ok: false, error: "Payment is not yet fully confirmed." },
       { status: 409 },
