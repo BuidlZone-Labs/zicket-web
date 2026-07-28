@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { dummyEvents } from "@/lib/dummyEvents/events";
 
 type ReconcileRequest = {
   attemptId?: string;
@@ -21,8 +22,12 @@ const processedAttempts = new Map<string, TicketRecord>();
  * returns the previously issued ticket instead of creating a duplicate, so a
  * failed-then-retried reconcile can never issue two tickets or double-charge.
  *
- * Responds 400 for malformed/missing fields, 409 when the attempt isn't
- * confirmed yet, and 200 with `{ ticketId, deduplicated }` on success.
+ * Free-vs-paid eligibility is derived from server-side event data rather than
+ * the client's `isPaid` flag, so a paid event can't be reconciled for free.
+ *
+ * Responds 400 for malformed/missing fields, 404 for an unknown event, 409
+ * when the attempt isn't confirmed, 402 when a paid event lacks payment, and
+ * 200 with `{ ticketId, deduplicated }` on success.
  */
 export async function POST(request: Request) {
   let body: ReconcileRequest;
@@ -46,13 +51,33 @@ export async function POST(request: Request) {
     );
   }
 
-  // `isPaid: false` is a legitimate, expected value for free/anonymous
-  // events — only `isConfirmed` indicates the attempt isn't ready to
-  // reconcile yet.
   if (!body.isConfirmed) {
     return NextResponse.json(
       { ok: false, error: "Payment is not yet fully confirmed." },
       { status: 409 },
+    );
+  }
+
+  // Derive free/paid eligibility from server-side event data, not from the
+  // client-supplied `isPaid` flag. This stops a caller from reconciling a paid
+  // event for free by simply sending `isPaid: false`.
+  //
+  // NOTE: `dummyEvents` stands in for a real event store here. For a paid event
+  // this still trusts that the client-side wallet flow ran; production must
+  // replace this with verification of a settled on-chain payment tied to
+  // `attemptId` before issuing the ticket.
+  const event = dummyEvents.find((e) => e.id === eventId);
+  if (!event) {
+    return NextResponse.json(
+      { ok: false, error: "Unknown event." },
+      { status: 404 },
+    );
+  }
+
+  if (event.isPaid && !body.isPaid) {
+    return NextResponse.json(
+      { ok: false, error: "This event requires a completed payment." },
+      { status: 402 },
     );
   }
 
