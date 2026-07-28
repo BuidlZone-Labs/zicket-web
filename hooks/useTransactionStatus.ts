@@ -66,6 +66,11 @@ export function useTransactionStatus(options: UseTransactionStatusOptions = {}) 
     // `attempts`/`consecutiveFailuresRef` and can burn the attempt budget
     // early from repeated manual clicks.
     const inFlightRef = useRef(false)
+    // Bumped by startTracking/reset/unmount. A poll captures the generation it
+    // was started for and drops its result if the generation has moved on, so a
+    // response that lands after the caller reset or started a new tx can't write
+    // stale state or fire onConfirmed/onFailed for an abandoned hash.
+    const generationRef = useRef(0)
 
     // Stable callbacks so the interval closure doesn't go stale
     const onConfirmedRef = useRef(onConfirmed)
@@ -85,8 +90,9 @@ export function useTransactionStatus(options: UseTransactionStatusOptions = {}) 
      * is terminal, times out after `maxAttempts`, and flips to "stalled" after
      * repeated network failures. Fires onConfirmed/onFailed on terminal states.
      */
-    const poll = useCallback(async (txHash: string) => {
+    const poll = useCallback(async (txHash: string, generation: number) => {
         if (inFlightRef.current) return
+        if (generation !== generationRef.current) return
         const current = stateRef.current
 
         // Guard: stop if already terminal or exceeded attempts
@@ -115,6 +121,9 @@ export function useTransactionStatus(options: UseTransactionStatusOptions = {}) 
         inFlightRef.current = true
         try {
             const result = await fetchTransactionStatus(txHash)
+            // The tracking session was reset or replaced while this was in
+            // flight — drop the result rather than clobber the new state.
+            if (generation !== generationRef.current) return
             consecutiveFailuresRef.current = 0
 
             setState((s) => ({
@@ -133,18 +142,23 @@ export function useTransactionStatus(options: UseTransactionStatusOptions = {}) 
                 onFailedRef.current?.(result.error ?? "Transaction failed")
             }
         } catch (err) {
+            if (generation !== generationRef.current) return
             // Network error — keep polling in the background, but surface a
             // "stalled" state after a couple of consecutive failures so the
-            // user isn't left staring at a silent spinner.
+            // user isn't left staring at a silent spinner. Clear any lingering
+            // error text so a prior poll's message doesn't show under the
+            // "Network Issue Detected" heading.
             consecutiveFailuresRef.current += 1
-            setState((s) => ({
-                ...s,
-                status:
+            setState((s) => {
+                const nextStalled =
                     s.status === "pending" && consecutiveFailuresRef.current >= STALL_THRESHOLD
-                        ? "stalled"
-                        : s.status,
-                attempts: s.attempts + 1,
-            }))
+                return {
+                    ...s,
+                    status: nextStalled ? "stalled" : s.status,
+                    error: nextStalled ? null : s.error,
+                    attempts: s.attempts + 1,
+                }
+            })
         } finally {
             inFlightRef.current = false
         }
@@ -157,7 +171,7 @@ export function useTransactionStatus(options: UseTransactionStatusOptions = {}) 
      */
     const checkConnection = useCallback(() => {
         const { txHash } = stateRef.current
-        if (txHash) poll(txHash)
+        if (txHash) poll(txHash, generationRef.current)
     }, [poll])
 
     /**
@@ -168,31 +182,42 @@ export function useTransactionStatus(options: UseTransactionStatusOptions = {}) 
         (txHash: string) => {
             stopPolling()
             consecutiveFailuresRef.current = 0
+            const generation = ++generationRef.current
 
-            setState({
+            const next: TransactionState = {
                 status: "pending",
                 txHash,
                 updatedAt: new Date().toISOString(),
                 error: null,
                 attempts: 0,
-            })
+            }
+            // Prime the ref synchronously (it otherwise only updates on render)
+            // so the immediate poll below sees this new tx, not the previous
+            // one's terminal state — which would short-circuit the first check.
+            stateRef.current = next
+            setState(next)
 
             // Poll immediately, then on interval
-            poll(txHash)
-            intervalRef.current = setInterval(() => poll(txHash), pollIntervalMs)
+            poll(txHash, generation)
+            intervalRef.current = setInterval(() => poll(txHash, generation), pollIntervalMs)
         },
         [poll, pollIntervalMs, stopPolling]
     )
 
-    /** Reset everything back to idle */
+    /** Reset everything back to idle, invalidating any in-flight poll. */
     const reset = useCallback(() => {
         stopPolling()
         consecutiveFailuresRef.current = 0
+        generationRef.current++
         setState(INITIAL_STATE)
     }, [stopPolling])
 
-    // Cleanup on unmount
-    useEffect(() => () => stopPolling(), [stopPolling])
+    // Cleanup on unmount — invalidate in-flight polls so they don't setState
+    // after the component is gone.
+    useEffect(() => () => {
+        generationRef.current++
+        stopPolling()
+    }, [stopPolling])
 
     return { ...state, startTracking, reset, checkConnection }
 }

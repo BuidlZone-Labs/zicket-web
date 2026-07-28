@@ -12,7 +12,6 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { TransactionStatus } from "@/hooks/useTransactionStatus"
-import Link from "next/link";
 
 /**
  * Extends the on-chain polling states from useTransactionStatus with two
@@ -157,12 +156,20 @@ export function TransactionStatusBanner({
   const Icon = config?.icon
   const role = config?.role ?? "status"
 
+  const isFailureStatus =
+    status === "failed" || status === "reconcile_failed" || status === "wallet_error"
+
   const message =
     status === "pending"
       ? pendingMessage
       : status === "confirmed"
       ? confirmedMessage
-      : (failedMessage ?? error ?? DEFAULT_MESSAGES[status] ?? "Something went wrong. Please try again.")
+      : isFailureStatus
+      // Only failure statuses fall back to failedMessage/error — otherwise a
+      // lingering error from the tracking hook could render failure copy under
+      // a "Network Issue Detected" / "Finalizing" heading.
+      ? (failedMessage ?? error ?? DEFAULT_MESSAGES[status] ?? "Something went wrong. Please try again.")
+      : (DEFAULT_MESSAGES[status] ?? "")
 
   const hintText = hint ?? config?.hint
 
@@ -171,6 +178,7 @@ export function TransactionStatusBanner({
   const showCheckConnection = status === "stalled" && onCheckConnection
   const showRetry = (status === "failed" || status === "reconcile_failed" || status === "wallet_error") && onRetry
   const showStalledRetryFallback = status === "stalled" && !onCheckConnection && onRetry
+  const showActions = showCheckConnection || showRetry || showStalledRetryFallback
 
   return (
     // The live-region wrapper is always mounted (even for "idle", when it's
@@ -204,9 +212,10 @@ export function TransactionStatusBanner({
               {message}
             </p>
 
-            {/* Explorer link — shown when we have a hash */}
+            {/* Explorer link — shown when we have a hash. Plain anchor since
+                explorerBaseUrl is an external origin (no next/link benefit). */}
             {showExplorerLink && txHash && (
-              <Link
+              <a
                 href={`${explorerBaseUrl}/${txHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -216,7 +225,7 @@ export function TransactionStatusBanner({
                 )}
               >
                 {explorerLabel} ↗
-              </Link>
+              </a>
             )}
 
             {/* Shortened hash shown while pending */}
@@ -240,7 +249,9 @@ export function TransactionStatusBanner({
               </div>
             )}
 
-            {/* Actions */}
+            {/* Actions — only rendered when there's at least one, so idle /
+                pending / confirmed don't emit an empty spaced row. */}
+            {showActions && (
             <div className="flex items-center gap-4 mt-2">
               {showCheckConnection && (
                 <button
@@ -270,6 +281,7 @@ export function TransactionStatusBanner({
                 </button>
               )}
             </div>
+            )}
           </div>
         </>
       )}

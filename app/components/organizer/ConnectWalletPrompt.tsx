@@ -76,15 +76,17 @@ export default function ConnectWalletPrompt() {
               </>
             )}
           </button>
-          {walletState.error && (
-            <TransactionStatusBanner
-              status="wallet_error"
-              error={walletState.error}
-              hint="Make sure your wallet extension is unlocked, then try again."
-              onRetry={handleConnectWallet}
-              className="mt-3 text-left"
-            />
-          )}
+          {/* Rendered unconditionally (idle collapses to nothing) so the
+              banner's live region is already observed when the first error
+              appears — mounting it only on error would risk a missed
+              screen-reader announcement. */}
+          <TransactionStatusBanner
+            status={walletState.error ? "wallet_error" : "idle"}
+            error={walletState.error}
+            hint="Make sure your wallet extension is unlocked, then try again."
+            onRetry={handleConnectWallet}
+            className="mt-3 text-left"
+          />
         </div>
       </div>
     </div>

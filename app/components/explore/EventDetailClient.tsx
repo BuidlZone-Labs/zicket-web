@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { PurchasedStage } from "./EventCheckout/PurchasedStage";
 import { TicketCancellationModal } from "../TicketCancellationModal";
 import { EventDetailCard } from "./EventCheckout/eventDetailsCard";
@@ -38,6 +38,11 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("idle");
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [attemptId, setAttemptId] = useState<string | null>(null);
+  // Synchronous mutex for the reconcile call. `paymentStatus` only updates on
+  // the next render, so two calls firing in the same tick (e.g. a button click
+  // racing the poll's onConfirmed) would both read "idle" and both POST. A ref
+  // flips immediately, so the second caller is rejected before it can submit.
+  const inFlightRef = useRef(false);
 
   // Only switch to the purchased view once the ticket is *actually*
   // reconciled. Switching away from TicketInfo any earlier (e.g. as soon as
@@ -137,7 +142,7 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
     isConfirmed: boolean;
     isPaid: boolean;
   }): Promise<PaymentAttemptResult> => {
-    if (paymentStatus === "processing") {
+    if (inFlightRef.current) {
       return { ok: false, error: "Payment already in progress." };
     }
 
@@ -152,6 +157,7 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
       return { ok: false, error: "Tickets are sold out for this event." };
     }
 
+    inFlightRef.current = true;
     const nextAttemptId = attemptId ?? createAttemptId();
     setAttemptId(nextAttemptId);
     setPaymentStatus("processing");
@@ -169,7 +175,6 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
 
       setIsConfirmed(status.isConfirmed);
       setIsPaid(status.isPaid);
-      setAttemptId(null);
       resetPaymentAttemptState();
       return { ok: true };
     } catch (error) {
@@ -182,6 +187,8 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
           : "Payment failed. Please try again.";
       setPaymentError(message);
       return { ok: false, error: message };
+    } finally {
+      inFlightRef.current = false;
     }
   };
 
@@ -236,7 +243,6 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
         onConfirm={(_, __, updatedState) => {
           setIsConfirmed(updatedState.isConfirmed);
           setIsPaid(updatedState.isPaid);
-          setAttemptId(null);
           resetPaymentAttemptState();
           setShowCancelModal(false);
         }}

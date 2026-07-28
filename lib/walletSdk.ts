@@ -49,12 +49,13 @@ export async function loadWalletSDK(): Promise<string> {
     // Simulates ~2 s of wallet connection + signing latency before returning
     // a fake Solana-style transaction hash. Remove this block when the real
     // SDK is wired up.
-    loadPromise = new Promise<string>((resolve) =>
+    const current = new Promise<string>((resolve) =>
       setTimeout(
         () => resolve("mock_tx_" + Math.random().toString(36).slice(2, 18)),
         2000
       )
     );
+    loadPromise = current;
     // ── END MOCK ──────────────────────────────────────────────────────────────
 
     // Clear after settle so a later purchase/retry gets a fresh tx hash.
@@ -66,12 +67,19 @@ export async function loadWalletSDK(): Promise<string> {
     // it, so it would surface as an unhandled rejection. Both handlers clear the
     // singleton; the original loadPromise is still returned so callers keep
     // seeing the real error.
-    void loadPromise.then(
+    //
+    // Guard by identity: only null out the singleton if it's still THIS load,
+    // so a settle from an earlier load can't wipe a newer in-flight one (matters
+    // once a real SDK adds awaits between creation and settle).
+    const clearIfCurrent = () => {
+      if (loadPromise === current) loadPromise = null;
+    };
+    void current.then(
       () => {
-        loadPromise = null;
+        clearIfCurrent();
       },
       () => {
-        loadPromise = null;
+        clearIfCurrent();
       },
     );
   }

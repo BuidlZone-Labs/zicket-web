@@ -83,6 +83,15 @@ export async function POST(request: Request) {
 
   const existing = processedAttempts.get(attemptId);
   if (existing) {
+    // `attemptId` is client-supplied, so bind the dedup lookup to its original
+    // event. Otherwise replaying an attemptId with a different eventId would
+    // bypass the eligibility checks above and leak another attempt's ticketId.
+    if (existing.eventId !== eventId) {
+      return NextResponse.json(
+        { ok: false, error: "attemptId does not match this event." },
+        { status: 409 },
+      );
+    }
     return NextResponse.json({
       ok: true,
       ticketId: existing.ticketId,
