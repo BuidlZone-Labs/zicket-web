@@ -29,86 +29,95 @@ export interface PurchasedTicket {
 /** Derived event-time state — never stored, always computed from the window. */
 export type TicketState = "upcoming" | "live" | "used" | "expired";
 
-// Baked once at module load. Both the server render and the client hydration
-// read these same ISO strings, so there's no time-based hydration mismatch;
-// only the live-updating countdown re-computes against the real clock.
-const BASE = Date.now();
 const MIN = 60_000;
 const HOUR = 60 * MIN;
 const DAY = 24 * HOUR;
-const iso = (offsetMs: number) => new Date(BASE + offsetMs).toISOString();
 
-export const dummyTickets: PurchasedTicket[] = [
-  {
-    id: "tkt-solana-vip",
-    eventId: "solana-summer-hackathon",
-    ticketType: "VIP",
-    seat: "A-04",
-    section: "Floor",
-    purchasedAt: iso(-6 * DAY),
-    eventStart: iso(5 * DAY),
-    eventEnd: iso(5 * DAY + 8 * HOUR),
-    checkedInAt: null,
-    privacyLevel: "Anonymous",
-  },
-  {
-    id: "tkt-crypto-build-live",
-    eventId: "crypto-build-ghana",
-    ticketType: "Regular",
-    seat: "B-12",
-    section: "Sector 7",
-    purchasedAt: iso(-3 * DAY),
-    eventStart: iso(-1 * HOUR),
-    eventEnd: iso(6 * HOUR),
-    checkedInAt: null,
-    privacyLevel: "Wallet Required",
-  },
-  {
-    id: "tkt-femcode-upcoming",
-    eventId: "femcode-fest-2025",
-    ticketType: "Free",
-    seat: null,
-    section: null,
-    purchasedAt: iso(-1 * DAY),
-    eventStart: iso(2 * DAY + 3 * HOUR),
-    eventEnd: iso(2 * DAY + 9 * HOUR),
-    checkedInAt: null,
-    privacyLevel: "Anonymous",
-  },
-  {
-    id: "tkt-nairobi-used",
-    eventId: "web3-bootcamp-nairobi",
-    ticketType: "Student",
-    seat: "C-21",
-    section: "Balcony",
-    purchasedAt: iso(-25 * DAY),
-    eventStart: iso(-20 * DAY),
-    eventEnd: iso(-20 * DAY + 4 * HOUR),
-    checkedInAt: iso(-20 * DAY + 25 * MIN),
-    privacyLevel: "Verified Access",
-  },
-  {
-    id: "tkt-lagos-expired",
-    eventId: "lagos-design-week",
-    ticketType: "Regular",
-    seat: null,
-    section: null,
-    purchasedAt: iso(-15 * DAY),
-    eventStart: iso(-10 * DAY),
-    eventEnd: iso(-10 * DAY + 5 * HOUR),
-    checkedInAt: null,
-    privacyLevel: "Verified Access",
-  },
-  {
-    id: "tkt-founders-upcoming",
-    eventId: "founders-lab-africa",
-    ticketType: "VIP",
-    seat: "D-08",
-    section: "Main Hall",
-    purchasedAt: iso(-2 * DAY),
-    eventStart: iso(28 * DAY),
-    eventEnd: iso(28 * DAY + 6 * HOUR),
-    checkedInAt: null,
-    privacyLevel: "Anonymous",
-  },
-];
+/**
+ * Builds the mock ticket fixtures relative to `now`, so the demo always has a
+ * ticket in each lifecycle state (upcoming / live / used / expired). Computed
+ * per request rather than once at module load — otherwise the "live" fixture
+ * would silently expire a few hours after the server started.
+ *
+ * The returned ISO strings are baked into the server-rendered HTML and reused
+ * on the client, so there's no time-based hydration mismatch; only the
+ * live-updating countdown re-computes against the real clock.
+ */
+export function buildDummyTickets(now: number = Date.now()): PurchasedTicket[] {
+  const iso = (offsetMs: number) => new Date(now + offsetMs).toISOString();
+
+  return [
+    {
+      id: "tkt-solana-vip",
+      eventId: "solana-summer-hackathon",
+      ticketType: "VIP",
+      seat: "A-04",
+      section: "Floor",
+      purchasedAt: iso(-6 * DAY),
+      eventStart: iso(5 * DAY),
+      eventEnd: iso(5 * DAY + 8 * HOUR),
+      checkedInAt: null,
+      privacyLevel: "Anonymous",
+    },
+    {
+      id: "tkt-crypto-build-live",
+      eventId: "crypto-build-ghana",
+      ticketType: "Regular",
+      seat: "B-12",
+      section: "Sector 7",
+      purchasedAt: iso(-3 * DAY),
+      eventStart: iso(-1 * HOUR),
+      eventEnd: iso(6 * HOUR),
+      checkedInAt: null,
+      privacyLevel: "Wallet Required",
+    },
+    {
+      id: "tkt-femcode-upcoming",
+      eventId: "femcode-fest-2025",
+      ticketType: "Free",
+      seat: null,
+      section: null,
+      purchasedAt: iso(-1 * DAY),
+      eventStart: iso(2 * DAY + 3 * HOUR),
+      eventEnd: iso(2 * DAY + 9 * HOUR),
+      checkedInAt: null,
+      privacyLevel: "Anonymous",
+    },
+    {
+      id: "tkt-nairobi-used",
+      eventId: "web3-bootcamp-nairobi",
+      ticketType: "Student",
+      seat: "C-21",
+      section: "Balcony",
+      purchasedAt: iso(-25 * DAY),
+      eventStart: iso(-20 * DAY),
+      eventEnd: iso(-20 * DAY + 4 * HOUR),
+      checkedInAt: iso(-20 * DAY + 25 * MIN),
+      privacyLevel: "Verified Access",
+    },
+    {
+      id: "tkt-lagos-expired",
+      eventId: "lagos-design-week",
+      ticketType: "Regular",
+      seat: null,
+      section: null,
+      purchasedAt: iso(-15 * DAY),
+      eventStart: iso(-10 * DAY),
+      eventEnd: iso(-10 * DAY + 5 * HOUR),
+      checkedInAt: null,
+      privacyLevel: "Verified Access",
+    },
+    {
+      id: "tkt-founders-upcoming",
+      eventId: "founders-lab-africa",
+      ticketType: "VIP",
+      seat: "D-08",
+      section: "Main Hall",
+      purchasedAt: iso(-2 * DAY),
+      eventStart: iso(28 * DAY),
+      eventEnd: iso(28 * DAY + 6 * HOUR),
+      checkedInAt: null,
+      privacyLevel: "Anonymous",
+    },
+  ];
+}

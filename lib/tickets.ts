@@ -1,14 +1,14 @@
 import { dummyEvents, type Event } from "./dummyEvents/events";
-import { dummyTickets, type PurchasedTicket, type TicketState } from "./dummyEvents/tickets";
+import { buildDummyTickets, type PurchasedTicket, type TicketState } from "./dummyEvents/tickets";
 
-/** All tickets belonging to the current (mock) user. */
-export function getUserTickets(): PurchasedTicket[] {
-  return dummyTickets;
+/** All tickets belonging to the current (mock) user, fresh for `now`. */
+export function getUserTickets(now: number = Date.now()): PurchasedTicket[] {
+  return buildDummyTickets(now);
 }
 
 /** Look up a single purchased ticket by its id. */
-export function getTicketById(id: string): PurchasedTicket | undefined {
-  return dummyTickets.find((t) => t.id === id);
+export function getTicketById(id: string, now: number = Date.now()): PurchasedTicket | undefined {
+  return buildDummyTickets(now).find((t) => t.id === id);
 }
 
 /** The public event a ticket was purchased for (image, title, venue, …). */
@@ -38,14 +38,21 @@ export function isTicketUsable(ticket: PurchasedTicket, now: number = Date.now()
   return getTicketState(ticket, now) === "live";
 }
 
+// A fixed display zone keeps server-rendered and client-hydrated dates/times
+// identical (no hydration mismatch) and deterministic across viewers. UTC is
+// used here for the mock; a real app would store an IANA zone per event.
+const EVENT_TIME_ZONE = "UTC";
 const DATE_FMT: Intl.DateTimeFormatOptions = {
   month: "short",
   day: "numeric",
   year: "numeric",
+  timeZone: EVENT_TIME_ZONE,
 };
 const TIME_FMT: Intl.DateTimeFormatOptions = {
   hour: "numeric",
   minute: "2-digit",
+  timeZone: EVENT_TIME_ZONE,
+  timeZoneName: "short",
 };
 
 export function formatEventDate(isoStr: string): string {
@@ -74,9 +81,13 @@ export function formatCountdown(targetIso: string, now: number = Date.now()): st
 }
 
 /**
- * Builds the opaque, offline-readable QR payload for a ticket: a base64 JSON of
- * just the ticket id and an expiry hint — no name, email, or other identity.
- * Mirrors the payload shape already used by QRCodeModal.
+ * Builds the QR payload for a ticket: a base64 JSON of just the ticket id and
+ * an expiry hint — no name, email, or other identity. Mirrors the payload shape
+ * already used by QRCodeModal.
+ *
+ * DEMO ONLY: this is base64, not encryption or a signed credential, and it is
+ * forgeable. A production gate would need a server-issued, time-bounded, signed
+ * entry credential that the scanner verifies.
  */
 export function buildTicketQrPayload(ticket: PurchasedTicket): string {
   const payload = {
@@ -89,10 +100,15 @@ export function buildTicketQrPayload(ticket: PurchasedTicket): string {
 }
 
 /**
- * The zero-knowledge "proof without identity" token a user can share to prove
- * ticket ownership. Deliberately contains no PII — only the event, a validity
- * window, and an opaque proof id — so sharing it reveals nothing about who
- * holds the ticket.
+ * A demo "proof without identity" token illustrating the zero-knowledge sharing
+ * concept. Deliberately contains no PII — only the event, a validity window,
+ * and an opaque proof id — so sharing it reveals nothing about who holds the
+ * ticket.
+ *
+ * DEMO ONLY: this is an unsigned base64 token, not a real zero-knowledge proof.
+ * It demonstrates the "no personal data" idea but is not cryptographically
+ * verifiable and must not be treated as proof of ownership. A production version
+ * needs a server-verified signed proof or an actual ZKP protocol.
  */
 export function buildPrivateProof(ticket: PurchasedTicket): string {
   const proof = {

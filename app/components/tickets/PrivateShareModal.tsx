@@ -149,6 +149,10 @@ export function PrivateShareModal({
                 )}
               </button>
             </div>
+            <p className="mt-2 text-[11px] leading-relaxed text-[#667185]">
+              Demo token — it illustrates the &ldquo;no personal data&rdquo;
+              concept but is not yet a cryptographically verifiable proof.
+            </p>
           </div>
         ) : (
           <button

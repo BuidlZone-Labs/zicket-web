@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Clock, ScanLine, CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -12,19 +11,18 @@ import {
 import type { PurchasedTicket } from "@/lib/dummyEvents/tickets";
 
 /**
- * Event-time / expiry UX for a ticket. Client-only so the live countdown ticks
- * against the real clock; renders a stable placeholder until mounted to avoid a
- * hydration mismatch on the time-sensitive text.
+ * Event-time / expiry UX for a ticket. `now` is owned by the parent
+ * (TicketDetail) and ticks every minute, so this and the status badge / QR all
+ * update from one clock. A null `now` (pre-hydration) renders a stable
+ * placeholder to avoid a time-based hydration mismatch.
  */
-export function ExpiryIndicator({ ticket }: { ticket: PurchasedTicket }) {
-  const [now, setNow] = useState<number | null>(null);
-
-  useEffect(() => {
-    setNow(Date.now());
-    const interval = setInterval(() => setNow(Date.now()), 60_000);
-    return () => clearInterval(interval);
-  }, []);
-
+export function ExpiryIndicator({
+  ticket,
+  now,
+}: {
+  ticket: PurchasedTicket;
+  now: number | null;
+}) {
   // Pre-hydration placeholder — keeps SSR and first client render identical.
   if (now === null) {
     return (

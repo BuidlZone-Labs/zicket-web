@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
@@ -48,10 +48,20 @@ export function TicketDetail({
   event: Event;
 }) {
   const [shareOpen, setShareOpen] = useState(false);
-  // Coarse initial state for the QR emphasis; the ExpiryIndicator handles the
-  // live-updating detail.
-  const state = getTicketState(ticket);
-  const qrActive = state === "live" || state === "upcoming";
+  // One ticking clock drives the badge, the QR activation, and the expiry
+  // indicator so they can never disagree (e.g. "Live now" + active QR after the
+  // window has already closed). `null` until mounted to avoid a hydration
+  // mismatch on the time-sensitive UI.
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    setNow(Date.now());
+    const interval = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const state = getTicketState(ticket, now ?? Date.now());
+  // The QR is only scannable while the ticket is live — not before entry opens.
+  const qrActive = state === "live";
   const qrPayload = buildTicketQrPayload(ticket);
 
   return (
@@ -104,7 +114,7 @@ export function TicketDetail({
             </div>
           </div>
 
-          <ExpiryIndicator ticket={ticket} />
+          <ExpiryIndicator ticket={ticket} now={now} />
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <InfoTile label="Ticket" value={ticket.ticketType} />
@@ -123,7 +133,7 @@ export function TicketDetail({
               </p>
               <span className="inline-flex items-center gap-1 text-xs text-[#667185]">
                 <Lock aria-hidden="true" className="size-3.5" />
-                Private &amp; encrypted
+                No personal data
               </span>
             </div>
 
@@ -138,9 +148,11 @@ export function TicketDetail({
             <p className="mt-4 text-center text-xs text-[#667185]">
               {qrActive
                 ? "Show this code at the entry gate. It carries no personal data."
-                : state === "used"
-                  ? "This ticket has been scanned and is no longer active."
-                  : "This ticket has expired and can no longer be scanned."}
+                : state === "upcoming"
+                  ? "This code activates when the entry window opens."
+                  : state === "used"
+                    ? "This ticket has been scanned and is no longer active."
+                    : "This ticket has expired and can no longer be scanned."}
             </p>
           </div>
 
@@ -155,10 +167,16 @@ export function TicketDetail({
 
           <button
             type="button"
-            className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-[#6917AF] py-3.5 font-bold text-[#6917AF] dark:text-[#D7B5F5] transition hover:bg-[#6917AF]/5"
+            disabled
+            aria-disabled="true"
+            title="Apple Wallet passes are coming soon"
+            className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-[#E4E5E6] dark:border-[#232323] py-3.5 font-bold text-[#98A2B3] dark:text-[#667085] cursor-not-allowed"
           >
             <Wallet aria-hidden="true" className="size-5" />
             Add to Apple Wallet
+            <span className="rounded-full bg-[#E5E7EB] dark:bg-[#2A2A2A] px-2 py-0.5 text-[10px] font-semibold text-[#667185]">
+              Soon
+            </span>
           </button>
 
           <Link
