@@ -52,7 +52,8 @@ const CONFIG = {
     textClass: "text-[#6917AF] dark:text-[#D7B5F5]",
     heading: "Transaction Pending",
     role: "status" as const,
-    hint: "Safe to retry — no funds have moved yet.",
+    // Tx already submitted — do not encourage another payment while we wait.
+    hint: "Please wait — don't submit another payment while this confirms.",
   },
   stalled: {
     icon: WifiOff,

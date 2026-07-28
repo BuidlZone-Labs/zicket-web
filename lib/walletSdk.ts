@@ -57,8 +57,10 @@ export async function loadWalletSDK(): Promise<string> {
     );
     // ── END MOCK ──────────────────────────────────────────────────────────────
 
-    // Reset on failure so callers can retry
-    loadPromise.catch(() => {
+    // Clear after settle so a later purchase/retry gets a fresh tx hash.
+    // Without this, every "Retry Payment" reuses the first mock hash and the
+    // status API keeps returning the previous terminal result forever.
+    loadPromise.finally(() => {
       loadPromise = null;
     });
   }

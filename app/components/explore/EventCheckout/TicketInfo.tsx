@@ -46,17 +46,19 @@ function getBannerStatus(params: {
   walletError: string | null;
   chainStatus: TransactionStatus;
   hasPaymentFailed: boolean;
-  isReconciling: boolean;
 }): BannerStatus {
-  const { walletError, chainStatus, hasPaymentFailed, isReconciling } = params;
+  const { walletError, chainStatus, hasPaymentFailed } = params;
 
   if (walletError) return "wallet_error";
   if (chainStatus === "failed") return "failed";
   if (chainStatus === "confirmed" && hasPaymentFailed) return "reconcile_failed";
-  if (chainStatus === "confirmed" && isReconciling) return "reconciling";
+  // Any on-chain confirmation still in checkout means we're finalizing (or
+  // about to). Never show the green "Ticket confirmed!" success here — that
+  // would flash between poll confirm and paymentStatus flipping to
+  // "processing", and the real success UI is PurchasedStage.
+  if (chainStatus === "confirmed") return "reconciling";
   if (chainStatus === "stalled") return "stalled";
   if (chainStatus === "pending") return "pending";
-  if (chainStatus === "confirmed") return "confirmed";
   // Pre-flight failure (e.g. sold out) — no tx was ever attempted.
   if (hasPaymentFailed) return "failed";
   return "idle";
@@ -149,7 +151,13 @@ export const TicketInfo: FC<TicketInfoProps> = ({
         setWalletState({ isLoading: false, error: null });
         startTracking(txHash);
       } else {
-        await onStatusChange?.({ isConfirmed: true, isPaid: false });
+        const result = await onStatusChange?.({ isConfirmed: true, isPaid: false });
+        if (result && !result.ok) {
+          // Parent owns paymentError / failed banner — don't pretend anonymous
+          // mode succeeded when reconcile rejected the attempt.
+          setWalletState({ isLoading: false, error: null });
+          return;
+        }
         setAnonymousBrowsing(true);
         setWalletState({ isLoading: false, error: null });
       }
@@ -269,7 +277,6 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     walletError: walletState.error,
     chainStatus,
     hasPaymentFailed,
-    isReconciling: isProcessingPayment,
   });
 
   const bannerError =
