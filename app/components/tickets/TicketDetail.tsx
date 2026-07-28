@@ -59,9 +59,13 @@ export function TicketDetail({
     return () => clearInterval(interval);
   }, []);
 
-  const state = getTicketState(ticket, now ?? Date.now());
-  // The QR is only scannable while the ticket is live — not before entry opens.
+  // `state` stays null until mounted (never calls Date.now() during SSR/first
+  // render), so the badge, QR styling, and caption render identically on server
+  // and client — no time-based hydration mismatch — then fill in once `now` is
+  // set. The QR is only scannable while the ticket is live, not before entry.
+  const state = now === null ? null : getTicketState(ticket, now);
   const qrActive = state === "live";
+  const qrDimmed = state !== null && !qrActive;
   const qrPayload = buildTicketQrPayload(ticket);
 
   return (
@@ -90,7 +94,7 @@ export function TicketDetail({
               SAFE MODE
             </span>
             <div className="absolute top-4 right-4">
-              <TicketStatusBadge state={state} />
+              {state && <TicketStatusBadge state={state} />}
             </div>
           </div>
 
@@ -139,20 +143,22 @@ export function TicketDetail({
 
             <div className="mt-4 flex justify-center">
               <div
-                className={`rounded-2xl border border-[#E9E9E9] bg-white p-4 ${qrActive ? "" : "opacity-40 grayscale"}`}
+                className={`rounded-2xl border border-[#E9E9E9] bg-white p-4 ${qrDimmed ? "opacity-40 grayscale" : ""}`}
               >
                 <QRCodeSVG value={qrPayload} size={220} level="M" className="block" />
               </div>
             </div>
 
             <p className="mt-4 text-center text-xs text-[#667185]">
-              {qrActive
-                ? "Show this code at the entry gate. It carries no personal data."
-                : state === "upcoming"
-                  ? "This code activates when the entry window opens."
-                  : state === "used"
-                    ? "This ticket has been scanned and is no longer active."
-                    : "This ticket has expired and can no longer be scanned."}
+              {state === null
+                ? "Checking ticket status…"
+                : qrActive
+                  ? "Show this code at the entry gate. It carries no personal data."
+                  : state === "upcoming"
+                    ? "This code activates when the entry window opens."
+                    : state === "used"
+                      ? "This ticket has been scanned and is no longer active."
+                      : "This ticket has expired and can no longer be scanned."}
             </p>
           </div>
 
