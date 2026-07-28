@@ -8,6 +8,11 @@ interface PurchasedStageProps {
   onCancelRegistration?: () => void;
 }
 
+/**
+ * Success screen shown once a ticket purchase is fully reconciled — the real
+ * "you're in" confirmation, as opposed to the in-flight status shown by the
+ * checkout banner. Offers access-code and cancel-registration actions.
+ */
 export const PurchasedStage: FC<PurchasedStageProps> = ({
   onViewAccessCode,
   onCancelRegistration,

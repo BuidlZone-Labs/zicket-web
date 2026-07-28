@@ -15,6 +15,15 @@ type TicketRecord = {
 
 const processedAttempts = new Map<string, TicketRecord>();
 
+/**
+ * Finalizes a ticket purchase after an on-chain payment (or free registration)
+ * has been confirmed. Idempotent by `attemptId`: replaying the same attempt
+ * returns the previously issued ticket instead of creating a duplicate, so a
+ * failed-then-retried reconcile can never issue two tickets or double-charge.
+ *
+ * Responds 400 for malformed/missing fields, 409 when the attempt isn't
+ * confirmed yet, and 200 with `{ ticketId, deduplicated }` on success.
+ */
 export async function POST(request: Request) {
   let body: ReconcileRequest;
 

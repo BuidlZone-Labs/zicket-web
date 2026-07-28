@@ -52,12 +52,19 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
   // on the checkout view forever.
   const isPurchased = isConfirmed && (event.isPaid ? isPaid : true);
 
+  /** Clears any in-progress/failed payment attempt back to a clean idle state. */
   const resetPaymentAttemptState = () => {
     setPaymentStatus("idle");
     setPaymentError(null);
     setAttemptId(null);
   };
 
+  /**
+   * Generates a stable idempotency key for a purchase attempt. The same key is
+   * reused across retries so the reconcile endpoint can dedupe them into one
+   * ticket. Falls back to a timestamp+random id where `crypto.randomUUID` is
+   * unavailable.
+   */
   const createAttemptId = () => {
     if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
       return crypto.randomUUID();
@@ -65,6 +72,12 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
     return `attempt_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
   };
 
+  /**
+   * Calls the reconcile endpoint to finalize a confirmed payment into a ticket.
+   * Normalizes HTTP errors, rejected payloads, and network failures into a
+   * single `{ ok, error }` result so callers don't have to branch on transport
+   * details.
+   */
   const reconcileWithBackend = async (
     nextAttemptId: string,
     status: { isConfirmed: boolean; isPaid: boolean },
@@ -113,6 +126,13 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
     }
   };
 
+  /**
+   * Entry point passed to {@link TicketInfo} as `onStatusChange`. Guards against
+   * concurrent/duplicate attempts and sold-out events, then drives the
+   * reconcile step, updating `paymentStatus`/`paymentError` so the checkout
+   * banner reflects the outcome. Safe to call again on retry — it reuses the
+   * existing `attemptId`.
+   */
   const handleStatusChange = async (status: {
     isConfirmed: boolean;
     isPaid: boolean;

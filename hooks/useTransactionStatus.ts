@@ -22,6 +22,7 @@ export interface UseTransactionStatusOptions {
     onFailed?: (error: string) => void
 }
 
+/** Fetches the current on-chain status for a tx hash from the status API. */
 async function fetchTransactionStatus(
     txHash: string
 ): Promise<{ status: "pending" | "confirmed" | "failed"; error?: string }> {
@@ -38,6 +39,15 @@ const INITIAL_STATE: TransactionState = {
     attempts: 0,
 }
 
+/**
+ * Polls the transaction status API for a tx hash and exposes its lifecycle
+ * (idle → pending → stalled/confirmed/failed) plus imperative controls. Handles
+ * timeout, transient-network "stalled" detection, and overlapping-request
+ * guarding so callers get a single reliable status stream.
+ *
+ * @returns the current state spread with `startTracking`, `reset`, and
+ * `checkConnection`.
+ */
 export function useTransactionStatus(options: UseTransactionStatusOptions = {}) {
     const {
         pollIntervalMs = 3_000,
@@ -70,6 +80,11 @@ export function useTransactionStatus(options: UseTransactionStatusOptions = {}) 
         }
     }, [])
 
+    /**
+     * Runs one status check: skips if a request is already in flight or the tx
+     * is terminal, times out after `maxAttempts`, and flips to "stalled" after
+     * repeated network failures. Fires onConfirmed/onFailed on terminal states.
+     */
     const poll = useCallback(async (txHash: string) => {
         if (inFlightRef.current) return
         const current = stateRef.current

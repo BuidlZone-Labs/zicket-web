@@ -130,6 +130,14 @@ const DEFAULT_EXPLORER_BASE_URL =
   process.env.NEXT_PUBLIC_EXPLORER_BASE_URL ?? "https://stellar.expert/explorer/public/tx"
 const DEFAULT_EXPLORER_LABEL = "View on Stellar Expert"
 
+/**
+ * Unified status/failure banner for the checkout and wallet flows. Renders one
+ * message per {@link BannerStatus} (pending, stalled, confirmed, reconciling,
+ * failed, reconcile_failed, wallet_error) with status-appropriate copy, an
+ * optional explorer link, a reassurance/caution hint, and retry /
+ * check-connection actions. The live-region wrapper stays mounted even when
+ * idle so screen readers don't miss the first announcement.
+ */
 export function TransactionStatusBanner({
   status,
   txHash,
@@ -274,6 +282,11 @@ export interface TxStatusDotProps {
   className?: string
 }
 
+/**
+ * Compact colored-dot + label indicator for a transaction status, for use in
+ * tight spaces (lists, headers) where the full {@link TransactionStatusBanner}
+ * would be too heavy. Renders nothing while idle.
+ */
 export function TxStatusDot({ status, className }: TxStatusDotProps) {
   if (status === "idle") return null
 

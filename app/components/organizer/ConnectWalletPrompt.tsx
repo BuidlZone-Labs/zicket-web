@@ -8,6 +8,11 @@ import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSd
 import { useUserSessionSync } from "@/lib/user-session-sync";
 import { TransactionStatusBanner } from "@/components/TransactionStatusBanner";
 
+/**
+ * Organizer-facing prompt to connect a wallet for receiving payments. Surfaces
+ * connect errors through the shared {@link TransactionStatusBanner} so wallet
+ * failures look consistent with the attendee checkout flow.
+ */
 export default function ConnectWalletPrompt() {
   const [walletState, setWalletState] = useState<WalletLoadState>({
     isLoading: false,
@@ -15,6 +20,7 @@ export default function ConnectWalletPrompt() {
   });
   const { walletConnected, setWalletConnected } = useUserSessionSync();
 
+  /** Loads the wallet SDK and reflects the outcome in local wallet state. */
   async function handleConnectWallet() {
     trackAnalyticsEvent("wallet_connect_cta_clicked", { source: "organizer_prompt" });
     setWalletState({ isLoading: true, error: null });

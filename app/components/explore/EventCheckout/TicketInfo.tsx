@@ -64,6 +64,12 @@ function getBannerStatus(params: {
   return "idle";
 }
 
+/**
+ * Ticket purchase panel for an event. Drives the paid (wallet + on-chain
+ * polling) and free (anonymous) flows, coordinates reconciliation via
+ * `onStatusChange`, and renders a single derived {@link TransactionStatusBanner}
+ * so wallet, chain, and reconcile states never contradict each other.
+ */
 export const TicketInfo: FC<TicketInfoProps> = ({
   eventId,
   ticketTypes,
