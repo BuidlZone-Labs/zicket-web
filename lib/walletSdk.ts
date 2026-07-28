@@ -57,10 +57,23 @@ export async function loadWalletSDK(): Promise<string> {
     );
     // ── END MOCK ──────────────────────────────────────────────────────────────
 
-    // Reset on failure so callers can retry
-    loadPromise.catch(() => {
-      loadPromise = null;
-    });
+    // Clear after settle so a later purchase/retry gets a fresh tx hash.
+    // Without this, every "Retry Payment" reuses the first mock hash and the
+    // status API keeps returning the previous terminal result forever.
+    //
+    // Use then(onFulfilled, onRejected) rather than finally(): finally() returns
+    // a derived promise that rejects when loading fails, and nothing consumes
+    // it, so it would surface as an unhandled rejection. Both handlers clear the
+    // singleton; the original loadPromise is still returned so callers keep
+    // seeing the real error.
+    void loadPromise.then(
+      () => {
+        loadPromise = null;
+      },
+      () => {
+        loadPromise = null;
+      },
+    );
   }
   return loadPromise;
 }

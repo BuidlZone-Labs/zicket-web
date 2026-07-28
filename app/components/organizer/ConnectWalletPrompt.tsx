@@ -6,7 +6,13 @@ import { useState } from "react";
 import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
 import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
 import { useUserSessionSync } from "@/lib/user-session-sync";
+import { TransactionStatusBanner } from "@/components/TransactionStatusBanner";
 
+/**
+ * Organizer-facing prompt to connect a wallet for receiving payments. Surfaces
+ * connect errors through the shared {@link TransactionStatusBanner} so wallet
+ * failures look consistent with the attendee checkout flow.
+ */
 export default function ConnectWalletPrompt() {
   const [walletState, setWalletState] = useState<WalletLoadState>({
     isLoading: false,
@@ -14,6 +20,7 @@ export default function ConnectWalletPrompt() {
   });
   const { walletConnected, setWalletConnected } = useUserSessionSync();
 
+  /** Loads the wallet SDK and reflects the outcome in local wallet state. */
   async function handleConnectWallet() {
     trackAnalyticsEvent("wallet_connect_cta_clicked", { source: "organizer_prompt" });
     setWalletState({ isLoading: true, error: null });
@@ -70,7 +77,13 @@ export default function ConnectWalletPrompt() {
             )}
           </button>
           {walletState.error && (
-            <p className="mt-2 text-sm text-red-500">{walletState.error}</p>
+            <TransactionStatusBanner
+              status="wallet_error"
+              error={walletState.error}
+              hint="Make sure your wallet extension is unlocked, then try again."
+              onRetry={handleConnectWallet}
+              className="mt-3 text-left"
+            />
           )}
         </div>
       </div>
