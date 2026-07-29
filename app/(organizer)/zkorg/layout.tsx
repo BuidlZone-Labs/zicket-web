@@ -2,7 +2,7 @@
 
 import React, { Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Logo from "@/public/images/Logo.png";
 import SearchIcon from "@/public/Search.png";
@@ -12,14 +12,14 @@ import UserProfileIcon from "@/public/Ellipse 8.png";
 import { ChevronDown } from 'lucide-react';
 
 function NavBar() {
-    const searchParams = useSearchParams();
-    const currentTab = searchParams.get('v') || 'overview';
+    const pathname = usePathname();
 
     const navLinks = [
-        { name: 'Overview', key: 'overview' },
-        { name: 'Events', key: 'events' },
-        { name: 'Orders', key: 'orders' },
-        { name: 'zkEmail Center', key: 'zkemail' },
+        { name: 'Overview', path: '/zkorg/dashboard' },
+        { name: 'Events', path: '/zkorg/events' },
+        { name: 'Orders', path: '/zkorg/orders' },
+        { name: 'zkEmail Center', path: '/zkorg/emails/create' },
+        { name: 'Settings', path: '/zkorg/settings' },
     ];
 
     return (
@@ -34,16 +34,19 @@ function NavBar() {
                     />
                 </Link>
                 <div className="flex items-center gap-2">
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.key}
-                            href={`?v=${link.key}`}
-                            className={`px-4 py-2 text-[16px] font-medium transition-colors duration-200 ${currentTab === link.key ? 'text-[#6917AF]' : 'text-[#475467] hover:text-[#6917AF]'
-                                }`}
-                        >
-                            {link.name}
-                        </Link>
-                    ))}
+                    {navLinks.map((link) => {
+                        const isActive = pathname.startsWith(link.path);
+                        return (
+                            <Link
+                                key={link.name}
+                                href={link.path}
+                                className={`px-4 py-2 text-[16px] font-medium transition-colors duration-200 ${isActive ? 'text-[#6917AF]' : 'text-[#475467] hover:text-[#6917AF]'
+                                    }`}
+                            >
+                                {link.name}
+                            </Link>
+                        );
+                    })}
                 </div>
             </div>
 
