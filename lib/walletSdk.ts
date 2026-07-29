@@ -49,18 +49,39 @@ export async function loadWalletSDK(): Promise<string> {
     // Simulates ~2 s of wallet connection + signing latency before returning
     // a fake Solana-style transaction hash. Remove this block when the real
     // SDK is wired up.
-    loadPromise = new Promise<string>((resolve) =>
+    const current = new Promise<string>((resolve) =>
       setTimeout(
         () => resolve("mock_tx_" + Math.random().toString(36).slice(2, 18)),
         2000
       )
     );
+    loadPromise = current;
     // ── END MOCK ──────────────────────────────────────────────────────────────
 
-    // Reset on failure so callers can retry
-    loadPromise.catch(() => {
-      loadPromise = null;
-    });
+    // Clear after settle so a later purchase/retry gets a fresh tx hash.
+    // Without this, every "Retry Payment" reuses the first mock hash and the
+    // status API keeps returning the previous terminal result forever.
+    //
+    // Use then(onFulfilled, onRejected) rather than finally(): finally() returns
+    // a derived promise that rejects when loading fails, and nothing consumes
+    // it, so it would surface as an unhandled rejection. Both handlers clear the
+    // singleton; the original loadPromise is still returned so callers keep
+    // seeing the real error.
+    //
+    // Guard by identity: only null out the singleton if it's still THIS load,
+    // so a settle from an earlier load can't wipe a newer in-flight one (matters
+    // once a real SDK adds awaits between creation and settle).
+    const clearIfCurrent = () => {
+      if (loadPromise === current) loadPromise = null;
+    };
+    void current.then(
+      () => {
+        clearIfCurrent();
+      },
+      () => {
+        clearIfCurrent();
+      },
+    );
   }
   return loadPromise;
 }
