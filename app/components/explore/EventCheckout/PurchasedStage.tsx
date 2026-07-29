@@ -2,30 +2,23 @@
 
 import { FC } from "react";
 import Image from "next/image";
-import { Loader2 } from "lucide-react";
 
 interface PurchasedStageProps {
-  isConfirming?: boolean;
   onViewAccessCode?: () => void;
   onCancelRegistration?: () => void;
 }
 
+/**
+ * Success screen shown once a ticket purchase is fully reconciled — the real
+ * "you're in" confirmation, as opposed to the in-flight status shown by the
+ * checkout banner. Offers access-code and cancel-registration actions.
+ */
 export const PurchasedStage: FC<PurchasedStageProps> = ({
-  isConfirming = false,
   onViewAccessCode,
   onCancelRegistration,
 }) => {
   return (
     <div className="p-8 border border-[#E9E9E9] rounded-2xl dark:border-[#232323] w-full bg-white dark:bg-[#0A0A0A] shadow-[0_4px_20px_rgba(0,0,0,0.03)] font-work-sans">
-      {isConfirming && (
-        <div className="flex items-center gap-2 mb-5 bg-[#F5EEFF] dark:bg-[#1C0F2E] border border-[#D4ADFC] dark:border-[#4A1F7A] text-[#6917AF] dark:text-[#D7B5F5] py-3 px-4 rounded-lg">
-          <Loader2 className="animate-spin shrink-0" size={16} />
-          <p className="text-xs font-medium">
-            Confirming on-chain&hellip; your ticket is reserved.
-          </p>
-        </div>
-      )}
-
       <div className="flex justify-between items-center mb-5">
         <h2 className="text-[32px] font-bold text-[#1F1F1F] dark:text-white">
           You&apos;re In!
@@ -79,7 +72,6 @@ export const PurchasedStage: FC<PurchasedStageProps> = ({
       <div className="flex gap-5">
         <button
           onClick={onViewAccessCode}
-          disabled={isConfirming}
           className="flex-1 py-4 bg-[#6917AF] text-white rounded-full flex items-center justify-center gap-3 hover:bg-[#5A1396] transition-all shadow-md active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <Image src="/qr-code-01.png" alt="QR Code" width={24} height={24} />
@@ -88,7 +80,6 @@ export const PurchasedStage: FC<PurchasedStageProps> = ({
 
         <button
           onClick={onCancelRegistration}
-          disabled={isConfirming}
           className="flex-1 py-4 border-2 border-[#6917AF] text-[#6917AF] dark:text-[#E0E0E0] rounded-full font-bold flex items-center justify-center gap-3 hover:bg-[#6917AF]/5 transition-all outline-none active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <Image
