@@ -21,6 +21,7 @@ import { CooldownMessage } from "@/app/components/AntiSpam/CooldownMessage";
 import { TransactionStatusBanner } from "@/components/TransactionStatusBanner";
 import type { TransactionStatus } from "@/hooks/useTransactionStatus";
 import { PrivacyTrustModal } from "@/app/components/privacy/PrivacyTrustModal";
+import { getEffectivePrivacyLevel } from "@/lib/privacyTrust";
 
 type PaymentStatus = "idle" | "processing" | "failed";
 
@@ -188,14 +189,21 @@ export const TicketInfo: FC<TicketInfoProps> = ({
   // The actual purchase — only reached after the user confirms in the modal.
   const runPurchase = async () => {
     setTrustOpen(false);
-    if (isProcessingPayment || txState.status === "pending" || isOnCooldown) return;
+    // Re-check availability first: the event can sell out while the modal is
+    // open, so bail before starting cooldown/loading (otherwise the CTA would
+    // stay stuck disabled with no path to clear it).
+    if (
+      isProcessingPayment ||
+      txState.status === "pending" ||
+      isOnCooldown ||
+      isSoldOut
+    )
+      return;
 
     startCooldown();
 
     setWalletState({ isLoading: true, error: null });
     setTxState({ status: "idle", txHash: null, error: null, attempts: 0 });
-
-    if (isSoldOut || isProcessingPayment) return;
 
     try {
       if (isPaid) {
@@ -476,7 +484,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
       <PrivacyTrustModal
         isOpen={trustOpen}
         context="payment"
-        privacyLevel={(privacyLevel[0] as PrivacyLevel) ?? "Anonymous"}
+        privacyLevel={getEffectivePrivacyLevel(privacyLevel as PrivacyLevel[])}
         isProcessing={walletState.isLoading}
         onConfirm={runPurchase}
         onClose={() => setTrustOpen(false)}

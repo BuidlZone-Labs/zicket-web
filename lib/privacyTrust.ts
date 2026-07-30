@@ -51,8 +51,11 @@ export interface TrustDisclosure {
 
 // Reused across disclosures so the promise stays consistent everywhere.
 const NO_IDENTITY = "NO IDENTITY STORED";
-const ON_DEVICE_REASSURANCE =
-  "Your data never leaves this device. We use a transparent lens to clarify intent and protect you — without friction.";
+// Scoped to what actually stays private — claiming "your data never leaves this
+// device" would contradict the shared items above (public address, ticket proof,
+// on-chain transaction) and reintroduce the ambiguity this feature removes.
+const SHARED_ONLY_REASSURANCE =
+  "Only the information listed above is shared to complete this action. Your private keys and seed phrase always stay in your wallet.";
 
 // Common "not shared" lines, reused so wording stays identical across contexts.
 const NOT_SHARED_KEYS: TrustItem = {
@@ -80,7 +83,7 @@ const WALLET_CONNECT: TrustDisclosure = {
     },
   ],
   notShared: [NOT_SHARED_KEYS, NOT_SHARED_ASSETS],
-  reassurance: ON_DEVICE_REASSURANCE,
+  reassurance: SHARED_ONLY_REASSURANCE,
   confirmLabel: "Allow Connection",
 };
 
@@ -101,7 +104,7 @@ const PAYMENT_BY_LEVEL: Record<PrivacyLevel, TrustDisclosure> = {
       { icon: "public-address", label: "Your wallet address" },
       { icon: "transaction", label: "Any payment history" },
     ],
-    reassurance: ON_DEVICE_REASSURANCE,
+    reassurance: SHARED_ONLY_REASSURANCE,
     confirmLabel: "Attend Anonymously",
   },
   "Verified Access": {
@@ -119,7 +122,7 @@ const PAYMENT_BY_LEVEL: Record<PrivacyLevel, TrustDisclosure> = {
       NOT_SHARED_KEYS,
       { icon: "contact", label: "Your contact details, published publicly" },
     ],
-    reassurance: ON_DEVICE_REASSURANCE,
+    reassurance: SHARED_ONLY_REASSURANCE,
     confirmLabel: "Confirm & Continue",
   },
   "Wallet Required": {
@@ -138,7 +141,7 @@ const PAYMENT_BY_LEVEL: Record<PrivacyLevel, TrustDisclosure> = {
       },
     ],
     notShared: [NOT_SHARED_KEYS, NOT_SHARED_ASSETS, NOT_SHARED_IDENTITY],
-    reassurance: ON_DEVICE_REASSURANCE,
+    reassurance: SHARED_ONLY_REASSURANCE,
     confirmLabel: "Confirm & Pay",
   },
 };
@@ -154,4 +157,24 @@ export function getTrustDisclosure(
 ): TrustDisclosure {
   if (context === "wallet-connect") return WALLET_CONNECT;
   return PAYMENT_BY_LEVEL[privacyLevel] ?? PAYMENT_BY_LEVEL.Anonymous;
+}
+
+// Most-disclosing first: an event can list several privacy levels, and the
+// prompt must never show weaker copy than the data it actually requires.
+const DISCLOSURE_PRIORITY: PrivacyLevel[] = [
+  "Wallet Required",
+  "Verified Access",
+  "Anonymous",
+];
+
+/**
+ * Picks the single privacy level whose disclosure covers everything a multi-level
+ * event needs — the most data-revealing one present — so we never under-disclose
+ * (e.g. show "Anonymous" copy for an event that also requires a wallet).
+ */
+export function getEffectivePrivacyLevel(levels: PrivacyLevel[]): PrivacyLevel {
+  for (const level of DISCLOSURE_PRIORITY) {
+    if (levels.includes(level)) return level;
+  }
+  return "Anonymous";
 }
