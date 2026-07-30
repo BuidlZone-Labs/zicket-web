@@ -230,7 +230,6 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
       ) : (
         <div className="max-w-[550px] mx-auto py-10">
           <PurchasedStage
-            isConfirming={isOptimistic && !isReallyPurchased}
             onViewAccessCode={() => router.push("/tickets")}
             onCancelRegistration={() => setShowCancelModal(true)}
           />
