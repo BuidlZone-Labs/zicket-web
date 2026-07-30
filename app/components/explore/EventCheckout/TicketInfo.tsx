@@ -20,6 +20,7 @@ import { useCooldown } from "@/hooks/useCooldown";
 import { CooldownMessage } from "@/app/components/AntiSpam/CooldownMessage";
 import { TransactionStatusBanner } from "@/components/TransactionStatusBanner";
 import type { TransactionStatus } from "@/hooks/useTransactionStatus";
+import { PrivacyTrustModal } from "@/app/components/privacy/PrivacyTrustModal";
 
 type PaymentStatus = "idle" | "processing" | "failed";
 
@@ -89,6 +90,10 @@ export const TicketInfo: FC<TicketInfoProps> = ({
   });
 
   const { isOnCooldown, remainingSeconds, startCooldown } = useCooldown({ duration: 8 });
+
+  // Privacy Trust prompt: the purchase button opens this first; the real
+  // purchase only runs when the user confirms in the modal.
+  const [trustOpen, setTrustOpen] = useState(false);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -173,7 +178,16 @@ export const TicketInfo: FC<TicketInfoProps> = ({
 
   useEffect(() => () => stopPolling(), []);
 
-  const handlePrimaryClick = async () => {
+  // Guard, then open the trust prompt instead of buying straight away.
+  const handlePrimaryClick = () => {
+    if (isProcessingPayment || txState.status === "pending" || isOnCooldown) return;
+    if (isSoldOut) return;
+    setTrustOpen(true);
+  };
+
+  // The actual purchase — only reached after the user confirms in the modal.
+  const runPurchase = async () => {
+    setTrustOpen(false);
     if (isProcessingPayment || txState.status === "pending" || isOnCooldown) return;
 
     startCooldown();
@@ -458,6 +472,15 @@ export const TicketInfo: FC<TicketInfoProps> = ({
           </div>
         </fieldset>
       </form>
+
+      <PrivacyTrustModal
+        isOpen={trustOpen}
+        context="payment"
+        privacyLevel={(privacyLevel[0] as PrivacyLevel) ?? "Anonymous"}
+        isProcessing={walletState.isLoading}
+        onConfirm={runPurchase}
+        onClose={() => setTrustOpen(false)}
+      />
     </div>
   );
 };

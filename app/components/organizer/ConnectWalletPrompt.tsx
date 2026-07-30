@@ -6,16 +6,26 @@ import { useState } from "react";
 import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
 import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
 import { useUserSessionSync } from "@/lib/user-session-sync";
+import { PrivacyTrustModal } from "@/app/components/privacy/PrivacyTrustModal";
 
 export default function ConnectWalletPrompt() {
   const [walletState, setWalletState] = useState<WalletLoadState>({
     isLoading: false,
     error: null,
   });
+  // Privacy Trust prompt: the button opens this first; the wallet only connects
+  // once the user confirms they understand what is (and isn't) shared.
+  const [trustOpen, setTrustOpen] = useState(false);
   const { walletConnected, setWalletConnected } = useUserSessionSync();
 
-  async function handleConnectWallet() {
+  function handleConnectWallet() {
+    if (walletState.isLoading) return;
     trackAnalyticsEvent("wallet_connect_cta_clicked", { source: "organizer_prompt" });
+    setTrustOpen(true);
+  }
+
+  async function runConnect() {
+    setTrustOpen(false);
     setWalletState({ isLoading: true, error: null });
     try {
       await loadWalletSDK();
@@ -74,6 +84,14 @@ export default function ConnectWalletPrompt() {
           )}
         </div>
       </div>
+
+      <PrivacyTrustModal
+        isOpen={trustOpen}
+        context="wallet-connect"
+        privacyLevel="Wallet Required"
+        onConfirm={runConnect}
+        onClose={() => setTrustOpen(false)}
+      />
     </div>
   );
 }
