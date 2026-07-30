@@ -6,24 +6,34 @@ import { useState } from "react";
 import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
 import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
 import { useUserSessionSync } from "@/lib/user-session-sync";
+import { TransactionStatusBanner } from "@/components/TransactionStatusBanner";
 import { PrivacyTrustModal } from "@/app/components/privacy/PrivacyTrustModal";
 
+/**
+ * Organizer-facing prompt to connect a wallet for receiving payments. Surfaces
+ * connect errors through the shared {@link TransactionStatusBanner} so wallet
+ * failures look consistent with the attendee checkout flow. A Privacy Trust
+ * prompt runs first, so the wallet only connects once the user confirms they
+ * understand what is (and isn't) shared.
+ */
 export default function ConnectWalletPrompt() {
   const [walletState, setWalletState] = useState<WalletLoadState>({
     isLoading: false,
     error: null,
   });
   // Privacy Trust prompt: the button opens this first; the wallet only connects
-  // once the user confirms they understand what is (and isn't) shared.
+  // once the user confirms in the modal.
   const [trustOpen, setTrustOpen] = useState(false);
   const { walletConnected, setWalletConnected } = useUserSessionSync();
 
+  /** Guard, then open the trust prompt instead of connecting straight away. */
   function handleConnectWallet() {
     if (walletState.isLoading) return;
     trackAnalyticsEvent("wallet_connect_cta_clicked", { source: "organizer_prompt" });
     setTrustOpen(true);
   }
 
+  /** The actual connect — only reached after the user confirms in the modal. */
   async function runConnect() {
     setTrustOpen(false);
     setWalletState({ isLoading: true, error: null });
@@ -79,9 +89,17 @@ export default function ConnectWalletPrompt() {
               </>
             )}
           </button>
-          {walletState.error && (
-            <p className="mt-2 text-sm text-red-500">{walletState.error}</p>
-          )}
+          {/* Rendered unconditionally (idle collapses to nothing) so the
+              banner's live region is already observed when the first error
+              appears — mounting it only on error would risk a missed
+              screen-reader announcement. */}
+          <TransactionStatusBanner
+            status={walletState.error ? "wallet_error" : "idle"}
+            error={walletState.error}
+            hint="Make sure your wallet extension is unlocked, then try again."
+            onRetry={handleConnectWallet}
+            className="mt-3 text-left"
+          />
         </div>
       </div>
 

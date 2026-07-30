@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { PurchasedStage } from "./EventCheckout/PurchasedStage";
 import { TicketCancellationModal } from "../TicketCancellationModal";
 import { EventDetailCard } from "./EventCheckout/eventDetailsCard";
@@ -38,19 +38,38 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("idle");
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [attemptId, setAttemptId] = useState<string | null>(null);
+  // Synchronous mutex for the reconcile call. `paymentStatus` only updates on
+  // the next render, so two calls firing in the same tick (e.g. a button click
+  // racing the poll's onConfirmed) would both read "idle" and both POST. A ref
+  // flips immediately, so the second caller is rejected before it can submit.
+  const inFlightRef = useRef(false);
 
-  const [isOptimistic, setIsOptimistic] = useState(false);
+  // Only switch to the purchased view once the ticket is *actually*
+  // reconciled. Switching away from TicketInfo any earlier (e.g. as soon as
+  // the on-chain tx confirms) would unmount it mid-reconcile, wiping the
+  // chain status/txHash it needs to show a correct "reconcile failed —
+  // don't double-pay" message and to retry reconciliation without
+  // re-triggering a new wallet payment.
+  //
+  // Gate on the event's own paid-ness rather than the reconciled `isPaid`
+  // flag: free events reconcile with isPaid=false (see the anonymous path in
+  // TicketInfo), so requiring isPaid here would strand free-event purchases
+  // on the checkout view forever.
+  const isPurchased = isConfirmed && (event.isPaid ? isPaid : true);
 
-  const isReallyPurchased = isConfirmed && isPaid;
-  const isPurchased = isOptimistic || isReallyPurchased;
-
+  /** Clears any in-progress/failed payment attempt back to a clean idle state. */
   const resetPaymentAttemptState = () => {
     setPaymentStatus("idle");
     setPaymentError(null);
-    setIsOptimistic(false);
     setAttemptId(null);
   };
 
+  /**
+   * Generates a stable idempotency key for a purchase attempt. The same key is
+   * reused across retries so the reconcile endpoint can dedupe them into one
+   * ticket. Falls back to a timestamp+random id where `crypto.randomUUID` is
+   * unavailable.
+   */
   const createAttemptId = () => {
     if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
       return crypto.randomUUID();
@@ -58,6 +77,12 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
     return `attempt_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
   };
 
+  /**
+   * Calls the reconcile endpoint to finalize a confirmed payment into a ticket.
+   * Normalizes HTTP errors, rejected payloads, and network failures into a
+   * single `{ ok, error }` result so callers don't have to branch on transport
+   * details.
+   */
   const reconcileWithBackend = async (
     nextAttemptId: string,
     status: { isConfirmed: boolean; isPaid: boolean },
@@ -106,29 +131,35 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
     }
   };
 
+  /**
+   * Entry point passed to {@link TicketInfo} as `onStatusChange`. Guards against
+   * concurrent/duplicate attempts and sold-out events, then drives the
+   * reconcile step, updating `paymentStatus`/`paymentError` so the checkout
+   * banner reflects the outcome. Safe to call again on retry — it reuses the
+   * existing `attemptId`.
+   */
   const handleStatusChange = async (status: {
     isConfirmed: boolean;
     isPaid: boolean;
   }): Promise<PaymentAttemptResult> => {
-    if (paymentStatus === "processing") {
+    if (inFlightRef.current) {
       return { ok: false, error: "Payment already in progress." };
     }
 
-    if (isReallyPurchased) {
+    if (isPurchased) {
       return { ok: false, error: "Payment already completed." };
     }
 
     if (event.slotsLeft < 1) {
       setAttemptId(null);
-      setIsOptimistic(false);
       setPaymentStatus("failed");
       setPaymentError("Tickets are sold out for this event.");
       return { ok: false, error: "Tickets are sold out for this event." };
     }
 
+    inFlightRef.current = true;
     const nextAttemptId = attemptId ?? createAttemptId();
     setAttemptId(nextAttemptId);
-    setIsOptimistic(true);
     setPaymentStatus("processing");
     setPaymentError(null);
 
@@ -144,12 +175,9 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
 
       setIsConfirmed(status.isConfirmed);
       setIsPaid(status.isPaid);
-      setIsOptimistic(false);
-      setAttemptId(null);
       resetPaymentAttemptState();
       return { ok: true };
     } catch (error) {
-      setIsOptimistic(false);
       setIsConfirmed(false);
       setIsPaid(false);
       setPaymentStatus("failed");
@@ -159,6 +187,8 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
           : "Payment failed. Please try again.";
       setPaymentError(message);
       return { ok: false, error: message };
+    } finally {
+      inFlightRef.current = false;
     }
   };
 
@@ -198,7 +228,6 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
       ) : (
         <div className="max-w-[550px] mx-auto py-10">
           <PurchasedStage
-            isConfirming={isOptimistic && !isReallyPurchased}
             onCancelRegistration={() => setShowCancelModal(true)}
           />
         </div>
@@ -214,8 +243,6 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
         onConfirm={(_, __, updatedState) => {
           setIsConfirmed(updatedState.isConfirmed);
           setIsPaid(updatedState.isPaid);
-          setIsOptimistic(false);
-          setAttemptId(null);
           resetPaymentAttemptState();
           setShowCancelModal(false);
         }}
