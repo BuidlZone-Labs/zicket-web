@@ -1,0 +1,43 @@
+name: CI Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Lint first: `next lint` generates next-env.d.ts, which `tsc` needs
+      # to resolve image module types on a fresh checkout.
+      - name: Run Linter
+        run: npm run lint
+
+      - name: Run Type Check
+        run: npx tsc --noEmit
+
+      - name: Run Vitest Unit Tests
+        run: npm run test
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright E2E Tests
+        run: npm run test:e2e
