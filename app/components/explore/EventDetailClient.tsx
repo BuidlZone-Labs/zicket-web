@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { PurchasedStage } from "./EventCheckout/PurchasedStage";
 import { TicketCancellationModal } from "../TicketCancellationModal";
@@ -32,6 +33,7 @@ type ReconcileResponse = {
  * Handles client-side state for purchase flow and modals
  */
 export default function EventDetailClient({ event }: EventDetailClientProps) {
+  const router = useRouter();
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -228,6 +230,7 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
       ) : (
         <div className="max-w-[550px] mx-auto py-10">
           <PurchasedStage
+            onViewAccessCode={() => router.push("/tickets")}
             onCancelRegistration={() => setShowCancelModal(true)}
           />
         </div>
