@@ -132,7 +132,7 @@ class InMemoryCache {
    * @param ttl - Time to live in milliseconds (default: 5 minutes)
    */
   static set<T>(key: string, data: T, ttl: number = DEFAULT_TTL): void {
-    if (ttl <= 0) {
+    if (!Number.isFinite(ttl) || ttl <= 0) {
       this.store.delete(key);
       return;
     }
