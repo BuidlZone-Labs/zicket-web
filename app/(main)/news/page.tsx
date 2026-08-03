@@ -63,7 +63,6 @@ export default function NewsPage() {
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M2 6.5A2.5 2.5 0 014.5 4h15A2.5 2.5 0 0122 6.5v11a2.5 2.5 0 01-2.5 2.5h-15A2.5 2.5 0 012 17.5v-11zm1.75.75l7.72 6.18a2.25 2.25 0 002.78 0l7.72-6.18" stroke="#6C6C6C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </span>
             </div>
-          </form>
           <Button
             type="submit"
             className="rounded-full px-4 py-6 mb-4 shadow-md border border-[#BF37DA] text-white text-lg"
@@ -74,6 +73,7 @@ export default function NewsPage() {
           >
             Subscribe!
           </Button>
+          </form>
         </section>
 
         {/* Announcement + Hero */}
