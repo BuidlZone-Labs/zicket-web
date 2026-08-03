@@ -56,8 +56,8 @@ class InMemoryCache {
    * Change the capacity at runtime. Shrinking the cap evicts immediately.
    */
   static configure({ maxEntries }: { maxEntries: number }): void {
-    if (!Number.isFinite(maxEntries) || maxEntries <= 0) {
-      throw new Error('maxEntries must be a positive number');
+    if (!Number.isInteger(maxEntries) || maxEntries <= 0) {
+      throw new Error('maxEntries must be a positive integer');
     }
 
     this.maxEntries = maxEntries;
