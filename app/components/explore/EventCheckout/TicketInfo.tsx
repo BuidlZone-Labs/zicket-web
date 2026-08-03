@@ -20,6 +20,8 @@ import { useCooldown } from "@/hooks/useCooldown";
 import { CooldownMessage } from "@/app/components/AntiSpam/CooldownMessage";
 import { TransactionStatusBanner, type BannerStatus } from "@/components/TransactionStatusBanner";
 import { useTransactionStatus, type TransactionStatus } from "@/hooks/useTransactionStatus";
+import { PrivacyTrustModal } from "@/app/components/privacy/PrivacyTrustModal";
+import { getEffectivePrivacyLevel } from "@/lib/privacyTrust";
 
 type PaymentStatus = "idle" | "processing" | "failed";
 
@@ -114,6 +116,10 @@ export const TicketInfo: FC<TicketInfoProps> = ({
 
   const { isOnCooldown, remainingSeconds, startCooldown } = useCooldown({ duration: 8 });
 
+  // Privacy Trust prompt: the purchase button opens this first; the real
+  // purchase only runs when the user confirms in the modal.
+  const [trustOpen, setTrustOpen] = useState(false);
+
   const decrementQuantity = () => {
     if (quantity > 1) {
       setQuantity((prev) => prev - 1);
@@ -132,18 +138,38 @@ export const TicketInfo: FC<TicketInfoProps> = ({
   // which we handle safely by checking inside the handlers and on render.
   const clampedQuantity = liveSlotsLeft > 0 ? Math.min(quantity, liveSlotsLeft) : quantity;
 
-  const handlePrimaryClick = async () => {
+  // Guard, then open the trust prompt instead of buying straight away.
+  const handlePrimaryClick = () => {
     if (isProcessingPayment || chainStatus === "pending" || chainStatus === "stalled" || isOnCooldown) return;
 
     // The on-chain payment already succeeded and only the backend reconcile
-    // step failed — retry reconciliation directly. Do NOT re-trigger a new
-    // wallet signature here, or the user could end up paying twice.
+    // step failed — retry reconciliation directly. No new data is shared, so
+    // skip the trust prompt and don't re-trigger a new wallet signature (the
+    // user could otherwise end up paying twice).
     if (hasPaymentFailed && chainStatus === "confirmed") {
       void onStatusChange?.({ isConfirmed: true, isPaid });
       return;
     }
 
     if (isSoldOut) return;
+
+    setTrustOpen(true);
+  };
+
+  // The actual purchase — only reached after the user confirms in the modal.
+  const runPurchase = async () => {
+    setTrustOpen(false);
+    // Re-check availability/state first: things can change while the modal is
+    // open (e.g. a sell-out), so bail before starting cooldown/loading —
+    // otherwise the CTA would stay stuck disabled with no path to clear it.
+    if (
+      isProcessingPayment ||
+      chainStatus === "pending" ||
+      chainStatus === "stalled" ||
+      isOnCooldown ||
+      isSoldOut
+    )
+      return;
 
     startCooldown();
 
@@ -470,6 +496,15 @@ export const TicketInfo: FC<TicketInfoProps> = ({
           </button>
         </div>
       </form>
+
+      <PrivacyTrustModal
+        isOpen={trustOpen}
+        context="payment"
+        privacyLevel={getEffectivePrivacyLevel(privacyLevel as PrivacyLevel[])}
+        isProcessing={walletState.isLoading}
+        onConfirm={runPurchase}
+        onClose={() => setTrustOpen(false)}
+      />
     </div>
   );
 };

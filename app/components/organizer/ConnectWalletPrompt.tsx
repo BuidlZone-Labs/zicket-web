@@ -7,22 +7,35 @@ import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
 import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
 import { useUserSessionSync } from "@/lib/user-session-sync";
 import { TransactionStatusBanner } from "@/components/TransactionStatusBanner";
+import { PrivacyTrustModal } from "@/app/components/privacy/PrivacyTrustModal";
 
 /**
  * Organizer-facing prompt to connect a wallet for receiving payments. Surfaces
  * connect errors through the shared {@link TransactionStatusBanner} so wallet
- * failures look consistent with the attendee checkout flow.
+ * failures look consistent with the attendee checkout flow. A Privacy Trust
+ * prompt runs first, so the wallet only connects once the user confirms they
+ * understand what is (and isn't) shared.
  */
 export default function ConnectWalletPrompt() {
   const [walletState, setWalletState] = useState<WalletLoadState>({
     isLoading: false,
     error: null,
   });
+  // Privacy Trust prompt: the button opens this first; the wallet only connects
+  // once the user confirms in the modal.
+  const [trustOpen, setTrustOpen] = useState(false);
   const { walletConnected, setWalletConnected } = useUserSessionSync();
 
-  /** Loads the wallet SDK and reflects the outcome in local wallet state. */
-  async function handleConnectWallet() {
+  /** Guard, then open the trust prompt instead of connecting straight away. */
+  function handleConnectWallet() {
+    if (walletState.isLoading) return;
     trackAnalyticsEvent("wallet_connect_cta_clicked", { source: "organizer_prompt" });
+    setTrustOpen(true);
+  }
+
+  /** The actual connect — only reached after the user confirms in the modal. */
+  async function runConnect() {
+    setTrustOpen(false);
     setWalletState({ isLoading: true, error: null });
     try {
       await loadWalletSDK();
@@ -89,6 +102,14 @@ export default function ConnectWalletPrompt() {
           />
         </div>
       </div>
+
+      <PrivacyTrustModal
+        isOpen={trustOpen}
+        context="wallet-connect"
+        privacyLevel="Wallet Required"
+        onConfirm={runConnect}
+        onClose={() => setTrustOpen(false)}
+      />
     </div>
   );
 }
