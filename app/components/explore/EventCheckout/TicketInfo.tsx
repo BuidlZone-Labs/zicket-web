@@ -14,7 +14,7 @@ import {
 } from "@/public/svg/svg";
 import { TicketType, PrivacyLevel } from "@/lib/dummyEvents/events";
 import { PrivacyLevelExplanationModal } from "../PrivacyLevelInfo";
-import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
+import { signTransaction, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
 import { useUserSessionSync } from "@/lib/user-session-sync";
 import { useCooldown } from "@/hooks/useCooldown";
 import { CooldownMessage } from "@/app/components/AntiSpam/CooldownMessage";
@@ -152,7 +152,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
 
     try {
       if (isPaid) {
-        const txHash = await loadWalletSDK();
+        const txHash = await signTransaction();
         setWalletConnected(true);
         setWalletState({ isLoading: false, error: null });
         startTracking(txHash);

@@ -4,6 +4,11 @@
  * This module is the single source of truth for all dynamic import logic.
  * Both TicketInfo and ConnectWalletPrompt import from here.
  *
+ * **Architecture**: SDK module loading is cached (loaded once per session),
+ * but transaction signing is always executed fresh so every payment attempt
+ * receives a unique transaction hash. Retries, subsequent purchases, and
+ * concurrent wallet connections never reuse a stale signature.
+ *
  * NOTE: Replace "wallet-sdk-package" below with the actual Azguard/wallet SDK
  * package name once it is added to package.json (e.g. "@azguard/sdk" or similar).
  */
@@ -26,73 +31,104 @@ export type WalletLoadState = {
   error: string | null; // non-null when the import failed
 };
 
-// Singleton promise — prevents duplicate in-flight requests
-let loadPromise: Promise<string> | null = null;
+//──────────────────────────────────────────────────────────────────────────────
+// Internal: SDK module loading cache
+//──────────────────────────────────────────────────────────────────────────────
+
+/** Cached SDK instance — loaded once per session, shared across all callers. */
+let sdkLoadPromise: Promise<WalletSDK> | null = null;
 
 /**
- * Dynamically imports the wallet SDK, connects the wallet, and returns the
- * transaction hash after the user signs.
- *
- * Returns: txHash string — used by the transaction lifecycle tracker in TicketInfo.
- *
- * TODO: Replace the mock below with the real implementation once the Azguard SDK
- * package is added to package.json. The wired version should look like:
- *
- *   const sdk = await import("@azguard/sdk")
- *   const { address } = await sdk.connect()
- *   const { txHash } = await sdk.signAndSendTransaction({ ... })
- *   return txHash
+ * Dynamically imports (or returns the cached) wallet SDK module.
+ * Safe to call concurrently — in-flight requests share the same promise.
  */
-export async function loadWalletSDK(): Promise<string> {
-  if (!loadPromise) {
-    // ── MOCK (development only) ───────────────────────────────────────────────
-    // Simulates ~2 s of wallet connection + signing latency before returning
-    // a fake Solana-style transaction hash. Remove this block when the real
-    // SDK is wired up.
-    const current = new Promise<string>((resolve) =>
+async function getOrLoadSDK(): Promise<WalletSDK> {
+  if (!sdkLoadPromise) {
+    const current = new Promise<WalletSDK>((resolve) =>
       setTimeout(
-        () => resolve("mock_tx_" + Math.random().toString(36).slice(2, 18)),
-        2000
+        () =>
+          resolve({
+            connect: async () => ({
+              address: "0x" + Math.random().toString(36).slice(2, 10),
+            }),
+            disconnect: async () => {},
+            isConnected: () => true,
+          }),
+        1500
       )
     );
-    loadPromise = current;
-    // ── END MOCK ──────────────────────────────────────────────────────────────
+    sdkLoadPromise = current;
 
-    // Clear after settle so a later purchase/retry gets a fresh tx hash.
-    // Without this, every "Retry Payment" reuses the first mock hash and the
-    // status API keeps returning the previous terminal result forever.
-    //
-    // Use then(onFulfilled, onRejected) rather than finally(): finally() returns
-    // a derived promise that rejects when loading fails, and nothing consumes
-    // it, so it would surface as an unhandled rejection. Both handlers clear the
-    // singleton; the original loadPromise is still returned so callers keep
-    // seeing the real error.
-    //
-    // Guard by identity: only null out the singleton if it's still THIS load,
-    // so a settle from an earlier load can't wipe a newer in-flight one (matters
-    // once a real SDK adds awaits between creation and settle).
+    // Clear on failure only so a failed load can be retried.
+    // On success the SDK stays cached — subsequent signTransaction() calls
+    // reuse it without reloading.
     const clearIfCurrent = () => {
-      if (loadPromise === current) loadPromise = null;
+      if (sdkLoadPromise === current) sdkLoadPromise = null;
     };
-    void current.then(
-      () => {
-        clearIfCurrent();
-      },
-      () => {
-        clearIfCurrent();
-      },
-    );
+    void current.then(undefined, clearIfCurrent);
   }
-  return loadPromise;
+  return sdkLoadPromise;
+}
+
+//──────────────────────────────────────────────────────────────────────────────
+// Public API
+//──────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Loads and connects the wallet SDK. The SDK module is only loaded once;
+ * subsequent calls reuse the cached instance.
+ *
+ * Returns the connected SDK instance for callers that need the wallet address
+ * or need to call other SDK methods.
+ */
+export async function loadWalletSDK(): Promise<WalletSDK> {
+  const sdk = await getOrLoadSDK();
+  await sdk.connect();
+  return sdk;
 }
 
 /**
- * Kicks off the import without awaiting — safe to call on hover/focus.
+ * Signs a new transaction and returns a unique transaction hash.
+ *
+ * Unlike the cached SDK module, this ALWAYS executes fresh — every call
+ * generates a new cryptographic signature. Safe for retries, subsequent
+ * purchases, and concurrent payments — no hash is ever reused.
+ *
+ * Returns: txHash string — used by the transaction lifecycle tracker in TicketInfo.
+ */
+export async function signTransaction(): Promise<string> {
+  await loadWalletSDK(); // ensure SDK is loaded AND wallet is connected
+
+  // ── MOCK (development only) ───────────────────────────────────────────────
+  // Simulates ~500 ms signing latency and returns a fresh fake Solana-style
+  // transaction hash every call. Remove this block when the real SDK is wired.
+  return new Promise<string>((resolve) =>
+    setTimeout(
+      () => resolve("mock_tx_" + Math.random().toString(36).slice(2, 18)),
+      500
+    )
+  );
+  // ── END MOCK ──────────────────────────────────────────────────────────────
+
+  // TODO: Replace the mock above with the real implementation once the Azguard
+  // SDK package is added to package.json. The wired version should look like:
+  //
+  //   const sdk = await getOrLoadSDK();
+  //   const { txHash } = await sdk.signAndSendTransaction({ ... });
+  //   return txHash;
+}
+
+/**
+ * Kicks off the SDK import without awaiting — safe to call on hover/focus.
  * Errors are intentionally swallowed here; they will surface on the next
- * loadWalletSDK() call. On failure the singleton is reset so a retry is possible.
+ * loadWalletSDK() or signTransaction() call. On failure the singleton is
+ * reset so a retry is possible.
  */
 export function preloadWalletSDK(): void {
-  loadWalletSDK().catch(() => {
-    loadPromise = null;
+  const current = getOrLoadSDK();
+  current.catch(() => {
+    // Guard by identity so a concurrent load started after this failure
+    // isn't clobbered.
+    if (sdkLoadPromise === current) sdkLoadPromise = null;
   });
 }
