@@ -51,6 +51,8 @@ class InMemoryCache {
   private static store = cacheStore;
   private static maxEntries = resolveMaxEntries();
   private static evictions = 0;
+  /** Bumped on clear() so in-flight fetches can tell their result is stale. */
+  private static generation = 0;
 
   /**
    * Change the capacity at runtime. Shrinking the cap evicts immediately.
@@ -162,6 +164,7 @@ class InMemoryCache {
   static clear(): void {
     this.store.clear();
     this.evictions = 0;
+    this.generation += 1;
   }
 
   /**
@@ -185,10 +188,14 @@ class InMemoryCache {
     }
 
     // Fetch fresh data
+    const generation = this.generation;
     const data = await fetcher();
 
-    // Store in cache
-    this.set(key, data, ttl);
+    // Only cache it if nothing invalidated the store while we were awaiting,
+    // otherwise this write would resurrect data that was just cleared
+    if (generation === this.generation) {
+      this.set(key, data, ttl);
+    }
 
     return data;
   }

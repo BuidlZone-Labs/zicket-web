@@ -74,12 +74,30 @@ const createSessionStore = (
     listeners.forEach((listener) => listener());
   };
 
+  /**
+   * Reading or writing localStorage can throw — the property access itself
+   * raises SecurityError when storage is blocked, and writes raise
+   * QuotaExceededError when it is full. Session state still works in memory, so
+   * these failures must never propagate into a render or a subscribe call.
+   */
+  const readPersistedState = (): SessionState | null => {
+    try {
+      return parseState(window.localStorage.getItem(STORAGE_KEY));
+    } catch {
+      return null;
+    }
+  };
+
   const persistState = () => {
     if (typeof window === 'undefined') {
       return;
     }
 
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // Storage unavailable or full; keep the in-memory state as-is
+    }
   };
 
   const applyState = (
@@ -117,7 +135,7 @@ const createSessionStore = (
 
     initialized = true;
 
-    const persistedState = parseState(window.localStorage.getItem(STORAGE_KEY));
+    const persistedState = readPersistedState();
     if (persistedState) {
       state = persistedState;
     } else {
