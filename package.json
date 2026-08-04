@@ -13,6 +13,8 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@aztec/aztec.js": "^0.72.0",
+    "@creit.tech/stellar-wallets-kit": "^1.7.5",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.2.2",
     "@icons-pack/react-simple-icons": "^13.11.1",
@@ -25,6 +27,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "^1.2.5",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@stellar/stellar-sdk": "^13.1.0",
     "@tiptap/extension-link": "^3.20.1",
     "@tiptap/extension-placeholder": "^3.20.1",
     "@tiptap/extension-text-align": "^3.20.1",

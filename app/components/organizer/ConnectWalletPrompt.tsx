@@ -5,9 +5,15 @@ import { ChevronRight, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
 import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
+import type { WalletChain } from "@/lib/wallet/types";
 import { useUserSessionSync } from "@/lib/user-session-sync";
 import { TransactionStatusBanner } from "@/components/TransactionStatusBanner";
 import { PrivacyTrustModal } from "@/app/components/privacy/PrivacyTrustModal";
+
+const CHAIN_OPTIONS: { id: WalletChain; label: string }[] = [
+  { id: "stellar", label: "Stellar" },
+  { id: "aztec", label: "Aztec" },
+];
 
 /**
  * Organizer-facing prompt to connect a wallet for receiving payments. Surfaces
@@ -24,7 +30,8 @@ export default function ConnectWalletPrompt() {
   // Privacy Trust prompt: the button opens this first; the wallet only connects
   // once the user confirms in the modal.
   const [trustOpen, setTrustOpen] = useState(false);
-  const { walletConnected, setWalletConnected } = useUserSessionSync();
+  const [chain, setChain] = useState<WalletChain>("stellar");
+  const { walletConnected, walletAddress, walletName, setWalletConnected } = useUserSessionSync();
 
   /** Guard, then open the trust prompt instead of connecting straight away. */
   function handleConnectWallet() {
@@ -38,9 +45,9 @@ export default function ConnectWalletPrompt() {
     setTrustOpen(false);
     setWalletState({ isLoading: true, error: null });
     try {
-      await loadWalletSDK();
-      setWalletConnected(true);
-      // TODO: invoke wallet connection flow with the loaded SDK
+      const adapter = await loadWalletSDK(chain);
+      const account = adapter.getAccount();
+      setWalletConnected(true, account ?? undefined);
       setWalletState({ isLoading: false, error: null });
     } catch (err) {
       const message =
@@ -70,10 +77,33 @@ export default function ConnectWalletPrompt() {
           Connect your wallet to receive payments from paid events.
         </p>
 
+        {!walletConnected && (
+          <div className="flex gap-2" role="radiogroup" aria-label="Wallet network">
+            {CHAIN_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                role="radio"
+                aria-checked={chain === option.id}
+                onClick={() => setChain(option.id)}
+                disabled={walletState.isLoading}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium border transition disabled:opacity-60 disabled:cursor-not-allowed ${
+                  chain === option.id
+                    ? "bg-[#6917AF] text-white border-[#6917AF]"
+                    : "bg-white text-[#475467] border-[#E3E3E3] hover:border-[#6917AF]"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="mt-2">
           <button
             onClick={handleConnectWallet}
-            onMouseEnter={preloadWalletSDK}
+            onMouseEnter={() => preloadWalletSDK(chain)}
+            onFocus={() => preloadWalletSDK(chain)}
             disabled={walletState.isLoading}
             className="inline-flex group items-center cursor-pointer gap-2 bg-[#6917AF] hover:bg-[#5A1296] text-white font-medium text-sm md:text-base px-8 py-3 rounded-full transition whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
           >
@@ -84,11 +114,16 @@ export default function ConnectWalletPrompt() {
               </>
             ) : (
               <>
-                {walletConnected ? "Wallet Connected" : "Connect Wallet"}
+                {walletConnected
+                  ? `Connected${walletName ? ` — ${walletName}` : ""}`
+                  : "Connect Wallet"}
                 <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition ease-in-out duration-300" />
               </>
             )}
           </button>
+          {walletConnected && walletAddress && (
+            <p className="mt-2 text-xs text-[#667185] break-all">{walletAddress}</p>
+          )}
           {/* Rendered unconditionally (idle collapses to nothing) so the
               banner's live region is already observed when the first error
               appears — mounting it only on error would risk a missed

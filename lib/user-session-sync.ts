@@ -1,10 +1,14 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
+import type { WalletAccount, WalletChain } from './wallet/types';
 
 type SessionState = {
   anonymousBrowsing: boolean;
   walletConnected: boolean;
+  walletAddress: string | null;
+  walletName: string | null;
+  walletChain: WalletChain | null;
 };
 
 type SessionStateUpdate = Partial<SessionState>;
@@ -16,6 +20,9 @@ const CHANNEL_NAME = 'zicket-user-session';
 let state: SessionState = {
   anonymousBrowsing: false,
   walletConnected: false,
+  walletAddress: null,
+  walletName: null,
+  walletChain: null,
 };
 
 let initialized = false;
@@ -36,6 +43,9 @@ const parseState = (value: string | null): SessionState | null => {
     return {
       anonymousBrowsing: Boolean(parsed.anonymousBrowsing),
       walletConnected: Boolean(parsed.walletConnected),
+      walletAddress: parsed.walletAddress ?? null,
+      walletName: parsed.walletName ?? null,
+      walletChain: parsed.walletChain ?? null,
     };
   } catch {
     return null;
@@ -125,7 +135,12 @@ export const useUserSessionSync = () => {
     ...snapshot,
     setAnonymousBrowsing: (anonymousBrowsing: boolean) =>
       updateUserSessionState({ anonymousBrowsing }),
-    setWalletConnected: (walletConnected: boolean) =>
-      updateUserSessionState({ walletConnected }),
+    setWalletConnected: (walletConnected: boolean, account?: WalletAccount) =>
+      updateUserSessionState({
+        walletConnected,
+        walletAddress: walletConnected ? (account?.address ?? null) : null,
+        walletName: walletConnected ? (account?.walletName ?? null) : null,
+        walletChain: walletConnected ? (account?.chain ?? null) : null,
+      }),
   };
 };

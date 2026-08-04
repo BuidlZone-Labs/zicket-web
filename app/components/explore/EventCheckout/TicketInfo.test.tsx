@@ -7,10 +7,12 @@ import type { TicketType } from "@/lib/dummyEvents/events";
 
 const mockSignTransaction = vi.fn();
 const mockPreloadWalletSDK = vi.fn();
+const mockGetConnectedAccount = vi.fn();
 
 vi.mock("@/lib/walletSdk", () => ({
   signTransaction: (...args: unknown[]) => mockSignTransaction(...args),
   preloadWalletSDK: (...args: unknown[]) => mockPreloadWalletSDK(...args),
+  getConnectedAccount: (...args: unknown[]) => mockGetConnectedAccount(...args),
 }));
 
 const mockSetWalletConnected = vi.fn();
@@ -91,6 +93,11 @@ describe("TicketInfo (event checkout)", () => {
     sessionState = { anonymousBrowsing: false, walletConnected: false };
     availabilityState = { slotsLeft: 10, isSoldOut: false };
     mockSignTransaction.mockResolvedValue("tx_abc123");
+    mockGetConnectedAccount.mockReturnValue({
+      address: "GATESTPUBLICKEY",
+      chain: "stellar",
+      walletName: "Freighter",
+    });
   });
 
   it("renders every ticket type and defaults to the first one selected", () => {
@@ -137,7 +144,10 @@ describe("TicketInfo (event checkout)", () => {
     await user.click(screen.getByText("Confirm Trust Prompt"));
 
     await waitFor(() => expect(mockSignTransaction).toHaveBeenCalledTimes(1));
-    expect(mockSetWalletConnected).toHaveBeenCalledWith(true);
+    expect(mockSetWalletConnected).toHaveBeenCalledWith(
+      true,
+      expect.objectContaining({ walletName: "Freighter" })
+    );
     expect(mockStartTracking).toHaveBeenCalledWith("tx_abc123");
   });
 

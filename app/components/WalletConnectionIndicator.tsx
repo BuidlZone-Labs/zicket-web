@@ -10,12 +10,16 @@ interface WalletConnectionIndicatorProps {
   showLabel?: boolean;
 }
 
-export default function WalletConnectionIndicator({ 
-  variant = "user", 
+function shortenAddress(address: string): string {
+  return address.length > 12 ? `${address.slice(0, 6)}…${address.slice(-4)}` : address;
+}
+
+export default function WalletConnectionIndicator({
+  variant = "user",
   className = "",
-  showLabel = true 
+  showLabel = true
 }: WalletConnectionIndicatorProps) {
-  const { walletConnected } = useUserSessionSync();
+  const { walletConnected, walletName, walletAddress } = useUserSessionSync();
 
   const baseClasses = "flex items-center gap-2 transition-all duration-200";
   const variantClasses = variant === "organizer" 
@@ -37,7 +41,11 @@ export default function WalletConnectionIndicator({
       )}
       {showLabel && (
         <span>
-          {walletConnected ? "Connected" : "Disconnected"}
+          {walletConnected
+            ? [walletName, walletAddress && shortenAddress(walletAddress)]
+                .filter(Boolean)
+                .join(" · ") || "Connected"
+            : "Disconnected"}
         </span>
       )}
     </div>
