@@ -14,7 +14,7 @@ import {
 } from "@/public/svg/svg";
 import { TicketType, PrivacyLevel } from "@/lib/dummyEvents/events";
 import { PrivacyLevelExplanationModal } from "../PrivacyLevelInfo";
-import { signTransaction, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
+import { signTransaction, preloadWalletSDK, getConnectedAccount, WalletLoadState } from "@/lib/walletSdk";
 import { useUserSessionSync } from "@/lib/user-session-sync";
 import { useCooldown } from "@/hooks/useCooldown";
 import { CooldownMessage } from "@/app/components/AntiSpam/CooldownMessage";
@@ -179,7 +179,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     try {
       if (isPaid) {
         const txHash = await signTransaction();
-        setWalletConnected(true);
+        setWalletConnected(true, getConnectedAccount() ?? undefined);
         setWalletState({ isLoading: false, error: null });
         startTracking(txHash);
       } else {
@@ -380,6 +380,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
                 <button
                   disabled={clampedQuantity === 1}
                   type="button"
+                  aria-label="Decrease quantity"
                   onClick={decrementQuantity}
                   className={`${clampedQuantity === 1
                     ? "text-[#667185] cursor-not-allowed"
@@ -393,6 +394,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
                 </p>
                 <button
                   type="button"
+                  aria-label="Increase quantity"
                   onClick={incrementQuantity}
                   disabled={isSoldOut || clampedQuantity === liveSlotsLeft}
                   className={`${isSoldOut || clampedQuantity === liveSlotsLeft
@@ -474,8 +476,8 @@ export const TicketInfo: FC<TicketInfoProps> = ({
             type="button"
             disabled={isSoldOut || isProcessingPayment || walletState.isLoading || isButtonDisabled}
             onClick={handlePrimaryClick}
-            onMouseEnter={isSoldOut ? undefined : preloadWalletSDK}
-            onFocus={isSoldOut ? undefined : preloadWalletSDK}
+            onMouseEnter={isSoldOut ? undefined : () => preloadWalletSDK()}
+            onFocus={isSoldOut ? undefined : () => preloadWalletSDK()}
             className={
               isSoldOut
                 ? "py-4 px-6 flex w-full items-center justify-center font-bold rounded-full gap-3 duration-200 ease-in-out transition bg-[#E4E5E6] text-[#98A2B3] cursor-not-allowed dark:bg-[#232323] dark:text-[#667085]"
