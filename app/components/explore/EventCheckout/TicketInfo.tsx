@@ -380,6 +380,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
                 <button
                   disabled={clampedQuantity === 1}
                   type="button"
+                  aria-label="Decrease quantity"
                   onClick={decrementQuantity}
                   className={`${clampedQuantity === 1
                     ? "text-[#667185] cursor-not-allowed"
@@ -393,6 +394,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
                 </p>
                 <button
                   type="button"
+                  aria-label="Increase quantity"
                   onClick={incrementQuantity}
                   disabled={isSoldOut || clampedQuantity === liveSlotsLeft}
                   className={`${isSoldOut || clampedQuantity === liveSlotsLeft
