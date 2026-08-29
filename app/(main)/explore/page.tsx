@@ -3,6 +3,7 @@
 import MainContent from "../../components/explore/MainContent";
 import { getAllPublicEvents } from "@/lib/dataFetching";
 import { Metadata } from "next";
+import { isCategoryPillValue } from "@/app/components/explore/categoryFilters";
 
 export const metadata: Metadata = {
   title: "Explore Events | Zicket",
@@ -26,6 +27,10 @@ const EVENT_TYPE_OPTIONS = [
 
 type SearchParamsRecord = Record<string, string | string[] | undefined>;
 
+interface ExplorePageProps {
+  searchParams: Promise<SearchParamsRecord>;
+}
+
 const extractSearchParam = (
   searchParams: SearchParamsRecord,
   key: string
@@ -46,12 +51,16 @@ const getOptionParam = <T extends readonly string[]>(
     : null;
 };
 
-export default async function ExplorePage({ searchParams }: any) {
+export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   const resolvedSearchParams = await searchParams;
   // Server-side data fetching for SSR
   const events = await getAllPublicEvents();
 
   const initialQuery = {
+    category: (() => {
+      const value = extractSearchParam(resolvedSearchParams, "category");
+      return isCategoryPillValue(value) ? value : null;
+    })(),
     privacy: getOptionParam(resolvedSearchParams, "privacy", PRIVACY_OPTIONS),
     price: getOptionParam(resolvedSearchParams, "price", PRICE_OPTIONS),
     location: extractSearchParam(resolvedSearchParams, "location"),

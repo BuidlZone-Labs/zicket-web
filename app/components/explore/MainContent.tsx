@@ -5,11 +5,18 @@ import { usePathname, useRouter } from "next/navigation";
 import Card from "./card";
 import { EmptyStateIcon } from "@/public/svg/svg";
 import CustomDropdown from "./CustomDropdown";
+import CategoryPillBar from "./CategoryPillBar";
+import {
+  eventMatchesCategory,
+  isCategoryPillValue,
+  type CategoryPillValue,
+} from "./categoryFilters";
 import type { EventType, Event } from "@/lib/dummyEvents/events";
 
 interface MainContentProps {
   initialEvents?: Event[];
   initialQuery?: {
+    category: CategoryPillValue | null;
     privacy: string | null;
     price: string | null;
     location: string | null;
@@ -47,6 +54,10 @@ const getQueryState = (search: string) => {
   const params = new URLSearchParams(search);
 
   return {
+    category: (() => {
+      const value = params.get("category");
+      return isCategoryPillValue(value) ? value : null;
+    })(),
     privacy: getOptionParam(params, "privacy", PRIVACY_OPTIONS),
     price: getOptionParam(params, "price", PRICE_OPTIONS),
     location: params.get("location"),
@@ -57,6 +68,7 @@ const getQueryState = (search: string) => {
 };
 
 const defaultQueryState = {
+  category: null,
   privacy: null,
   price: null,
   location: null,
@@ -74,6 +86,8 @@ function MainContent({ initialEvents = [], initialQuery }: MainContentProps) {
   const priceOptions = Array.from(PRICE_OPTIONS);
   const eventTypeOptions = Array.from(EVENT_TYPE_OPTIONS) as EventType[];
   const initialQueryState = initialQuery ?? defaultQueryState;
+  const [selectedCategory, setSelectedCategory] =
+    useState<CategoryPillValue | null>(initialQueryState.category);
   const [selectedPrivacy, setSelectedPrivacy] = useState<string | null>(
     initialQueryState.privacy
   );
@@ -179,6 +193,7 @@ function MainContent({ initialEvents = [], initialQuery }: MainContentProps) {
     const syncFiltersFromLocation = () => {
       const queryState = getQueryState(window.location.search);
 
+      setSelectedCategory(queryState.category);
       setSelectedPrivacy(queryState.privacy ?? null);
       setSelectedPrice(queryState.price ?? null);
       setSelectedLocation(queryState.location ?? null);
@@ -213,6 +228,7 @@ function MainContent({ initialEvents = [], initialQuery }: MainContentProps) {
       }
     };
 
+    setParam("category", selectedCategory);
     setParam("privacy", selectedPrivacy);
     setParam("price", selectedPrice);
     setParam("location", selectedLocation);
@@ -227,7 +243,7 @@ function MainContent({ initialEvents = [], initialQuery }: MainContentProps) {
     if (currentUrl !== nextUrl) {
       router.replace(nextUrl, { scroll: false });
     }
-  }, [pathname, router, selectedDate, selectedEventType, selectedLocation, selectedPrice, selectedPrivacy, selectedSort]);
+  }, [pathname, router, selectedCategory, selectedDate, selectedEventType, selectedLocation, selectedPrice, selectedPrivacy, selectedSort]);
 
   useEffect(() => {
     setMobilePrivacy(selectedPrivacy);
@@ -277,13 +293,20 @@ function MainContent({ initialEvents = [], initialQuery }: MainContentProps) {
             selectedEventType &&
             event.type.toString().trim().toLowerCase() ===
               selectedEventType.toString().trim().toLowerCase());
+        const matchCategory =
+          !selectedCategory || eventMatchesCategory(event, selectedCategory);
         const matchPrivacy =
           !selectedPrivacy || event.privacyLevel[0] === selectedPrivacy;
         return (
-          matchLocation && matchPrice && matchDate && matchType && matchPrivacy
+          matchLocation &&
+          matchPrice &&
+          matchDate &&
+          matchType &&
+          matchCategory &&
+          matchPrivacy
         );
       }),
-    [events, selectedLocation, selectedPrice, selectedDate, selectedEventType, selectedPrivacy]
+    [events, selectedCategory, selectedLocation, selectedPrice, selectedDate, selectedEventType, selectedPrivacy]
   );
 
   const sortedEvents = useMemo(() => {
@@ -333,6 +356,7 @@ function MainContent({ initialEvents = [], initialQuery }: MainContentProps) {
     setVisibleCount(PAGE_SIZE);
   }, [
     PAGE_SIZE,
+    selectedCategory,
     selectedPrivacy,
     selectedPrice,
     selectedLocation,
@@ -370,6 +394,11 @@ function MainContent({ initialEvents = [], initialQuery }: MainContentProps) {
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4">
+      <CategoryPillBar
+        activeCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        className="mb-4"
+      />
       <div className="hidden sm:flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2 border-t border-b border-t-[#F0F2F5] border-b-[#F0F2F5] py-2">
         <div className="flex flex-wrap items-center gap-2 text-sm w-full md:w-auto">
           <span className="font-medium text-[#7C3AED] mr-1">Filters:</span>
