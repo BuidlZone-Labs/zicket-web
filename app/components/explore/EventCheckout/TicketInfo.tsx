@@ -5,15 +5,13 @@ import { Check, Loader2, CheckCircle2, WifiOff } from "lucide-react";
 import { useSimulatedAvailability } from "@/lib/hooks/useSimulatedAvailability";
 import {
   DangerIcon,
-  KeyIcon,
-  LockIcon,
   PasswordProtectedShield,
   PlusIcon,
   MinusIcon,
-  ShiedIcon,
 } from "@/public/svg/svg";
 import { TicketType, PrivacyLevel } from "@/lib/dummyEvents/events";
 import { PrivacyLevelExplanationModal } from "../PrivacyLevelInfo";
+import { PrivacyBadge } from "@/components/privacy/PrivacyBadge";
 import {
   useStellarWallet,
   type StellarWalletId,
@@ -469,25 +467,19 @@ export const TicketInfo: FC<TicketInfoProps> = ({
             </div>
           </div>
           <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between">
               <p className="font-medium text-[#7D7D7D]">Privacy Level:</p>
               <PrivacyLevelExplanationModal privacyLevels={privacyLevel as PrivacyLevel[]} />
             </div>
-            <div className="flex gap-4 flex-wrap">
+            <div className="flex gap-3 flex-wrap">
               {privacyLevel.map((level) => (
-                <div
+                <PrivacyBadge
                   key={level}
-                  className="flex gap-1 border-[0.5px] rounded-lg border-[#E9E9E9] px-3 py-1.5 items-center"
-                >
-                  {level === "Wallet Required" ? (
-                    <KeyIcon />
-                  ) : level === "Verified Access" ? (
-                    <LockIcon />
-                  ) : (
-                    <ShiedIcon />
-                  )}
-                  <p className="text-[#5C6170] text-xs font-medium">{level}</p>
-                </div>
+                  level={level}
+                  displayLabel={level}
+                  showLearnMore={false}
+                  size="md"
+                />
               ))}
             </div>
           </div>

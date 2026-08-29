@@ -2,15 +2,12 @@ import dummyImage from "@/public/images/solana_summer_game.jpg";
 import {
   CalendarIcon,
   ClockIcon,
-  KeyIcon,
   LocationIcon,
-  LockIcon,
   ShareIcon,
-  ShiedIcon,
   TagIcon,
   TicketIconSmall,
 } from "@/public/svg/svg";
-import { PrivacyLevelExplanationModal } from "../PrivacyLevelInfo";
+import { PrivacyBadge } from "@/components/privacy/PrivacyBadge";
 import type { PrivacyLevel } from "@/lib/dummyEvents/events";
 import Image from "next/image";
 import { FC } from "react";
@@ -60,39 +57,32 @@ export const EventDetailCard: FC<EventDetailCardProps> = ({
               <ShareIcon />
             </div>
           </div>
-          <div className="flex gap-6 flex-wrap">
-            <div className="flex gap-2">
+          <div className="flex gap-6 flex-wrap items-center">
+            <div className="flex gap-2 items-center">
               <CalendarIcon />
               <p className="text-[#5C6170] text-sm sm:text-base">{date}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <ClockIcon />
               <p className="text-[#5C6170] text-sm sm:text-base">{time}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <LocationIcon />
               <p className="text-[#5C6170] text-sm sm:text-base">{type}</p>
             </div>
             <div className="flex gap-2 items-center">
               <TicketIconSmall />
-              <p className="text-[#1E1E1E] font-medium text-lg capitalize">
+              <p className="text-[#1E1E1E] dark:text-[#E0E0E0] font-medium text-lg capitalize">
                 {price ? "paid" : "Free"}
               </p>
             </div>
-            <div className="flex gap-3 items-center">
-              <div className="flex gap-1 border-[0.5px] rounded-lg border-[#E9E9E9] px-3 py-1.5 items-center">
-                {privacyType === "Wallet Required" ? (
-                  <KeyIcon />
-                ) : privacyType === "Verified Access" ? (
-                  <LockIcon />
-                ) : (
-                  <ShiedIcon />
-                )}
-                <p className="text-[#5C6170] text-xs font-medium">
-                  {privacyType}
-                </p>
-              </div>
-              <PrivacyLevelExplanationModal privacyLevels={[privacyType]} />
+            <div className="flex gap-2 items-center">
+              <PrivacyBadge
+                level={privacyType}
+                showLearnMore={true}
+                displayLabel={privacyType}
+                size="md"
+              />
             </div>
           </div>
         </div>

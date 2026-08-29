@@ -15,6 +15,7 @@ const sliderEvents = dummyEvents.slice(0, 8).map((e) => ({
   time: e.time,
   location: e.location,
   price: e.isPaid ? `$${e.price.toFixed(2)}` : "Free",
+  privacyLevel: e.privacyLevel,
 }));
 
 export default function EventSlider() {

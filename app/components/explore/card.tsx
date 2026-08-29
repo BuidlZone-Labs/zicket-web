@@ -12,7 +12,7 @@ import { explorePathForEventTitle } from "@/lib/dummyEvents/explorePath";
 import { useSimulatedAvailability } from "@/lib/hooks/useSimulatedAvailability";
 import Image from "next/image";
 import Link from "next/link";
-import { PrivacyLevelBadge } from "./PrivacyLevelInfo";
+import { PrivacyBadge } from "@/components/privacy/PrivacyBadge";
 
 function Card({ id, title, date, time, location, price, image, privacyLevel }: Event) {
   const { slotsLeft, isSoldOut } = useSimulatedAvailability(id);
@@ -34,8 +34,18 @@ function Card({ id, title, date, time, location, price, image, privacyLevel }: E
           className="object-cover rounded-xl"
           sizes="(max-width: 24rem) 100vw, 384px"
         />
-        <div className="absolute top-2 left-2">
-          <PrivacyLevelBadge privacyLevel={privacyLevel[0]} />
+        <div
+          className="absolute top-2 left-2 z-10"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
+          <PrivacyBadge
+            level={privacyLevel[0]}
+            variant="card-overlay"
+            size="sm"
+          />
         </div>
       </div>
       <div className="p-4  w-full space-y-4">
