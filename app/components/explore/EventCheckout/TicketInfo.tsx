@@ -14,7 +14,11 @@ import {
 } from "@/public/svg/svg";
 import { TicketType, PrivacyLevel } from "@/lib/dummyEvents/events";
 import { PrivacyLevelExplanationModal } from "../PrivacyLevelInfo";
-import { signTransaction, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
+import {
+  useStellarWallet,
+  type StellarWalletId,
+  type WalletLoadState,
+} from "@/hooks/useStellarWallet";
 import { useUserSessionSync } from "@/lib/user-session-sync";
 import { useCooldown } from "@/hooks/useCooldown";
 import { CooldownMessage } from "@/app/components/AntiSpam/CooldownMessage";
@@ -24,6 +28,11 @@ import { PrivacyTrustModal } from "@/app/components/privacy/PrivacyTrustModal";
 import { getEffectivePrivacyLevel } from "@/lib/privacyTrust";
 
 type PaymentStatus = "idle" | "processing" | "failed";
+
+// Set once the Soroban ticketing contract is deployed and its address is
+// known (see the zicket-contract repo). Purchases fail fast with a clear
+// error until then, instead of silently signing against a placeholder ID.
+const TICKET_CONTRACT_ID = process.env.NEXT_PUBLIC_ZICKET_EVENT_CONTRACT_ID;
 
 interface TicketInfoProps {
   eventId: string;
@@ -97,6 +106,16 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     isLoading: false,
     error: null,
   });
+  // Which Stellar wallet the next purchase attempt connects with — defaults
+  // to Freighter; the "Use Albedo instead" link below switches this for
+  // people without the Freighter extension installed.
+  const [selectedWallet, setSelectedWallet] = useState<StellarWalletId>("freighter");
+  const {
+    publicKey: stellarPublicKey,
+    connect: connectStellarWallet,
+    preload: preloadStellarWallet,
+    registerForEvent,
+  } = useStellarWallet();
 
   // Chain-level polling lives in the shared hook; reconciliation (the backend
   // finalize step) is owned by the parent (onStatusChange) and layered on top
@@ -178,8 +197,23 @@ export const TicketInfo: FC<TicketInfoProps> = ({
 
     try {
       if (isPaid) {
-        const txHash = await signTransaction();
+        if (!TICKET_CONTRACT_ID) {
+          throw new Error(
+            "Ticket purchases aren't configured yet — the event contract address is missing."
+          );
+        }
+
+        // connectStellarWallet() always resolves with a non-null publicKey on
+        // success (it throws instead of resolving on any failure/rejection).
+        const address: string =
+          stellarPublicKey ?? (await connectStellarWallet(selectedWallet)).publicKey!;
         setWalletConnected(true);
+
+        const txHash = await registerForEvent({
+          contractId: TICKET_CONTRACT_ID,
+          eventId,
+          attendee: address,
+        });
         setWalletState({ isLoading: false, error: null });
         startTracking(txHash);
       } else {
@@ -474,8 +508,8 @@ export const TicketInfo: FC<TicketInfoProps> = ({
             type="button"
             disabled={isSoldOut || isProcessingPayment || walletState.isLoading || isButtonDisabled}
             onClick={handlePrimaryClick}
-            onMouseEnter={isSoldOut ? undefined : preloadWalletSDK}
-            onFocus={isSoldOut ? undefined : preloadWalletSDK}
+            onMouseEnter={isSoldOut ? undefined : () => preloadStellarWallet("freighter")}
+            onFocus={isSoldOut ? undefined : () => preloadStellarWallet("freighter")}
             className={
               isSoldOut
                 ? "py-4 px-6 flex w-full items-center justify-center font-bold rounded-full gap-3 duration-200 ease-in-out transition bg-[#E4E5E6] text-[#98A2B3] cursor-not-allowed dark:bg-[#232323] dark:text-[#667085]"
@@ -494,6 +528,21 @@ export const TicketInfo: FC<TicketInfoProps> = ({
               <>{buttonLabel()}</>
             )}
           </button>
+
+          {/* Freighter is the default wallet; offer Albedo (no extension
+              required) as a fallback for anyone who doesn't have Freighter
+              installed. Only relevant before a wallet is connected. */}
+          {isPaid && !stellarPublicKey && !isSoldOut && (
+            <button
+              type="button"
+              onClick={() => setSelectedWallet((w) => (w === "albedo" ? "freighter" : "albedo"))}
+              className="mt-2 w-full text-center text-xs text-[#667185] hover:text-[#6917AF] underline-offset-2 hover:underline cursor-pointer"
+            >
+              {selectedWallet === "albedo"
+                ? "Use Freighter instead"
+                : "No Freighter? Use Albedo instead"}
+            </button>
+          )}
         </div>
       </form>
 
