@@ -4,7 +4,7 @@ import Image from "next/image";
 import { ChevronRight, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { trackAnalyticsEvent } from "@/lib/privacyAnalytics";
-import { loadWalletSDK, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
+import { useStellarWallet, type WalletLoadState } from "@/hooks/useStellarWallet";
 import { useUserSessionSync } from "@/lib/user-session-sync";
 import { TransactionStatusBanner } from "@/components/TransactionStatusBanner";
 import { PrivacyTrustModal } from "@/app/components/privacy/PrivacyTrustModal";
@@ -25,6 +25,7 @@ export default function ConnectWalletPrompt() {
   // once the user confirms in the modal.
   const [trustOpen, setTrustOpen] = useState(false);
   const { walletConnected, setWalletConnected } = useUserSessionSync();
+  const { connect: connectStellarWallet, preload: preloadStellarWallet } = useStellarWallet();
 
   /** Guard, then open the trust prompt instead of connecting straight away. */
   function handleConnectWallet() {
@@ -38,9 +39,8 @@ export default function ConnectWalletPrompt() {
     setTrustOpen(false);
     setWalletState({ isLoading: true, error: null });
     try {
-      await loadWalletSDK();
+      await connectStellarWallet("freighter");
       setWalletConnected(true);
-      // TODO: invoke wallet connection flow with the loaded SDK
       setWalletState({ isLoading: false, error: null });
     } catch (err) {
       const message =
@@ -73,7 +73,7 @@ export default function ConnectWalletPrompt() {
         <div className="mt-2">
           <button
             onClick={handleConnectWallet}
-            onMouseEnter={preloadWalletSDK}
+            onMouseEnter={() => preloadStellarWallet("freighter")}
             disabled={walletState.isLoading}
             className="inline-flex group items-center cursor-pointer gap-2 bg-[#6917AF] hover:bg-[#5A1296] text-white font-medium text-sm md:text-base px-8 py-3 rounded-full transition whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
           >

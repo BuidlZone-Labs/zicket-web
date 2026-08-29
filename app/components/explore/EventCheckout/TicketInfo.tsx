@@ -14,7 +14,12 @@ import {
 } from "@/public/svg/svg";
 import { TicketType, PrivacyLevel } from "@/lib/dummyEvents/events";
 import { PrivacyLevelExplanationModal } from "../PrivacyLevelInfo";
-import { signTransaction, preloadWalletSDK, WalletLoadState } from "@/lib/walletSdk";
+import {
+  useStellarWallet,
+  type StellarWalletId,
+  type WalletLoadState,
+  type WalletSnapshot,
+} from "@/hooks/useStellarWallet";
 import { useUserSessionSync } from "@/lib/user-session-sync";
 import { useCooldown } from "@/hooks/useCooldown";
 import { CooldownMessage } from "@/app/components/AntiSpam/CooldownMessage";
@@ -24,6 +29,11 @@ import { PrivacyTrustModal } from "@/app/components/privacy/PrivacyTrustModal";
 import { getEffectivePrivacyLevel } from "@/lib/privacyTrust";
 
 type PaymentStatus = "idle" | "processing" | "failed";
+
+// Set once the Soroban ticketing contract is deployed and its address is
+// known (see the zicket-contract repo). Purchases fail fast with a clear
+// error until then, instead of silently signing against a placeholder ID.
+const TICKET_CONTRACT_ID = process.env.NEXT_PUBLIC_ZICKET_EVENT_CONTRACT_ID;
 
 interface TicketInfoProps {
   eventId: string;
@@ -55,13 +65,13 @@ function getBannerStatus(params: {
   if (chainStatus === "failed") return "failed";
   if (chainStatus === "confirmed" && hasPaymentFailed) return "reconcile_failed";
   // Any on-chain confirmation still in checkout means we're finalizing (or
-  // about to). Never show the green "Ticket confirmed!" success here — that
+  // about to). Never show the green "Ticket confirmed!" success here -- that
   // would flash between poll confirm and paymentStatus flipping to
   // "processing", and the real success UI is PurchasedStage.
   if (chainStatus === "confirmed") return "reconciling";
   if (chainStatus === "stalled") return "stalled";
   if (chainStatus === "pending") return "pending";
-  // Pre-flight failure (e.g. sold out) — no tx was ever attempted.
+  // Pre-flight failure (e.g. sold out) -- no tx was ever attempted.
   if (hasPaymentFailed) return "failed";
   return "idle";
 }
@@ -97,10 +107,20 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     isLoading: false,
     error: null,
   });
+  // Which Stellar wallet the next purchase attempt connects with -- defaults
+  // to Freighter; the "Use Albedo instead" link below switches this for
+  // people without the Freighter extension installed.
+  const [selectedWallet, setSelectedWallet] = useState<StellarWalletId>("freighter");
+  const {
+    publicKey: stellarPublicKey,
+    connect: connectStellarWallet,
+    preload: preloadStellarWallet,
+    registerForEvent,
+  } = useStellarWallet();
 
   // Chain-level polling lives in the shared hook; reconciliation (the backend
   // finalize step) is owned by the parent (onStatusChange) and layered on top
-  // via paymentStatus/paymentError below — see `bannerStatus`.
+  // via paymentStatus/paymentError below -- see `bannerStatus`.
   const {
     status: chainStatus,
     txHash: chainTxHash,
@@ -143,7 +163,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     if (isProcessingPayment || chainStatus === "pending" || chainStatus === "stalled" || isOnCooldown) return;
 
     // The on-chain payment already succeeded and only the backend reconcile
-    // step failed — retry reconciliation directly. No new data is shared, so
+    // step failed -- retry reconciliation directly. No new data is shared, so
     // skip the trust prompt and don't re-trigger a new wallet signature (the
     // user could otherwise end up paying twice).
     if (hasPaymentFailed && chainStatus === "confirmed") {
@@ -156,11 +176,11 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     setTrustOpen(true);
   };
 
-  // The actual purchase — only reached after the user confirms in the modal.
+  // The actual purchase -- only reached after the user confirms in the modal.
   const runPurchase = async () => {
     setTrustOpen(false);
     // Re-check availability/state first: things can change while the modal is
-    // open (e.g. a sell-out), so bail before starting cooldown/loading —
+    // open (e.g. a sell-out), so bail before starting cooldown/loading --
     // otherwise the CTA would stay stuck disabled with no path to clear it.
     if (
       isProcessingPayment ||
@@ -178,14 +198,41 @@ export const TicketInfo: FC<TicketInfoProps> = ({
 
     try {
       if (isPaid) {
-        const txHash = await signTransaction();
+        if (!TICKET_CONTRACT_ID) {
+          throw new Error(
+            "Ticket purchases aren't configured yet -- the event contract address is missing."
+          );
+        }
+
+        // A snapshot is only needed when we just connected in this call --
+        // hook state won't have re-rendered yet, so signAndSubmit would read
+        // a stale (pre-connect) walletId/publicKey without it. Already-
+        // connected users (stellarPublicKey already set) skip this entirely.
+        let walletSnapshot: WalletSnapshot | undefined;
+        let address: string;
+        if (stellarPublicKey) {
+          address = stellarPublicKey;
+        } else {
+          // connectStellarWallet() always resolves with a non-null snapshot
+          // on success (it throws instead of resolving on any failure).
+          const connected = await connectStellarWallet(selectedWallet);
+          walletSnapshot = connected;
+          address = connected.publicKey;
+        }
         setWalletConnected(true);
+
+        const txHash = await registerForEvent({
+          contractId: TICKET_CONTRACT_ID,
+          eventId,
+          attendee: address,
+          wallet: walletSnapshot,
+        });
         setWalletState({ isLoading: false, error: null });
         startTracking(txHash);
       } else {
         const result = await onStatusChange?.({ isConfirmed: true, isPaid: false });
         if (result && !result.ok) {
-          // Parent owns paymentError / failed banner — don't pretend anonymous
+          // Parent owns paymentError / failed banner -- don't pretend anonymous
           // mode succeeded when reconcile rejected the attempt.
           setWalletState({ isLoading: false, error: null });
           return;
@@ -446,7 +493,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
           </div>
         </fieldset>
 
-        {/* Unified failure/status banner — covers wallet errors, chain
+        {/* Unified failure/status banner -- covers wallet errors, chain
             delays, stalled connections, on-chain failures, and partial
             (on-chain-ok-but-not-reconciled) confirmations in one place.
             Kept outside the fieldset above: its retry/check-connection
@@ -474,8 +521,8 @@ export const TicketInfo: FC<TicketInfoProps> = ({
             type="button"
             disabled={isSoldOut || isProcessingPayment || walletState.isLoading || isButtonDisabled}
             onClick={handlePrimaryClick}
-            onMouseEnter={isSoldOut ? undefined : preloadWalletSDK}
-            onFocus={isSoldOut ? undefined : preloadWalletSDK}
+            onMouseEnter={isSoldOut ? undefined : () => preloadStellarWallet("freighter")}
+            onFocus={isSoldOut ? undefined : () => preloadStellarWallet("freighter")}
             className={
               isSoldOut
                 ? "py-4 px-6 flex w-full items-center justify-center font-bold rounded-full gap-3 duration-200 ease-in-out transition bg-[#E4E5E6] text-[#98A2B3] cursor-not-allowed dark:bg-[#232323] dark:text-[#667085]"
@@ -494,6 +541,21 @@ export const TicketInfo: FC<TicketInfoProps> = ({
               <>{buttonLabel()}</>
             )}
           </button>
+
+          {/* Freighter is the default wallet; offer Albedo (no extension
+              required) as a fallback for anyone who doesn't have Freighter
+              installed. Only relevant before a wallet is connected. */}
+          {isPaid && !stellarPublicKey && !isSoldOut && (
+            <button
+              type="button"
+              onClick={() => setSelectedWallet((w) => (w === "albedo" ? "freighter" : "albedo"))}
+              className="mt-2 w-full text-center text-xs text-[#667185] hover:text-[#6917AF] underline-offset-2 hover:underline cursor-pointer"
+            >
+              {selectedWallet === "albedo"
+                ? "Use Freighter instead"
+                : "No Freighter? Use Albedo instead"}
+            </button>
+          )}
         </div>
       </form>
 
