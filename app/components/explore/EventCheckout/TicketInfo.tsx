@@ -18,6 +18,7 @@ import {
   useStellarWallet,
   type StellarWalletId,
   type WalletLoadState,
+  type WalletSnapshot,
 } from "@/hooks/useStellarWallet";
 import { useUserSessionSync } from "@/lib/user-session-sync";
 import { useCooldown } from "@/hooks/useCooldown";
@@ -64,13 +65,13 @@ function getBannerStatus(params: {
   if (chainStatus === "failed") return "failed";
   if (chainStatus === "confirmed" && hasPaymentFailed) return "reconcile_failed";
   // Any on-chain confirmation still in checkout means we're finalizing (or
-  // about to). Never show the green "Ticket confirmed!" success here — that
+  // about to). Never show the green "Ticket confirmed!" success here -- that
   // would flash between poll confirm and paymentStatus flipping to
   // "processing", and the real success UI is PurchasedStage.
   if (chainStatus === "confirmed") return "reconciling";
   if (chainStatus === "stalled") return "stalled";
   if (chainStatus === "pending") return "pending";
-  // Pre-flight failure (e.g. sold out) — no tx was ever attempted.
+  // Pre-flight failure (e.g. sold out) -- no tx was ever attempted.
   if (hasPaymentFailed) return "failed";
   return "idle";
 }
@@ -106,7 +107,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     isLoading: false,
     error: null,
   });
-  // Which Stellar wallet the next purchase attempt connects with — defaults
+  // Which Stellar wallet the next purchase attempt connects with -- defaults
   // to Freighter; the "Use Albedo instead" link below switches this for
   // people without the Freighter extension installed.
   const [selectedWallet, setSelectedWallet] = useState<StellarWalletId>("freighter");
@@ -119,7 +120,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
 
   // Chain-level polling lives in the shared hook; reconciliation (the backend
   // finalize step) is owned by the parent (onStatusChange) and layered on top
-  // via paymentStatus/paymentError below — see `bannerStatus`.
+  // via paymentStatus/paymentError below -- see `bannerStatus`.
   const {
     status: chainStatus,
     txHash: chainTxHash,
@@ -162,7 +163,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     if (isProcessingPayment || chainStatus === "pending" || chainStatus === "stalled" || isOnCooldown) return;
 
     // The on-chain payment already succeeded and only the backend reconcile
-    // step failed — retry reconciliation directly. No new data is shared, so
+    // step failed -- retry reconciliation directly. No new data is shared, so
     // skip the trust prompt and don't re-trigger a new wallet signature (the
     // user could otherwise end up paying twice).
     if (hasPaymentFailed && chainStatus === "confirmed") {
@@ -175,11 +176,11 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     setTrustOpen(true);
   };
 
-  // The actual purchase — only reached after the user confirms in the modal.
+  // The actual purchase -- only reached after the user confirms in the modal.
   const runPurchase = async () => {
     setTrustOpen(false);
     // Re-check availability/state first: things can change while the modal is
-    // open (e.g. a sell-out), so bail before starting cooldown/loading —
+    // open (e.g. a sell-out), so bail before starting cooldown/loading --
     // otherwise the CTA would stay stuck disabled with no path to clear it.
     if (
       isProcessingPayment ||
@@ -199,27 +200,39 @@ export const TicketInfo: FC<TicketInfoProps> = ({
       if (isPaid) {
         if (!TICKET_CONTRACT_ID) {
           throw new Error(
-            "Ticket purchases aren't configured yet — the event contract address is missing."
+            "Ticket purchases aren't configured yet -- the event contract address is missing."
           );
         }
 
-        // connectStellarWallet() always resolves with a non-null publicKey on
-        // success (it throws instead of resolving on any failure/rejection).
-        const address: string =
-          stellarPublicKey ?? (await connectStellarWallet(selectedWallet)).publicKey!;
+        // A snapshot is only needed when we just connected in this call --
+        // hook state won't have re-rendered yet, so signAndSubmit would read
+        // a stale (pre-connect) walletId/publicKey without it. Already-
+        // connected users (stellarPublicKey already set) skip this entirely.
+        let walletSnapshot: WalletSnapshot | undefined;
+        let address: string;
+        if (stellarPublicKey) {
+          address = stellarPublicKey;
+        } else {
+          // connectStellarWallet() always resolves with a non-null snapshot
+          // on success (it throws instead of resolving on any failure).
+          const connected = await connectStellarWallet(selectedWallet);
+          walletSnapshot = connected;
+          address = connected.publicKey;
+        }
         setWalletConnected(true);
 
         const txHash = await registerForEvent({
           contractId: TICKET_CONTRACT_ID,
           eventId,
           attendee: address,
+          wallet: walletSnapshot,
         });
         setWalletState({ isLoading: false, error: null });
         startTracking(txHash);
       } else {
         const result = await onStatusChange?.({ isConfirmed: true, isPaid: false });
         if (result && !result.ok) {
-          // Parent owns paymentError / failed banner — don't pretend anonymous
+          // Parent owns paymentError / failed banner -- don't pretend anonymous
           // mode succeeded when reconcile rejected the attempt.
           setWalletState({ isLoading: false, error: null });
           return;
@@ -480,7 +493,7 @@ export const TicketInfo: FC<TicketInfoProps> = ({
           </div>
         </fieldset>
 
-        {/* Unified failure/status banner — covers wallet errors, chain
+        {/* Unified failure/status banner -- covers wallet errors, chain
             delays, stalled connections, on-chain failures, and partial
             (on-chain-ok-but-not-reconciled) confirmations in one place.
             Kept outside the fieldset above: its retry/check-connection

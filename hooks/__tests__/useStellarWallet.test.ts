@@ -240,6 +240,36 @@ describe("useStellarWallet -- signing and submitting", () => {
     });
   });
 
+  it("registers immediately after connect using the returned snapshot", async () => {
+    // Regression test: registerForEvent must use the wallet snapshot
+    // connect() returns, not the hook's `state` closure, which hasn't
+    // re-rendered yet in a connect-then-register call within the same tick.
+    freighter.isConnected.mockResolvedValue({ isConnected: true });
+    freighter.requestAccess.mockResolvedValue({ address: "GATTENDEE...ADDR" });
+    freighter.getNetwork.mockResolvedValue({
+      network: "TESTNET",
+      networkPassphrase: "Test SDF Network ; September 2015",
+    });
+    freighter.signTransaction.mockResolvedValue({
+      signedTxXdr: "SIGNED_XDR",
+      signerAddress: "GATTENDEE...ADDR",
+    });
+
+    const { result } = renderHook(() => useStellarWallet());
+
+    let txHash = "";
+    await act(async () => {
+      const connected = await result.current.connect("freighter");
+      txHash = await result.current.registerForEvent({
+        contractId: "CCONTRACT...ID",
+        eventId: "evt_123",
+        wallet: connected,
+      });
+    });
+
+    expect(txHash).toBe("FAKE_TX_HASH");
+  });
+
   it("requires a connected wallet before signing", async () => {
     const { result } = renderHook(() => useStellarWallet());
 

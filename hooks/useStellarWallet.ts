@@ -46,6 +46,13 @@ export type ScValArg =
   | { type: "u32"; value: number }
   | { type: "u64" | "i128"; value: string | number | bigint };
 
+export interface WalletSnapshot {
+  walletId: StellarWalletId;
+  publicKey: string;
+  network: StellarNetwork;
+  networkPassphrase: string;
+}
+
 export interface ContractInvocation {
   contractId: string;
   method: string;
@@ -60,6 +67,13 @@ export interface RegisterForEventParams {
   /** Defaults to the connected wallet's address. */
   attendee?: string;
   rpcUrl?: string;
+  /**
+   * Pass the snapshot returned by connect() when registering immediately
+   * after a first-time connection -- hook state won't have re-rendered yet,
+   * so signAndSubmit would otherwise read a stale (pre-connect) walletId/
+   * publicKey and throw. Already-connected callers can omit this.
+   */
+  wallet?: WalletSnapshot;
 }
 
 export interface BatchRegisterForEventParams {
@@ -67,6 +81,7 @@ export interface BatchRegisterForEventParams {
   eventId: string;
   attendees: string[];
   rpcUrl?: string;
+  wallet?: WalletSnapshot;
 }
 
 // Soroban RPC endpoints are network infrastructure, not secrets -- safe to
@@ -185,7 +200,7 @@ export function useStellarWallet() {
   // connect flows against the same wallet.
   const connectingRef = useRef(false);
 
-  const connect = useCallback(async (walletId: StellarWalletId) => {
+  const connect = useCallback(async (walletId: StellarWalletId): Promise<WalletSnapshot> => {
     if (connectingRef.current) {
       throw new Error("A wallet connection is already in progress.");
     }
@@ -240,8 +255,14 @@ export function useStellarWallet() {
       setState(next);
       // Returned directly (not just set on state) because callers that
       // immediately sign after connecting can't rely on this render's
-      // `state` closure reflecting the update yet.
-      return next;
+      // `state` closure reflecting the update yet. The `!`s are safe: both
+      // branches above always populate all four fields on success.
+      return {
+        walletId: next.walletId!,
+        publicKey: next.publicKey!,
+        network: next.network!,
+        networkPassphrase: next.networkPassphrase!,
+      };
     } catch (err) {
       const message = toErrorMessage(err, walletId);
       setState({ ...INITIAL_STATE, error: message });
@@ -266,17 +287,21 @@ export function useStellarWallet() {
   }, []);
 
   const signAndSubmit = useCallback(
-    async (invocation: ContractInvocation): Promise<string> => {
-      if (!state.publicKey || !state.walletId) {
+    async (invocation: ContractInvocation, wallet?: WalletSnapshot): Promise<string> => {
+      const walletId = wallet?.walletId ?? state.walletId;
+      const publicKey = wallet?.publicKey ?? state.publicKey;
+      const network = wallet?.network ?? state.network ?? "TESTNET";
+      const networkPassphrase =
+        wallet?.networkPassphrase ?? state.networkPassphrase ?? NETWORK_PASSPHRASES[network];
+
+      if (!publicKey || !walletId) {
         throw new Error("Connect a wallet before signing a transaction.");
       }
 
-      const network = state.network ?? "TESTNET";
-      const networkPassphrase = state.networkPassphrase ?? NETWORK_PASSPHRASES[network];
       const rpcUrl = invocation.rpcUrl ?? DEFAULT_RPC_URLS[network];
       const server = new StellarRpc.Server(rpcUrl);
 
-      const sourceAccount = await server.getAccount(state.publicKey);
+      const sourceAccount = await server.getAccount(publicKey);
       const contract = new Contract(invocation.contractId);
       const scArgs = invocation.args.map(toScVal);
 
@@ -293,10 +318,10 @@ export function useStellarWallet() {
       const prepared = await server.prepareTransaction(built);
       const unsignedXdr = prepared.toXDR();
 
-      const signedXdr = await signWithWallet(state.walletId, unsignedXdr, {
+      const signedXdr = await signWithWallet(walletId, unsignedXdr, {
         network,
         networkPassphrase,
-        address: state.publicKey,
+        address: publicKey,
       });
 
       const signedTx = TransactionBuilder.fromXDR(signedXdr, networkPassphrase);
@@ -310,36 +335,46 @@ export function useStellarWallet() {
         );
       }
 
+      if (sendResult.status === "TRY_AGAIN_LATER") {
+        throw new Error("The network is busy right now. Please try again in a moment.");
+      }
+
       return sendResult.hash;
     },
     [state.publicKey, state.walletId, state.network, state.networkPassphrase]
   );
 
   const registerForEvent = useCallback(
-    ({ contractId, eventId, attendee, rpcUrl }: RegisterForEventParams) =>
-      signAndSubmit({
-        contractId,
-        rpcUrl,
-        method: "register_for_event",
-        args: [
-          { type: "address", value: attendee ?? state.publicKey ?? "" },
-          { type: "string", value: eventId },
-        ],
-      }),
+    ({ contractId, eventId, attendee, rpcUrl, wallet }: RegisterForEventParams) =>
+      signAndSubmit(
+        {
+          contractId,
+          rpcUrl,
+          method: "register_for_event",
+          args: [
+            { type: "address", value: attendee ?? wallet?.publicKey ?? state.publicKey ?? "" },
+            { type: "string", value: eventId },
+          ],
+        },
+        wallet
+      ),
     [signAndSubmit, state.publicKey]
   );
 
   const batchRegisterForEvent = useCallback(
-    ({ contractId, eventId, attendees, rpcUrl }: BatchRegisterForEventParams) =>
-      signAndSubmit({
-        contractId,
-        rpcUrl,
-        method: "batch_register_for_event",
-        args: [
-          { type: "addressList", value: attendees },
-          { type: "string", value: eventId },
-        ],
-      }),
+    ({ contractId, eventId, attendees, rpcUrl, wallet }: BatchRegisterForEventParams) =>
+      signAndSubmit(
+        {
+          contractId,
+          rpcUrl,
+          method: "batch_register_for_event",
+          args: [
+            { type: "addressList", value: attendees },
+            { type: "string", value: eventId },
+          ],
+        },
+        wallet
+      ),
     [signAndSubmit]
   );
 
