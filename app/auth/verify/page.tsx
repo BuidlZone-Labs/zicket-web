@@ -64,7 +64,7 @@ const VerifyPage = () => {
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 800));
-      router.push("/dashboard");
+      router.push("/zkorg");
     } catch {
       setError("Verification failed. Please try again.");
     } finally {

@@ -67,7 +67,7 @@ function Footer() {
         <div className="flex flex-wrap gap-10 justify-between pt-9 border-t mt-10 sm:mt-20 border-[#5E5E5E]">
           <nav className="flex w-full max-w-89 justify-between text-xs" aria-label="Footer navigation">
             <Link href="/explore">Explore</Link>
-            <Link href="/login">Host Event</Link>
+            <Link href="/auth/login">Host Event</Link>
             <Link href="/how-it-works">How It Works</Link>
             <Link href="/about">About</Link>
             <Link href="/#faqs">FAQs</Link>

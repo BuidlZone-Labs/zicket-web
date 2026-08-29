@@ -18,7 +18,7 @@ export function SignupForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle signup logic here
-    router.push("/verify");
+    router.push("/auth/verify");
   };
 
   return (
