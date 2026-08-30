@@ -10,6 +10,7 @@ import {
   type CanonicalPrivacyLevel,
 } from "./constants";
 import { PrivacyDisclosureModal } from "./PrivacyDisclosureModal";
+import { AppTooltip } from "@/components/ui/app-tooltip";
 import type { PrivacyLevel } from "@/lib/dummyEvents/events";
 
 export interface PrivacyBadgeProps {
@@ -17,6 +18,9 @@ export interface PrivacyBadgeProps {
   variant?: "default" | "compact" | "pill" | "subtle" | "outline" | "card-overlay";
   interactive?: boolean;
   showLearnMore?: boolean;
+  showInfoIcon?: boolean;
+  showTooltip?: boolean;
+  tooltipText?: string;
   displayLabel?: string;
   className?: string;
   onClick?: (e: React.MouseEvent) => void;
@@ -28,6 +32,9 @@ export function PrivacyBadge({
   variant = "default",
   interactive = true,
   showLearnMore = false,
+  showInfoIcon = true,
+  showTooltip = true,
+  tooltipText,
   displayLabel,
   className = "",
   onClick,
@@ -39,6 +46,7 @@ export function PrivacyBadge({
 
   // Label to show: either explicit displayLabel, or formatted version of original level if specified
   const label = displayLabel || (typeof level === "string" && level.length > 0 ? level : config.label);
+  const resolvedTooltip = tooltipText || `${config.guaranteeText} Click for full disclosure.`;
 
   const getIcon = () => {
     const iconSizeClass =
@@ -119,37 +127,59 @@ export function PrivacyBadge({
     }
   };
 
+  const infoIconSize = size === "sm" ? "size-3" : size === "lg" ? "size-4" : "size-3.5";
+
+  const badgeElement = (
+    <div
+      role={interactive ? "button" : "status"}
+      tabIndex={interactive ? 0 : undefined}
+      aria-haspopup={interactive ? "dialog" : undefined}
+      aria-expanded={interactive ? isModalOpen : undefined}
+      aria-label={`Privacy level: ${label}. ${config.guaranteeText} Click to view data disclosure guarantees.`}
+      title={showTooltip ? undefined : config.guaranteeText}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      className={`inline-flex items-center font-semibold tracking-tight transition-all duration-150 select-none group/badge ${getVariantStyles()} ${getSizeStyles()} ${
+        interactive
+          ? "cursor-pointer hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#6917AF]/40 dark:focus:ring-[#D7B5F5]/40"
+          : ""
+      } ${className}`}
+    >
+      {/* Icon & Label */}
+      <span className="flex items-center gap-1.5">
+        {getIcon()}
+        <span>{label}</span>
+      </span>
+
+      {/* Info indicator icon */}
+      {showInfoIcon && !showLearnMore && interactive && (
+        <span
+          className="ml-0.5 flex items-center justify-center text-current/50 group-hover/badge:text-[#6917AF] dark:group-hover/badge:text-[#D7B5F5] transition-colors"
+          aria-hidden="true"
+        >
+          <Info className={infoIconSize} />
+        </span>
+      )}
+
+      {/* Learn More label if explicitly requested */}
+      {showLearnMore && (
+        <span className="inline-flex items-center gap-1 ml-1 pl-1.5 border-l border-current/20 text-[11px] font-medium text-[#6917AF] dark:text-[#D7B5F5] group-hover/badge:underline">
+          <span>Learn More</span>
+          <Info className="size-3" aria-hidden="true" />
+        </span>
+      )}
+    </div>
+  );
+
   return (
     <>
-      <div
-        role={interactive ? "button" : "status"}
-        tabIndex={interactive ? 0 : undefined}
-        aria-haspopup={interactive ? "dialog" : undefined}
-        aria-expanded={interactive ? isModalOpen : undefined}
-        aria-label={`Privacy level: ${label}. Click to view data disclosure guarantees.`}
-        title={config.guaranteeText}
-        onClick={handleClick}
-        onKeyDown={handleKeyDown}
-        className={`inline-flex items-center font-semibold tracking-tight transition-all duration-150 select-none ${getVariantStyles()} ${getSizeStyles()} ${
-          interactive
-            ? "cursor-pointer hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#6917AF]/40 dark:focus:ring-[#D7B5F5]/40"
-            : ""
-        } ${className}`}
-      >
-        {/* Status Dot / Icon */}
-        <span className="flex items-center gap-1.5">
-          {getIcon()}
-          <span>{label}</span>
-        </span>
-
-        {/* Learn More link or info trigger if requested */}
-        {showLearnMore && (
-          <span className="inline-flex items-center gap-1 ml-1 pl-1.5 border-l border-current/20 text-[11px] font-medium text-[#6917AF] dark:text-[#D7B5F5] hover:underline">
-            <span>Learn More</span>
-            <Info className="size-3" aria-hidden="true" />
-          </span>
-        )}
-      </div>
+      {showTooltip ? (
+        <AppTooltip label={resolvedTooltip} side="top" delayDuration={150}>
+          {badgeElement}
+        </AppTooltip>
+      ) : (
+        badgeElement
+      )}
 
       {interactive && (
         <PrivacyDisclosureModal
@@ -161,3 +191,4 @@ export function PrivacyBadge({
     </>
   );
 }
+

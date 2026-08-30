@@ -1,7 +1,7 @@
 "use client";
 
 import { FC, useState } from "react";
-import { Check, Loader2, CheckCircle2, WifiOff } from "lucide-react";
+import { Check, Loader2, CheckCircle2, WifiOff, Info } from "lucide-react";
 import { useSimulatedAvailability } from "@/lib/hooks/useSimulatedAvailability";
 import {
   DangerIcon,
@@ -12,6 +12,7 @@ import {
 import { TicketType, PrivacyLevel } from "@/lib/dummyEvents/events";
 import { PrivacyLevelExplanationModal } from "../PrivacyLevelInfo";
 import { PrivacyBadge } from "@/components/privacy/PrivacyBadge";
+import { AppTooltip } from "@/components/ui/app-tooltip";
 import {
   useStellarWallet,
   type StellarWalletId,
@@ -392,11 +393,28 @@ export const TicketInfo: FC<TicketInfoProps> = ({
                     htmlFor={ticket.name}
                     className={`${isSoldOut ? "cursor-not-allowed opacity-60" : "cursor-pointer"} flex px-6 py-4 border rounded-xl justify-between items-center transition-colors ease-in-out duration-300 ${isSelected ? "border-[#6917AF]" : "border-[#E4E5E6]"}`}
                   >
-                    <p
-                      className={`font-semibold text-base transition-colors ease-in-out duration-300 ${isSelected ? "text-[#6917AF]" : ""}`}
-                    >
-                      {ticket.name}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p
+                        className={`font-semibold text-base transition-colors ease-in-out duration-300 ${isSelected ? "text-[#6917AF]" : ""}`}
+                      >
+                        {ticket.name}
+                      </p>
+                      <AppTooltip
+                        label={`Admission tier for ${ticket.name}. Enforced under ${privacyLevel[0]} privacy mode.`}
+                        side="top"
+                      >
+                        <span
+                          className="text-[#9CA3AF] hover:text-[#6917AF] dark:hover:text-[#D7B5F5] transition-colors p-0.5 rounded-full"
+                          aria-label={`More info about ${ticket.name} ticket tier`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                        >
+                          <Info className="size-3.5" aria-hidden="true" />
+                        </span>
+                      </AppTooltip>
+                    </div>
                     <div className="relative size-5">
                       <input
                         type="radio"
