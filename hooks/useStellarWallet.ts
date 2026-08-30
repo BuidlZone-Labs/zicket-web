@@ -84,6 +84,32 @@ export interface BatchRegisterForEventParams {
   wallet?: WalletSnapshot;
 }
 
+/** Shared shape for the organizer-only settlement entrypoints. */
+export interface OrganizerActionParams {
+  contractId: string;
+  eventId: string;
+  /** Defaults to the connected wallet's address. */
+  organizer?: string;
+  rpcUrl?: string;
+  /** See {@link RegisterForEventParams.wallet} -- needed right after connect(). */
+  wallet?: WalletSnapshot;
+}
+
+export interface WithdrawRevenueParams extends OrganizerActionParams {
+  /** Asset contract address of the token to settle. */
+  tokenAddress: string;
+}
+
+export interface PostponeEventParams extends OrganizerActionParams {
+  /** Ledger sequence after which attendees can no longer choose a refund. */
+  refundChoiceDeadlineLedger: number;
+}
+
+export interface FinalizeEventStartParams extends OrganizerActionParams {
+  /** New start time as a Unix timestamp in seconds. */
+  startsAtUnixSeconds: number;
+}
+
 // Soroban RPC endpoints are network infrastructure, not secrets -- safe to
 // default and override via env for testnet/mainnet/custom deployments.
 const DEFAULT_RPC_URLS: Record<StellarNetwork, string> = {
@@ -185,8 +211,11 @@ async function signWithWallet(
 /**
  * Connects to a Stellar wallet (the Freighter browser extension, or Albedo's
  * hosted signer as an extension-free fallback) and signs + submits Soroban
- * contract calls. Exposes connection state plus `registerForEvent` /
- * `batchRegisterForEvent` helpers for the ticket-purchase Soroban entrypoints.
+ * contract calls. Exposes connection state, `registerForEvent` /
+ * `batchRegisterForEvent` for the ticket-purchase Soroban entrypoints, and the
+ * organizer-only settlement entrypoints (`withdrawRevenue`,
+ * `withdrawAllTokens`, `postponeEvent`, `setRefundChoiceDeadline`,
+ * `finalizeEventStart`).
  *
  * Network + RPC endpoint are read from the connected wallet (Freighter) or
  * default to Testnet (Albedo, which doesn't report a "current network").
@@ -378,6 +407,151 @@ export function useStellarWallet() {
     [signAndSubmit]
   );
 
+  /**
+   * Resolves the organizer address for a settlement call. These entrypoints
+   * are `require_auth`-gated on the organizer, so signing with a different
+   * account than the one passed would fail at simulation -- catching it here
+   * gives a readable error instead.
+   */
+  const resolveOrganizer = useCallback(
+    (organizer: string | undefined, wallet: WalletSnapshot | undefined): string => {
+      const signer = wallet?.publicKey ?? state.publicKey;
+      if (!signer) {
+        throw new Error("Connect your organizer wallet before signing a transaction.");
+      }
+      if (organizer && organizer !== signer) {
+        throw new Error(
+          "The connected wallet isn't the organizer for this event. Switch accounts and try again."
+        );
+      }
+      return signer;
+    },
+    [state.publicKey]
+  );
+
+  /** Settles a single token's escrow balance to the organizer. */
+  const withdrawRevenue = useCallback(
+    ({ contractId, eventId, tokenAddress, organizer, rpcUrl, wallet }: WithdrawRevenueParams) =>
+      signAndSubmit(
+        {
+          contractId,
+          rpcUrl,
+          method: "withdraw_revenue",
+          args: [
+            { type: "address", value: resolveOrganizer(organizer, wallet) },
+            { type: "string", value: eventId },
+            { type: "address", value: tokenAddress },
+          ],
+        },
+        wallet
+      ),
+    [signAndSubmit, resolveOrganizer]
+  );
+
+  /**
+   * Settles every token the event escrow holds in one signature -- preferred
+   * over looping `withdraw_revenue` when an event sold tiers in more than one
+   * token, since each loop iteration would be a separate wallet prompt.
+   */
+  const withdrawAllTokens = useCallback(
+    ({ contractId, eventId, organizer, rpcUrl, wallet }: OrganizerActionParams) =>
+      signAndSubmit(
+        {
+          contractId,
+          rpcUrl,
+          method: "withdraw_all_tokens",
+          args: [
+            { type: "address", value: resolveOrganizer(organizer, wallet) },
+            { type: "string", value: eventId },
+          ],
+        },
+        wallet
+      ),
+    [signAndSubmit, resolveOrganizer]
+  );
+
+  /**
+   * Declares a postponement and opens the refund-choice window. The deadline
+   * is a ledger sequence, not a timestamp, because that is what the contract
+   * compares against.
+   */
+  const postponeEvent = useCallback(
+    ({
+      contractId,
+      eventId,
+      refundChoiceDeadlineLedger,
+      organizer,
+      rpcUrl,
+      wallet,
+    }: PostponeEventParams) =>
+      signAndSubmit(
+        {
+          contractId,
+          rpcUrl,
+          method: "postpone_event",
+          args: [
+            { type: "address", value: resolveOrganizer(organizer, wallet) },
+            { type: "string", value: eventId },
+            { type: "u32", value: refundChoiceDeadlineLedger },
+          ],
+        },
+        wallet
+      ),
+    [signAndSubmit, resolveOrganizer]
+  );
+
+  /** Pushes an already-open refund-choice window out to a later ledger. */
+  const setRefundChoiceDeadline = useCallback(
+    ({
+      contractId,
+      eventId,
+      refundChoiceDeadlineLedger,
+      organizer,
+      rpcUrl,
+      wallet,
+    }: PostponeEventParams) =>
+      signAndSubmit(
+        {
+          contractId,
+          rpcUrl,
+          method: "set_refund_choice_deadline",
+          args: [
+            { type: "address", value: resolveOrganizer(organizer, wallet) },
+            { type: "string", value: eventId },
+            { type: "u32", value: refundChoiceDeadlineLedger },
+          ],
+        },
+        wallet
+      ),
+    [signAndSubmit, resolveOrganizer]
+  );
+
+  /** Commits the rescheduled start date, closing out the postponement. */
+  const finalizeEventStart = useCallback(
+    ({
+      contractId,
+      eventId,
+      startsAtUnixSeconds,
+      organizer,
+      rpcUrl,
+      wallet,
+    }: FinalizeEventStartParams) =>
+      signAndSubmit(
+        {
+          contractId,
+          rpcUrl,
+          method: "finalize_event_start",
+          args: [
+            { type: "address", value: resolveOrganizer(organizer, wallet) },
+            { type: "string", value: eventId },
+            { type: "u64", value: startsAtUnixSeconds },
+          ],
+        },
+        wallet
+      ),
+    [signAndSubmit, resolveOrganizer]
+  );
+
   return {
     ...state,
     connect,
@@ -386,5 +560,10 @@ export function useStellarWallet() {
     signAndSubmit,
     registerForEvent,
     batchRegisterForEvent,
+    withdrawRevenue,
+    withdrawAllTokens,
+    postponeEvent,
+    setRefundChoiceDeadline,
+    finalizeEventStart,
   };
 }
