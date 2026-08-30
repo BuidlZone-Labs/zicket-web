@@ -44,5 +44,45 @@ describe("MainContent category query synchronization", () => {
         { scroll: false }
       )
     );
+    expect(
+      screen.getByRole("button", { name: "Hackathons" })
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("resynchronizes the selected category after a popstate event", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/explore?privacy=Anonymous&category=hackathon"
+    );
+
+    render(
+      <MainContent
+        initialEvents={[]}
+        initialQuery={{
+          category: "hackathon",
+          privacy: "Anonymous",
+          price: null,
+          location: null,
+          date: null,
+          eventType: null,
+          sort: null,
+        }}
+      />
+    );
+
+    window.history.replaceState(
+      {},
+      "",
+      "/explore?privacy=Anonymous&category=meetup"
+    );
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Meetups" })).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      )
+    );
   });
 });

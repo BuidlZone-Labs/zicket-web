@@ -39,6 +39,8 @@ const EVENT_TYPE_OPTIONS = [
   "Community",
 ] as const;
 
+const EVENT_TYPE_OPTION_LIST = Array.from(EVENT_TYPE_OPTIONS) as EventType[];
+
 const getOptionParam = <T extends readonly string[]>(
   params: URLSearchParams,
   key: string,
@@ -84,7 +86,7 @@ function MainContent({ initialEvents = [], initialQuery }: MainContentProps) {
   const pathname = usePathname();
   const privacyOptions = Array.from(PRIVACY_OPTIONS);
   const priceOptions = Array.from(PRICE_OPTIONS);
-  const eventTypeOptions = Array.from(EVENT_TYPE_OPTIONS) as EventType[];
+  const eventTypeOptions = EVENT_TYPE_OPTION_LIST;
   const initialQueryState = initialQuery ?? defaultQueryState;
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryPillValue | null>(initialQueryState.category);
