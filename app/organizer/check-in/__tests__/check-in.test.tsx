@@ -108,6 +108,32 @@ describe('Organizer Check-In & Ticket Verification', () => {
       expect(result.reason).toBe('ALREADY_USED');
     });
 
+    it('rejects upcoming tickets before the event starts (tkt-solana-vip)', () => {
+      const result = checkInTicket('tkt-solana-vip');
+      expect(result.success).toBe(false);
+      expect(result.reason).toBe('UPCOMING');
+      expect(result.error).toContain('Event has not started yet');
+    });
+
+    it('rejects invalid or mismatched proof payloads', () => {
+      const proofMismatch = {
+        ticketId: 'tkt-different-id',
+        eventId: 'crypto-build-ghana',
+      };
+      const result = checkInTicket('tkt-crypto-build-live', 'crypto-build-ghana', proofMismatch);
+      expect(result.success).toBe(false);
+      expect(result.reason).toBe('INVALID_PAYLOAD');
+
+      const sigMismatch = {
+        ticketId: 'tkt-crypto-build-live',
+        eventId: 'crypto-build-ghana',
+        signature: 'invalid-signature',
+      };
+      const sigResult = checkInTicket('tkt-crypto-build-live', 'crypto-build-ghana', sigMismatch);
+      expect(sigResult.success).toBe(false);
+      expect(sigResult.reason).toBe('INVALID_PAYLOAD');
+    });
+
     it('rejects unknown or invalid tickets', () => {
       const result = checkInTicket('tkt-nonexistent-999');
       expect(result.success).toBe(false);

@@ -147,6 +147,16 @@ export default function OrganizerCheckInPage() {
       return;
     }
 
+    if (!publicKey) {
+      setResultState({
+        success: false,
+        reason: 'UNAUTHORIZED',
+        error: 'Check-in Failed — Organizer authentication required. Connect wallet first.',
+      });
+      setIsProcessing(false);
+      return;
+    }
+
     // Handle offline status
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       const queuedItem: QueuedCheckIn = {
@@ -174,11 +184,16 @@ export default function OrganizerCheckInPage() {
     try {
       const response = await fetch('/api/tickets/verify-attend', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Organizer-Address': publicKey,
+          'Authorization': `Bearer ${publicKey}`,
+        },
         body: JSON.stringify({
           ticketId: cleanTicketId,
           eventId: selectedEventId,
           payload: payloadRaw,
+          organizerAddress: publicKey,
         }),
       });
 
