@@ -24,6 +24,21 @@ export function QRCodeScanner({
   const lastScannedTextRef = useRef<string | null>(null);
   const lastScanTimestampRef = useRef<number>(0);
 
+  const stopScanner = useCallback(async () => {
+    if (html5QrcodeRef.current) {
+      const scanner = html5QrcodeRef.current as { isScanning?: boolean; stop: () => Promise<void>; clear: () => void };
+      try {
+        if (scanner.isScanning) {
+          await scanner.stop();
+        }
+        scanner.clear();
+      } catch {
+        // Ignore teardown errors
+      }
+      html5QrcodeRef.current = null;
+    }
+  }, []);
+
   const startScanner = useCallback(async () => {
     try {
       setCameraErrorState(null);
@@ -36,19 +51,10 @@ export function QRCodeScanner({
         return;
       }
 
+      await stopScanner();
+
       // Dynamically import Html5Qrcode to ensure SSR compatibility
       const { Html5Qrcode } = await import('html5-qrcode');
-
-      if (html5QrcodeRef.current) {
-        try {
-          const activeScanner = html5QrcodeRef.current as InstanceType<typeof Html5Qrcode>;
-          if (activeScanner.isScanning) {
-            await activeScanner.stop();
-          }
-        } catch {
-          // Ignore clean-up errors on restart
-        }
-      }
 
       const html5Qrcode = new Html5Qrcode(scannerContainerId);
       html5QrcodeRef.current = html5Qrcode;
@@ -111,33 +117,25 @@ export function QRCodeScanner({
       setIsScanning(false);
       onCameraError?.(msg);
     }
-  }, [isProcessing, onScan, onError, onCameraError]);
+  }, [isProcessing, onScan, onError, onCameraError, stopScanner]);
 
   useEffect(() => {
     let isMounted = true;
 
-    if (isMounted) {
-      startScanner();
-    }
+    const initScanner = async () => {
+      await stopScanner();
+      if (isMounted) {
+        await startScanner();
+      }
+    };
+
+    initScanner();
 
     return () => {
       isMounted = false;
-      if (html5QrcodeRef.current) {
-        const scanner = html5QrcodeRef.current as { isScanning?: boolean; stop: () => Promise<void>; clear: () => void };
-        if (scanner.isScanning) {
-          scanner
-            .stop()
-            .then(() => scanner.clear())
-            .catch(() => {});
-        } else {
-          try {
-            scanner.clear();
-          } catch {}
-        }
-        html5QrcodeRef.current = null;
-      }
+      stopScanner().catch(() => {});
     };
-  }, [startScanner]);
+  }, [startScanner, stopScanner]);
 
   return (
     <div className="w-full flex flex-col items-center justify-center">
