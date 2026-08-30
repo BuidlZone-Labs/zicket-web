@@ -124,7 +124,8 @@ export function PrivacyDisclosureModal({
                     role="tab"
                     id={`tab-${mode.toLowerCase()}`}
                     aria-selected={isActive}
-                    aria-controls={`panel-${mode.toLowerCase()}`}
+                    aria-controls="privacy-modal-tabpanel"
+                    tabIndex={isActive ? 0 : -1}
                     onClick={() => setSelectedLevel(mode)}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-150 cursor-pointer ${
                       isActive
@@ -148,9 +149,9 @@ export function PrivacyDisclosureModal({
 
         {/* Scrollable Content Body */}
         <div
-          id={`panel-${selectedLevel.toLowerCase()}`}
-          role="tabpanel"
-          aria-labelledby={`tab-${selectedLevel.toLowerCase()}`}
+          id="privacy-modal-tabpanel"
+          role={showTabs ? "tabpanel" : "region"}
+          aria-labelledby={showTabs ? `tab-${selectedLevel.toLowerCase()}` : "privacy-modal-title"}
           className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 text-sm"
         >
           {/* Explicit Guarantee Box (PRD Required Statement) */}
