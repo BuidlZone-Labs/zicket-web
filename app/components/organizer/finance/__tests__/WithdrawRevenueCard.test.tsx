@@ -272,6 +272,28 @@ describe("WithdrawRevenueCard submission", () => {
     expect(withdrawButton()).toBeEnabled();
   });
 
+  it("stays blocked after confirmation until the receipt is recorded", async () => {
+    // Confirms on-chain, then the receipt POST fails. `finance.settlement` is
+    // still null, so only the confirmed-is-submitting guard stands between the
+    // organizer and a second withdrawal of an escrow that already paid out.
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
+      init?.method === "POST"
+        ? new Response(JSON.stringify({ error: "nope" }), { status: 500 })
+        : new Response(JSON.stringify({ status: "confirmed" }), { status: 200 })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const user = userEvent.setup();
+    renderCard(buildFinance());
+
+    await user.click(withdrawButton());
+
+    expect(await screen.findByText(/couldn't save the receipt/i)).toBeInTheDocument();
+    expect(withdrawButton()).toBeDisabled();
+    expect(withdrawButton()).toHaveAttribute("data-block-reason", "in_flight");
+    expect(withdrawRevenueMock).toHaveBeenCalledTimes(1);
+  });
+
   it("blocks a duplicate submit while the first withdrawal is confirming", async () => {
     const user = userEvent.setup();
     renderCard(buildFinance());

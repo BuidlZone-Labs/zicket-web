@@ -160,7 +160,14 @@ function deriveTokens(tiers: TierSales[], status: EscrowContractStatus): TokenSe
         withdrawable: released ? net.toString() : "0",
       };
     })
-    .sort((a, b) => (toBigInt(b.gross) > toBigInt(a.gross) ? 1 : -1));
+    // Descending by gross, returning 0 on ties: a comparator that never
+    // reports equality lets equal-gross rows swap between polls.
+    .sort((a, b) => {
+      const left = toBigInt(a.gross);
+      const right = toBigInt(b.gross);
+      if (left === right) return 0;
+      return right > left ? 1 : -1;
+    });
 }
 
 function derivePostponement(eventId: string, status: EscrowContractStatus): PostponementState {
@@ -310,6 +317,13 @@ export function applyPostponement(
   const ledger = finance.postponement.currentLedger;
 
   if (input.action === "finalize") {
+    // Finalizing commits a rescheduled start, which only exists once a
+    // postponement has been declared — otherwise this would flip a perfectly
+    // normal event to "rescheduled" without one.
+    if (finance.postponement.status !== "pending_refund_window") {
+      return { ok: false, error: "There's no open refund window to finalize." };
+    }
+
     const parsed = Date.parse(input.rescheduledStartsAt);
     if (Number.isNaN(parsed)) {
       return { ok: false, error: "A valid new start date is required." };
@@ -329,13 +343,29 @@ export function applyPostponement(
     return { ok: false, error: "There's no open refund window to extend." };
   }
 
+  // Re-initiating over an open window would overwrite its deadline, and
+  // nothing stops the replacement landing earlier than the ledger attendees
+  // were already promised. Extending is the only legal way to move it.
+  if (input.action === "initiate" && finance.postponement.status === "pending_refund_window") {
+    return {
+      ok: false,
+      error: "A refund window is already open for this event. Extend it instead of re-opening it.",
+    };
+  }
+
   const hours = input.refundWindowHours;
   if (!Number.isFinite(hours) || hours <= 0 || hours > 720) {
     return { ok: false, error: "The refund window must be between 1 and 720 hours." };
   }
 
-  const nextDeadline = ledger + hoursToLedgers(hours);
   const existingDeadline = finance.postponement.refundChoiceDeadlineLedger ?? 0;
+  // Extending measures from where the window currently ends, matching what
+  // PostponementCard signs — anchoring on the current ledger here would record
+  // a different deadline than the transaction actually carries.
+  const anchor =
+    input.action === "extend_window" ? Math.max(ledger, existingDeadline) : ledger;
+  const nextDeadline = anchor + hoursToLedgers(hours);
+
   if (input.action === "extend_window" && nextDeadline <= existingDeadline) {
     return { ok: false, error: "The new deadline must be later than the current one." };
   }

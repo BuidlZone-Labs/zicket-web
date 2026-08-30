@@ -106,6 +106,16 @@ describe("summarizeTokens", () => {
     expect(summarizeTokens([XLM, USDC]).primary?.code).toBe("USDC");
     expect(summarizeTokens([]).primary).toBeNull();
   });
+
+  it("flags an escrow spanning more than one asset, so sums aren't shown as money", () => {
+    expect(summarizeTokens([USDC, XLM]).isMixedAsset).toBe(true);
+    expect(summarizeTokens([USDC]).isMixedAsset).toBe(false);
+    expect(summarizeTokens([]).isMixedAsset).toBe(false);
+  });
+
+  it("flags mixed precision even when the asset addresses match", () => {
+    expect(summarizeTokens([USDC, { ...USDC, decimals: 6 }]).isMixedAsset).toBe(true);
+  });
 });
 
 describe("resolveWithdrawMethod", () => {
@@ -241,6 +251,11 @@ describe("ledger helpers", () => {
 
   it("never returns a zero-ledger window for a sub-ledger duration", () => {
     expect(hoursToLedgers(0.0001)).toBe(1);
+  });
+
+  it("floors to one ledger rather than propagating NaN into a signed deadline", () => {
+    expect(hoursToLedgers(Number.NaN)).toBe(1);
+    expect(hoursToLedgers(Number.POSITIVE_INFINITY)).toBe(1);
   });
 
   it("reports zero remaining once the deadline has passed or was never set", () => {

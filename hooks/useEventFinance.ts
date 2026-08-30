@@ -42,16 +42,20 @@ export function useEventFinance(
 
   const generationRef = useRef(0);
   const inFlightRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
     if (inFlightRef.current) return;
     const generation = generationRef.current;
 
+    const controller = new AbortController();
+    abortRef.current = controller;
     inFlightRef.current = true;
     setIsRefreshing(true);
     try {
       const res = await fetch(`/api/organizer/events/${encodeURIComponent(eventId)}/finance`, {
         cache: "no-store",
+        signal: controller.signal,
       });
       if (!res.ok) throw new Error(`Couldn't load settlement data (HTTP ${res.status}).`);
       const data = (await res.json()) as EventFinance;
@@ -65,17 +69,25 @@ export function useEventFinance(
         err instanceof Error ? err.message : "Couldn't load settlement data. Please try again."
       );
     } finally {
+      // Only the current generation may clear these. An aborted request
+      // settles *after* the effect has already started the next event's load,
+      // so an unguarded reset here would mark that new request as not in
+      // flight and let a poll fire a duplicate alongside it.
       if (generation === generationRef.current) {
         setIsLoading(false);
         setIsRefreshing(false);
+        inFlightRef.current = false;
       }
-      inFlightRef.current = false;
     }
   }, [eventId]);
 
   useEffect(() => {
-    // Invalidate anything in flight for a previous event id.
+    // Invalidate anything in flight for a previous event id, and abort it so
+    // its `inFlightRef` guard can't make the new event wait a full poll
+    // interval for its first load.
     generationRef.current += 1;
+    abortRef.current?.abort();
+    inFlightRef.current = false;
     setIsLoading(true);
     setFinance(null);
     void load();
@@ -87,6 +99,8 @@ export function useEventFinance(
 
     return () => {
       generationRef.current += 1;
+      abortRef.current?.abort();
+      inFlightRef.current = false;
       clearInterval(timer);
     };
   }, [load, pollIntervalMs]);

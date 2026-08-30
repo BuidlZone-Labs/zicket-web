@@ -102,8 +102,15 @@ export function WithdrawRevenueCard({ finance, onSettled }: WithdrawRevenueCardP
     checkConnection,
   } = useTransactionStatus({ onConfirmed: recordSettlement });
 
+  // "confirmed" counts as submitting too: the escrow has already paid out, but
+  // `finance.settlement` only appears once recordSettlement() lands. Without
+  // this the button would re-enable in the window between the two — and stay
+  // enabled for good if that write failed — inviting a second withdrawal.
   const isSubmitting =
-    isSigning || chainStatus === "pending" || chainStatus === "stalled";
+    isSigning ||
+    chainStatus === "pending" ||
+    chainStatus === "stalled" ||
+    chainStatus === "confirmed";
   const gate = resolveWithdrawGate(finance, { isSubmitting });
 
   const handleWithdraw = async () => {

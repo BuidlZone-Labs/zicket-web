@@ -14,6 +14,35 @@ import {
 } from "@/components/ui/table";
 import { formatAmount, sumAmounts, type TierSales } from "@/lib/organizer/finance";
 
+/**
+ * Totals gross per token code. Tiers can be priced in different assets, and
+ * the contract settles each separately, so a single summed figure would be
+ * adding unlike units.
+ */
+function grossByToken(tiers: TierSales[]): Array<{ code: string; decimals: number; total: bigint }> {
+  const order: string[] = [];
+  const byCode = new Map<string, { code: string; decimals: number; rows: TierSales[] }>();
+
+  for (const tier of tiers) {
+    const existing = byCode.get(tier.tokenCode);
+    if (existing) {
+      existing.rows.push(tier);
+    } else {
+      order.push(tier.tokenCode);
+      byCode.set(tier.tokenCode, { code: tier.tokenCode, decimals: tier.decimals, rows: [tier] });
+    }
+  }
+
+  return order.map((code) => {
+    const group = byCode.get(code)!;
+    return {
+      code: group.code,
+      decimals: group.decimals,
+      total: sumAmounts(group.rows.map((tier) => tier.gross)),
+    };
+  });
+}
+
 interface TierSalesTableProps {
   tiers: TierSales[];
   /** Shown as a subtle "live" pulse while a background refresh is running. */
@@ -23,8 +52,7 @@ interface TierSalesTableProps {
 /** Live ticket sales per tier, and the gross each tier has contributed. */
 export function TierSalesTable({ tiers, isRefreshing = false }: TierSalesTableProps) {
   const totalSold = tiers.reduce((acc, tier) => acc + tier.sold, 0);
-  const decimals = tiers[0]?.decimals ?? 7;
-  const totalGross = sumAmounts(tiers.map((tier) => tier.gross));
+  const totals = grossByToken(tiers);
 
   return (
     <section className="rounded-xl border border-[#E3E3E3] bg-white dark:border-[#2A2A2A] dark:bg-[#141414]">
@@ -113,11 +141,19 @@ export function TierSalesTable({ tiers, isRefreshing = false }: TierSalesTablePr
       </Table>
 
       {tiers.length > 0 ? (
-        <footer className="flex items-center justify-between border-t border-[#EAECF0] px-4 py-3 text-sm dark:border-[#2A2A2A]">
+        <footer className="flex items-start justify-between gap-4 border-t border-[#EAECF0] px-4 py-3 text-sm dark:border-[#2A2A2A]">
           <span className="text-[#667085] dark:text-[#808080]">Total gross</span>
-          <span className="font-semibold tabular-nums text-[#101828] dark:text-white">
-            {formatAmount(totalGross, decimals, 2)}
-          </span>
+          <div className="text-right">
+            {totals.map((total) => (
+              <p
+                key={total.code}
+                className="font-semibold tabular-nums text-[#101828] dark:text-white"
+              >
+                {formatAmount(total.total, total.decimals, 2)}{" "}
+                <span className="font-normal text-[#667085]">{total.code}</span>
+              </p>
+            ))}
+          </div>
         </footer>
       ) : null}
     </section>

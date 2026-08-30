@@ -126,7 +126,16 @@ export function PostponementCard({ finance, onUpdated }: PostponementCardProps) 
         await commit({ action: "finalize", rescheduledStartsAt: new Date(parsed).toISOString() });
       } else {
         const hours = Number(windowHours);
-        const deadline = postponement.currentLedger + hoursToLedgers(hours);
+        // Extending measures from where the window currently ends, not from
+        // now — anchoring to the current ledger would let a short preset sign
+        // a deadline earlier than the one attendees were already promised.
+        const anchor = Math.max(
+          postponement.currentLedger,
+          postponement.refundChoiceDeadlineLedger ?? 0
+        );
+        const deadline =
+          (action === "extend_window" ? anchor : postponement.currentLedger) +
+          hoursToLedgers(hours);
 
         const hash =
           action === "initiate"

@@ -152,6 +152,46 @@ describe("EventFinancePage", () => {
     await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThan(callsBefore));
   });
 
+  it("never adds unlike assets together in the headline or tier totals", async () => {
+    // 1,000 USDC + 500 XLM must never render as "1,500" of anything.
+    mockFinanceResponse({
+      ...FINANCE,
+      tokens: [
+        FINANCE.tokens[0],
+        {
+          tokenAddress: "CXLMTOKEN",
+          code: "XLM",
+          decimals: 7,
+          gross: "5000000000",
+          platformFee: "125000000",
+          net: "4875000000",
+          withdrawable: "4875000000",
+        },
+      ],
+      tiers: [
+        FINANCE.tiers[0],
+        { ...FINANCE.tiers[1], tokenCode: "XLM", gross: "5000000000" },
+      ],
+    });
+    renderPage();
+
+    const summary = await screen.findByLabelText("Escrow summary");
+    // Each card names both assets separately rather than one summed figure.
+    expect(within(summary).getByLabelText("Gross revenue: 1,000 USDC, 500 XLM")).toBeInTheDocument();
+    expect(
+      within(summary).getByLabelText("Available to withdraw: 975 USDC, 487.5 XLM")
+    ).toBeInTheDocument();
+    expect(within(summary).queryByLabelText(/1,500/)).not.toBeInTheDocument();
+    expect(screen.getByText(/never added together/i)).toBeInTheDocument();
+
+    // The tier footer totals per token for the same reason: 8,000 USDC and
+    // 500 XLM, never their sum.
+    const tierFooter = screen.getByText("Total gross").closest("footer");
+    expect(tierFooter).toHaveTextContent("8,000 USDC");
+    expect(tierFooter).toHaveTextContent("500 XLM");
+    expect(tierFooter).not.toHaveTextContent("8,500");
+  });
+
   it("swaps the postponement action to 'extend' while a refund window is open", async () => {
     mockFinanceResponse({
       ...FINANCE,

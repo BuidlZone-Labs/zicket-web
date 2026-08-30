@@ -202,21 +202,33 @@ export interface SettlementTotals {
   withdrawableTokens: TokenSettlement[];
   /** Display decimals/code borrowed from the largest-gross token. */
   primary: TokenSettlement | null;
+  /**
+   * True when the positions span more than one asset (or precision). The sums
+   * above are then a count of unlike units, not a spendable figure — callers
+   * that display money must render per-token amounts instead. Aggregate-as-
+   * predicate uses (`withdrawable > 0n`) stay valid either way.
+   */
+  isMixedAsset: boolean;
 }
 
 /**
  * Rolls the per-token positions into headline figures.
  *
- * Summing across tokens is only meaningful when they share `decimals` and a
- * peg, which is true for the stablecoin-denominated tiers Zicket sells today.
- * `primary` is exposed so the UI can label the headline with a real token
- * rather than implying a currency conversion happened.
+ * The sums are only a meaningful amount when every position is the same asset;
+ * an event that sold tiers in, say, USDC and XLM would otherwise report their
+ * addition as a single number. `isMixedAsset` flags exactly that case and
+ * `primary` names a real token, so the UI can never imply a conversion the
+ * contract never performed.
  */
 export function summarizeTokens(tokens: TokenSettlement[]): SettlementTotals {
   const primary = tokens.reduce<TokenSettlement | null>((best, t) => {
     if (!best) return t;
     return toBigInt(t.gross) > toBigInt(best.gross) ? t : best;
   }, null);
+
+  const isMixedAsset =
+    new Set(tokens.map((t) => t.tokenAddress)).size > 1 ||
+    new Set(tokens.map((t) => t.decimals)).size > 1;
 
   return {
     gross: sumAmounts(tokens.map((t) => t.gross)),
@@ -225,6 +237,7 @@ export function summarizeTokens(tokens: TokenSettlement[]): SettlementTotals {
     withdrawable: sumAmounts(tokens.map((t) => t.withdrawable)),
     withdrawableTokens: tokens.filter((t) => toBigInt(t.withdrawable) > 0n),
     primary,
+    isMixedAsset,
   };
 }
 
@@ -372,7 +385,13 @@ export function describeLedgerWindow(ledgers: number): string {
   return `about ${Math.round(hours / 24)} days`;
 }
 
-/** Converts a wall-clock duration into the ledger count the contract expects. */
+/**
+ * Converts a wall-clock duration into the ledger count the contract expects,
+ * with a floor of one ledger. A non-finite input floors too rather than
+ * propagating `NaN` — the result becomes a deadline ledger inside a signed
+ * transaction, so it must always be a usable number.
+ */
 export function hoursToLedgers(hours: number): number {
+  if (!Number.isFinite(hours)) return 1;
   return Math.max(1, Math.round((hours * 3600) / LEDGER_SECONDS));
 }

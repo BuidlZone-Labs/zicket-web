@@ -6,8 +6,10 @@ import { Coins, Landmark, PiggyBank, Receipt } from "lucide-react";
 import { AppTooltip } from "@/components/ui/app-tooltip";
 import {
   formatAmount,
+  formatTokenAmount,
   summarizeTokens,
   type EventFinance,
+  type TokenSettlement,
 } from "@/lib/organizer/finance";
 
 interface SettlementSummaryProps {
@@ -27,15 +29,27 @@ export function SettlementSummary({ finance }: SettlementSummaryProps) {
   const decimals = totals.primary?.decimals ?? 7;
   const code = totals.primary?.code ?? "USDC";
   const feePercent = (finance.platformFeeBps / 100).toFixed(2).replace(/\.?0+$/, "");
-  // Amounts are only summed across tokens when they all share a precision;
-  // otherwise the headline would be adding unlike units.
-  const mixedPrecision = new Set(finance.tokens.map((t) => t.decimals)).size > 1;
 
-  const cards = [
+  // An event can sell tiers in more than one asset, and the contract settles
+  // each separately. Adding USDC to XLM would produce a number that is not an
+  // amount of anything, so a mixed escrow reports each token on its own line
+  // instead of a single headline figure.
+  const isMixed = totals.isMixedAsset;
+
+  const cards: Array<{
+    key: string;
+    label: string;
+    field: keyof Pick<TokenSettlement, "gross" | "platformFee" | "net" | "withdrawable">;
+    total: bigint;
+    icon: typeof Coins;
+    hint: string;
+    emphasis: boolean;
+  }> = [
     {
       key: "gross",
       label: "Gross revenue",
-      value: totals.gross,
+      field: "gross",
+      total: totals.gross,
       icon: Coins,
       hint: "Everything attendees paid into the event escrow, before fees.",
       emphasis: false,
@@ -43,7 +57,8 @@ export function SettlementSummary({ finance }: SettlementSummaryProps) {
     {
       key: "fee",
       label: `Platform fee (${feePercent}%)`,
-      value: totals.platformFee,
+      field: "platformFee",
+      total: totals.platformFee,
       icon: Receipt,
       hint: `Zicket's ${finance.platformFeeBps} bps cut, deducted by the contract at settlement.`,
       emphasis: false,
@@ -51,7 +66,8 @@ export function SettlementSummary({ finance }: SettlementSummaryProps) {
     {
       key: "net",
       label: "Net to organizer",
-      value: totals.net,
+      field: "net",
+      total: totals.net,
       icon: PiggyBank,
       hint: "Gross revenue minus the platform fee — your total entitlement for this event.",
       emphasis: false,
@@ -59,52 +75,73 @@ export function SettlementSummary({ finance }: SettlementSummaryProps) {
     {
       key: "withdrawable",
       label: "Available to withdraw",
-      value: totals.withdrawable,
+      field: "withdrawable",
+      total: totals.withdrawable,
       icon: Landmark,
       hint: "The portion of your net revenue the contract will release right now.",
       emphasis: true,
     },
   ];
 
+  /** One line per token for a mixed escrow, one aggregate line otherwise. */
+  const linesFor = (card: (typeof cards)[number]): string[] =>
+    isMixed
+      ? finance.tokens.map((token) =>
+          formatTokenAmount(token[card.field], token.decimals, token.code)
+        )
+      : [`${formatAmount(card.total, decimals, 2)} ${code}`];
+
   return (
     <section
       aria-label="Escrow summary"
       className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
     >
-      {cards.map(({ key, label, value, icon: Icon, hint, emphasis }) => (
-        <AppTooltip key={key} label={hint} side="bottom">
-          <article
-            tabIndex={0}
-            aria-label={`${label}: ${formatAmount(value, decimals, 2)} ${code}`}
-            className={`rounded-xl border p-4 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#6917AF]/40 ${
-              emphasis
-                ? "border-[#6917AF]/40 bg-[#F9F5FF] dark:border-[#6917AF]/50 dark:bg-[#6917AF]/10"
-                : "border-[#E3E3E3] bg-white dark:border-[#2A2A2A] dark:bg-[#141414]"
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <Icon
-                className={`size-4 ${emphasis ? "text-[#6917AF]" : "text-[#667085]"}`}
-                aria-hidden
-              />
-              <p className="text-sm font-medium text-[#475467] dark:text-[#D0D0D0]">{label}</p>
-            </div>
-            <p
-              className={`mt-3 text-2xl font-semibold tabular-nums ${
-                emphasis ? "text-[#6917AF] dark:text-[#D7B5F5]" : "text-[#101828] dark:text-white"
+      {cards.map((card) => {
+        const { key, label, icon: Icon, hint, emphasis } = card;
+        const lines = linesFor(card);
+
+        return (
+          <AppTooltip key={key} label={hint} side="bottom">
+            <article
+              tabIndex={0}
+              aria-label={`${label}: ${lines.join(", ")}`}
+              className={`rounded-xl border p-4 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#6917AF]/40 ${
+                emphasis
+                  ? "border-[#6917AF]/40 bg-[#F9F5FF] dark:border-[#6917AF]/50 dark:bg-[#6917AF]/10"
+                  : "border-[#E3E3E3] bg-white dark:border-[#2A2A2A] dark:bg-[#141414]"
               }`}
             >
-              {formatAmount(value, decimals, 2)}
-              <span className="ml-1 text-sm font-medium text-[#667085]">{code}</span>
-            </p>
-          </article>
-        </AppTooltip>
-      ))}
+              <div className="flex items-center gap-2">
+                <Icon
+                  className={`size-4 ${emphasis ? "text-[#6917AF]" : "text-[#667085]"}`}
+                  aria-hidden
+                />
+                <p className="text-sm font-medium text-[#475467] dark:text-[#D0D0D0]">{label}</p>
+              </div>
 
-      {mixedPrecision ? (
+              <div className="mt-3 space-y-0.5">
+                {lines.map((line) => (
+                  <p
+                    key={line}
+                    className={`font-semibold tabular-nums ${isMixed ? "text-lg" : "text-2xl"} ${
+                      emphasis
+                        ? "text-[#6917AF] dark:text-[#D7B5F5]"
+                        : "text-[#101828] dark:text-white"
+                    }`}
+                  >
+                    {line}
+                  </p>
+                ))}
+              </div>
+            </article>
+          </AppTooltip>
+        );
+      })}
+
+      {isMixed ? (
         <p className="col-span-full text-xs text-[#667085] dark:text-[#808080]">
-          This event settled in tokens with different precision — see the token breakdown below for
-          exact per-token balances.
+          This event settled in more than one token. Each is shown separately — they are never
+          added together. See the token breakdown for exact balances.
         </p>
       ) : null}
     </section>
