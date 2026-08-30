@@ -1,6 +1,8 @@
 "use client"
 
 import React from "react"
+import Link from "next/link"
+import { useParams } from "next/navigation"
 import { BarChart3, UsersRound } from "lucide-react"
 
 import { EventManagementHeader } from "@/app/components/organizer/EventManagementHeader"
@@ -15,6 +17,9 @@ const metricCards = [
 ]
 
 export default function OrganizerEventDetailsPage() {
+  const params = useParams<{ eventId: string }>()
+  const eventId = params?.eventId ?? ""
+
   const handlePreview = () => {
     window.open("/explore/solana-summer-hackathon", "_blank")
   }
@@ -39,6 +44,12 @@ export default function OrganizerEventDetailsPage() {
         <button className="pb-3 text-sm font-medium text-[#475467] hover:text-[#6917AF] transition-colors">
           Messaging Center
         </button>
+        <Link
+          href={`/zkorg/events/${eventId}/finance`}
+          className="pb-3 text-sm font-medium text-[#475467] hover:text-[#6917AF] transition-colors"
+        >
+          Finance
+        </Link>
       </div>
 
       <section className="rounded-xl border border-[#E3E3E3] dark:border-[#2A2A2A] bg-white dark:bg-[#141414]">
