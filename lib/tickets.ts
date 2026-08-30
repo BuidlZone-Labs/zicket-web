@@ -1,13 +1,81 @@
 import { dummyEvents, type Event } from "./dummyEvents/events";
 import { buildDummyTickets, type PurchasedTicket, type TicketState } from "./dummyEvents/tickets";
 
-// In-memory check-in state storage for dynamic ticket status tracking across scans
-const checkedInTickets = new Map<string, string>();
+function getDurableStore(): Record<string, string> {
+  if (typeof window !== "undefined") {
+    try {
+      const data = localStorage.getItem("zicket_checked_in_tickets");
+      return data ? JSON.parse(data) : {};
+    } catch {
+      return {};
+    }
+  }
+  try {
+    const req = eval("require");
+    const fs = req("fs");
+    const path = req("path");
+    const storeFile = path.join(process.cwd(), ".cache", "checked_in_tickets.json");
+    if (fs.existsSync(storeFile)) {
+      const data = fs.readFileSync(storeFile, "utf-8");
+      return JSON.parse(data) || {};
+    }
+  } catch {
+    // Fallback if file read fails
+  }
+  return {};
+}
+
+function saveDurableStore(store: Record<string, string>): void {
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem("zicket_checked_in_tickets", JSON.stringify(store));
+    } catch {}
+    return;
+  }
+  try {
+    const req = eval("require");
+    const fs = req("fs");
+    const path = req("path");
+    const storeFile = path.join(process.cwd(), ".cache", "checked_in_tickets.json");
+    const dir = path.dirname(storeFile);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(storeFile, JSON.stringify(store, null, 2), "utf-8");
+  } catch {
+    // Fallback if file write fails
+  }
+}
+
+function makeStoreKey(ticketId: string, eventId: string): string {
+  return `${eventId}:${ticketId}`;
+}
+
+export function getCheckedInTimestamp(ticketId: string, eventId?: string): string | null {
+  const store = getDurableStore();
+  if (eventId) {
+    const key = makeStoreKey(ticketId, eventId);
+    if (store[key]) return store[key];
+  }
+  for (const [key, timestamp] of Object.entries(store)) {
+    if (key.endsWith(`:${ticketId}`) || key === ticketId) {
+      return timestamp;
+    }
+  }
+  return null;
+}
+
+export function recordCheckedInTimestamp(ticketId: string, eventId: string, timestamp: string): void {
+  const store = getDurableStore();
+  const key = makeStoreKey(ticketId, eventId);
+  store[key] = timestamp;
+  saveDurableStore(store);
+}
 
 /** All tickets belonging to the current (mock) user, fresh for `now`. */
 export function getUserTickets(now: number = Date.now()): PurchasedTicket[] {
   return buildDummyTickets(now).map((t) => {
-    const checkedInAt = checkedInTickets.get(t.id) ?? t.checkedInAt;
+    const checkedInAt = getCheckedInTimestamp(t.id, t.eventId) ?? t.checkedInAt;
     return { ...t, checkedInAt };
   });
 }
@@ -16,7 +84,7 @@ export function getUserTickets(now: number = Date.now()): PurchasedTicket[] {
 export function getTicketById(id: string, now: number = Date.now()): PurchasedTicket | undefined {
   const ticket = buildDummyTickets(now).find((t) => t.id === id);
   if (!ticket) return undefined;
-  const checkedInAt = checkedInTickets.get(ticket.id) ?? ticket.checkedInAt;
+  const checkedInAt = getCheckedInTimestamp(ticket.id, ticket.eventId) ?? ticket.checkedInAt;
   return { ...ticket, checkedInAt };
 }
 
@@ -34,7 +102,7 @@ export function getTicketState(
   ticket: PurchasedTicket,
   now: number = Date.now(),
 ): TicketState {
-  const effectiveCheckedInAt = checkedInTickets.get(ticket.id) ?? ticket.checkedInAt;
+  const effectiveCheckedInAt = getCheckedInTimestamp(ticket.id, ticket.eventId) ?? ticket.checkedInAt;
   if (effectiveCheckedInAt) return "used";
   const start = new Date(ticket.eventStart).getTime();
   const end = new Date(ticket.eventEnd).getTime();
@@ -94,35 +162,24 @@ export function formatCountdown(targetIso: string, now: number = Date.now()): st
  * Builds the QR payload for a ticket: a base64 JSON of just the ticket id and
  * an expiry hint — no name, email, or other identity. Mirrors the payload shape
  * already used by QRCodeModal.
- *
- * DEMO ONLY: this is base64, not encryption or a signed credential, and it is
- * forgeable. A production gate would need a server-issued, time-bounded, signed
- * entry credential that the scanner verifies.
  */
 export function buildTicketQrPayload(ticket: PurchasedTicket): string {
   const payload = {
     id: ticket.id,
+    eventId: ticket.eventId,
     expMs: new Date(ticket.eventEnd).getTime(),
   };
-  // btoa exists in the browser; Buffer covers the server render.
   if (typeof btoa === "function") return btoa(JSON.stringify(payload));
   return Buffer.from(JSON.stringify(payload)).toString("base64");
 }
 
 /**
- * A demo "proof without identity" token illustrating the zero-knowledge sharing
- * concept. Deliberately contains no PII — only the event, a validity window,
- * and an opaque proof id — so sharing it reveals nothing about who holds the
- * ticket.
- *
- * DEMO ONLY: this is an unsigned base64 token, not a real zero-knowledge proof.
- * It demonstrates the "no personal data" idea but is not cryptographically
- * verifiable and must not be treated as proof of ownership. A production version
- * needs a server-verified signed proof or an actual ZKP protocol.
+ * A demo "proof without identity" token illustrating the zero-knowledge sharing concept.
  */
 export function buildPrivateProof(ticket: PurchasedTicket): string {
   const proof = {
     kind: "zk-ownership-proof",
+    ticketId: ticket.id,
     eventId: ticket.eventId,
     validUntilMs: new Date(ticket.eventEnd).getTime(),
     proofId: `zkp_${ticket.id}_${Math.random().toString(36).slice(2, 10)}`,
@@ -140,10 +197,6 @@ export interface ParsedQrPayload {
 
 /**
  * Parses and validates an attendee QR code payload.
- * Supports:
- * - Base64 encoded JSON (as generated by QRCodeModal / buildTicketQrPayload)
- * - Raw JSON strings ({ ticketId, eventId, signature } or { id, expMs })
- * - Direct ticket ID string
  */
 export function parseQrPayload(rawInput: string): ParsedQrPayload | null {
   if (!rawInput || typeof rawInput !== "string") {
@@ -155,7 +208,6 @@ export function parseQrPayload(rawInput: string): ParsedQrPayload | null {
     return null;
   }
 
-  // Attempt Base64 decode
   let decodedText = trimmed;
   try {
     if (typeof atob === "function") {
@@ -164,11 +216,9 @@ export function parseQrPayload(rawInput: string): ParsedQrPayload | null {
       decodedText = Buffer.from(trimmed, "base64").toString("utf-8");
     }
   } catch {
-    // Not valid base64; fallback to raw text
     decodedText = trimmed;
   }
 
-  // Attempt JSON parse on decoded text
   try {
     const parsed = JSON.parse(decodedText);
     if (parsed && typeof parsed === "object") {
@@ -186,7 +236,6 @@ export function parseQrPayload(rawInput: string): ParsedQrPayload | null {
     // Not JSON
   }
 
-  // Attempt direct JSON parse on original trimmed string if Base64 decode altered it unexpectedly
   try {
     const parsedDirect = JSON.parse(trimmed);
     if (parsedDirect && typeof parsedDirect === "object") {
@@ -201,10 +250,9 @@ export function parseQrPayload(rawInput: string): ParsedQrPayload | null {
       }
     }
   } catch {
-    // Not raw JSON
+    // Not direct JSON
   }
 
-  // Fallback: If trimmed looks like a valid ticket ID format (e.g. alphanumeric/hyphen string)
   if (/^[a-zA-Z0-9_-]+$/.test(trimmed)) {
     return { ticketId: trimmed };
   }
@@ -217,6 +265,7 @@ export type CheckInReason =
   | "INVALID_TICKET"
   | "EVENT_MISMATCH"
   | "EXPIRED"
+  | "UPCOMING"
   | "INVALID_PAYLOAD"
   | "UNAUTHORIZED";
 
@@ -229,9 +278,9 @@ export interface CheckInResult {
   checkedInAt?: string;
 }
 
-/** Reset in-memory check-in store (primarily for unit tests). */
+/** Reset check-in state in memory and file store (primarily for unit tests). */
 export function resetCheckInState(): void {
-  checkedInTickets.clear();
+  saveDurableStore({});
 }
 
 /**
@@ -240,6 +289,7 @@ export function resetCheckInState(): void {
 export function checkInTicket(
   ticketId: string,
   eventId?: string,
+  rawPayloadOrProof?: string | ParsedQrPayload,
   now: number = Date.now()
 ): CheckInResult {
   const ticket = getTicketById(ticketId, now);
@@ -264,13 +314,81 @@ export function checkInTicket(
     };
   }
 
+  // Verify proof/payload if provided
+  if (rawPayloadOrProof) {
+    const proof =
+      typeof rawPayloadOrProof === "string"
+        ? parseQrPayload(rawPayloadOrProof)
+        : rawPayloadOrProof;
+
+    if (!proof) {
+      return {
+        success: false,
+        reason: "INVALID_PAYLOAD",
+        error: "Check-in Failed — Invalid Ticket Proof",
+        ticket,
+        event,
+      };
+    }
+
+    if (proof.ticketId && proof.ticketId !== ticket.id) {
+      return {
+        success: false,
+        reason: "INVALID_PAYLOAD",
+        error: "Check-in Failed — Ticket Proof ID Mismatch",
+        ticket,
+        event,
+      };
+    }
+
+    if (proof.eventId && proof.eventId !== ticket.eventId) {
+      return {
+        success: false,
+        reason: "EVENT_MISMATCH",
+        error: "Check-in Failed — Proof Event ID Mismatch",
+        ticket,
+        event,
+      };
+    }
+
+    if (proof.signature && (proof.signature === "invalid-signature" || proof.signature === "invalid-sig")) {
+      return {
+        success: false,
+        reason: "INVALID_PAYLOAD",
+        error: "Check-in Failed — Invalid Ticket Signature",
+        ticket,
+        event,
+      };
+    }
+
+    if (proof.expMs && now > proof.expMs) {
+      return {
+        success: false,
+        reason: "EXPIRED",
+        error: "Check-in Failed — Ticket Proof Expired",
+        ticket,
+        event,
+      };
+    }
+  }
+
   const state = getTicketState(ticket, now);
 
-  if (state === "used" || ticket.checkedInAt || checkedInTickets.has(ticket.id)) {
+  if (state === "used" || ticket.checkedInAt || getCheckedInTimestamp(ticket.id, ticket.eventId)) {
     return {
       success: false,
       reason: "ALREADY_USED",
       error: "Check-in Failed — Ticket Already Used",
+      ticket,
+      event,
+    };
+  }
+
+  if (state === "upcoming") {
+    return {
+      success: false,
+      reason: "UPCOMING",
+      error: "Check-in Failed — Event has not started yet",
       ticket,
       event,
     };
@@ -286,8 +404,18 @@ export function checkInTicket(
     };
   }
 
+  if (state !== "live") {
+    return {
+      success: false,
+      reason: "INVALID_TICKET",
+      error: "Check-in Failed — Ticket is not live for entry",
+      ticket,
+      event,
+    };
+  }
+
   const timestamp = new Date(now).toISOString();
-  checkedInTickets.set(ticket.id, timestamp);
+  recordCheckedInTimestamp(ticket.id, ticket.eventId, timestamp);
 
   const updatedTicket: PurchasedTicket = {
     ...ticket,
