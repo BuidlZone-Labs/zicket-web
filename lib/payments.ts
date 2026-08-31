@@ -33,6 +33,7 @@ class PaymentStore {
   private activeLocks = new Set<string>();
   private processedAttempts = new Map<string, ProcessedTicketRecord>();
   private rateLimitMap = new Map<string, number[]>();
+  private readonly MAX_RATE_LIMIT_KEYS = 5000;
 
   /**
    * Registers a payment record in the authoritative store.
@@ -116,10 +117,25 @@ class PaymentStore {
   }
 
   /**
-   * Rate limits incoming requests per key (IP / User ID).
+   * Rate limits incoming requests per key (IP / User ID) with bounded memory size & TTL cleanup.
    */
   public checkRateLimit(key: string, maxRequests = 30, windowMs = 60_000): boolean {
     const now = Date.now();
+
+    // Bounded cleanup if key capacity is exceeded
+    if (this.rateLimitMap.size >= this.MAX_RATE_LIMIT_KEYS) {
+      for (const [k, timestamps] of this.rateLimitMap.entries()) {
+        const active = timestamps.filter((t) => now - t < windowMs);
+        if (active.length === 0) {
+          this.rateLimitMap.delete(k);
+        }
+      }
+      if (this.rateLimitMap.size >= this.MAX_RATE_LIMIT_KEYS) {
+        const firstKey = this.rateLimitMap.keys().next().value;
+        if (firstKey) this.rateLimitMap.delete(firstKey);
+      }
+    }
+
     const timestamps = (this.rateLimitMap.get(key) || []).filter(
       (t) => now - t < windowMs
     );
@@ -251,17 +267,23 @@ export function verifyPaymentServerSide(params: {
     };
   }
 
-  // User ownership validation check
-  if (params.userAddress) {
-    const normalizedUser = params.userAddress.trim().toLowerCase();
-    const normalizedOwner = payment.userAddress.trim().toLowerCase();
-    if (normalizedUser !== normalizedOwner) {
-      return {
-        ok: false,
-        statusCode: 403,
-        error: "Authenticated user is not authorized to reconcile this payment.",
-      };
-    }
+  // User ownership validation check: require a non-empty authenticated userAddress for paid events
+  if (!params.userAddress || !params.userAddress.trim()) {
+    return {
+      ok: false,
+      statusCode: 401,
+      error: "Authentication required to reconcile paid event payment.",
+    };
+  }
+
+  const normalizedUser = params.userAddress.trim().toLowerCase();
+  const normalizedOwner = payment.userAddress.trim().toLowerCase();
+  if (normalizedUser !== normalizedOwner) {
+    return {
+      ok: false,
+      statusCode: 403,
+      error: "Authenticated user is not authorized to reconcile this payment.",
+    };
   }
 
   // Replay check

@@ -15,7 +15,7 @@ function getStatusForTx(hash: string): {
   error?: string;
 } {
   const existingPayment = paymentStore.getPayment(hash);
-  if (existingPayment) {
+  if (existingPayment && (existingPayment.status === "confirmed" || existingPayment.status === "failed")) {
     return {
       status: existingPayment.status,
       error: existingPayment.error,
@@ -27,15 +27,17 @@ function getStatusForTx(hash: string): {
   if (!record) {
     record = { createdAt: Date.now() };
     txStore.set(hash, record);
-    // Register initial record in payment store
-    paymentStore.registerPayment({
-      txHash: hash,
-      eventId: "unknown",
-      userAddress: "anonymous",
-      amount: 0,
-      status: "pending",
-      createdAt: new Date(record.createdAt).toISOString(),
-    });
+    if (!existingPayment) {
+      // Register initial record in payment store if absent
+      paymentStore.registerPayment({
+        txHash: hash,
+        eventId: "unknown",
+        userAddress: "anonymous",
+        amount: 0,
+        status: "pending",
+        createdAt: new Date(record.createdAt).toISOString(),
+      });
+    }
   }
 
   const elapsed = Date.now() - record.createdAt;

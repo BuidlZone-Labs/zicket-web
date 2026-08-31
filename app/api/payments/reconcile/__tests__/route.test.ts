@@ -11,16 +11,16 @@ describe("POST /api/payments/reconcile API Security & Integration Tests", () => 
   // 1. Authentication & Authorization
   // --------------------------------------------------------------------------
   describe("Authentication & Authorization", () => {
-    it("rejects request with 401 when invalid token authentication is provided", async () => {
+    it("rejects paid event request with 401 when no authorization headers are provided", async () => {
       const req = new Request("http://localhost:3000/api/payments/reconcile", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer INVALID_TOKEN",
         },
         body: JSON.stringify({
-          attemptId: "attempt-auth-1",
-          eventId: "naija-tech-summit",
+          attemptId: "attempt-no-auth-paid",
+          eventId: "solana-summer-hackathon", // Paid event
+          txHash: "tx-some-hash",
         }),
       });
 
@@ -28,7 +28,7 @@ describe("POST /api/payments/reconcile API Security & Integration Tests", () => 
       expect(res.status).toBe(401);
       const body = await res.json();
       expect(body.ok).toBe(false);
-      expect(body.error).toMatch(/invalid or expired/i);
+      expect(body.error).toMatch(/authentication required/i);
     });
 
     it("rejects request with 403 when authenticated user attempts to reconcile another user's payment", async () => {
@@ -95,7 +95,10 @@ describe("POST /api/payments/reconcile API Security & Integration Tests", () => 
     it("toggling isPaid: false to isPaid: true does not bypass server payment verification", async () => {
       const reqPaidFalse = new Request("http://localhost:3000/api/payments/reconcile", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer GBUYER_ADDRESS_123",
+        },
         body: JSON.stringify({
           attemptId: "attempt-toggle-1",
           eventId: "solana-summer-hackathon",
@@ -111,7 +114,10 @@ describe("POST /api/payments/reconcile API Security & Integration Tests", () => 
 
       const reqPaidTrue = new Request("http://localhost:3000/api/payments/reconcile", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer GBUYER_ADDRESS_123",
+        },
         body: JSON.stringify({
           attemptId: "attempt-toggle-1",
           eventId: "solana-summer-hackathon",
@@ -132,7 +138,10 @@ describe("POST /api/payments/reconcile API Security & Integration Tests", () => 
     it("rejects non-existent payment ID or fake transaction hash with 404", async () => {
       const req = new Request("http://localhost:3000/api/payments/reconcile", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer GBUYER_123",
+        },
         body: JSON.stringify({
           attemptId: "attempt-fake-tx",
           eventId: "solana-summer-hackathon",
@@ -389,15 +398,15 @@ describe("POST /api/payments/reconcile API Security & Integration Tests", () => 
   });
 
   // --------------------------------------------------------------------------
-  // 5. Free Event Registration Regression
+  // 5. Free Event Registration Policy
   // --------------------------------------------------------------------------
-  describe("Free Event Registration", () => {
-    it("allows free event registration without requiring payment transaction", async () => {
+  describe("Free Event Registration Policy", () => {
+    it("explicitly permits anonymous registration for free events without payment credentials", async () => {
       const req = new Request("http://localhost:3000/api/payments/reconcile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          attemptId: "attempt-free-1",
+          attemptId: "attempt-free-anon",
           eventId: "naija-tech-summit", // Free event (isPaid: false)
         }),
       });

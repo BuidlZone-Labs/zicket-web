@@ -130,11 +130,11 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     reset: resetChainTracking,
     checkConnection,
   } = useTransactionStatus({
-    onConfirmed: () => {
+    onConfirmed: (confirmedHash: string) => {
       void onStatusChange?.({
         isConfirmed: true,
         isPaid,
-        txHash: chainTxHash ?? undefined,
+        txHash: confirmedHash || chainTxHash || undefined,
         userAddress: stellarPublicKey ?? undefined,
       });
     },

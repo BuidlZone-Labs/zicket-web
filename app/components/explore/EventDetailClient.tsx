@@ -93,6 +93,7 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (status.userAddress) {
         headers["Authorization"] = `Bearer ${status.userAddress}`;
+        headers["X-User-Address"] = status.userAddress;
       }
 
       const response = await fetch("/api/payments/reconcile", {
@@ -102,7 +103,6 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
           attemptId: nextAttemptId,
           eventId: event.id,
           txHash: status.txHash,
-          userAddress: status.userAddress,
           isConfirmed: status.isConfirmed,
           isPaid: status.isPaid,
         }),

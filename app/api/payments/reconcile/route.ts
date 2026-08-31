@@ -6,15 +6,33 @@ type ReconcileRequest = {
   attemptId?: string;
   eventId?: string;
   txHash?: string;
-  userAddress?: string;
   isConfirmed?: boolean;
   isPaid?: boolean;
 };
 
 /**
- * Extracts and validates caller authentication from request headers or body.
+ * Extracts client IP from platform-provided headers or first hop of x-forwarded-for.
  */
-function extractAuth(request: Request, body: ReconcileRequest): {
+function getClientIp(request: Request): string {
+  const cfIp = request.headers.get("cf-connecting-ip");
+  if (cfIp && cfIp.trim()) return cfIp.trim();
+
+  const realIp = request.headers.get("x-real-ip");
+  if (realIp && realIp.trim()) return realIp.trim();
+
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded && forwarded.trim()) {
+    const firstHop = forwarded.split(",")[0].trim();
+    if (firstHop) return firstHop;
+  }
+
+  return "unknown-client";
+}
+
+/**
+ * Extracts and validates caller authentication strictly from request headers.
+ */
+function extractAuth(request: Request): {
   authenticated: boolean;
   userAddress?: string;
   statusCode?: number;
@@ -27,38 +45,21 @@ function extractAuth(request: Request, body: ReconcileRequest): {
     request.headers.get("x-user-address") ||
     request.headers.get("x-wallet-address");
 
-  let tokenAddress = headerAddress || body.userAddress;
+  let credential = headerAddress?.trim();
 
   if (authHeader) {
     const parts = authHeader.trim().split(" ");
-    const token = parts.length === 2 && parts[0].toLowerCase() === "bearer" ? parts[1] : authHeader.trim();
-
-    if (token === "INVALID_TOKEN" || token === "UNAUTHORIZED" || token === "EXPIRED_TOKEN") {
-      return {
-        authenticated: false,
-        statusCode: 401,
-        error: "Invalid or expired authentication credentials.",
-      };
-    }
-
-    if (!tokenAddress) {
-      tokenAddress = token;
+    const token = parts.length === 2 && parts[0].toLowerCase() === "bearer" ? parts[1].trim() : authHeader.trim();
+    if (token) {
+      credential = token;
     }
   }
 
-  if (tokenAddress) {
-    const trimmed = tokenAddress.trim();
-    if (trimmed === "UNAUTHORIZED" || trimmed === "INVALID_USER") {
-      return {
-        authenticated: false,
-        statusCode: 401,
-        error: "Unauthorized user credentials.",
-      };
-    }
-    return { authenticated: true, userAddress: trimmed };
+  if (credential) {
+    return { authenticated: true, userAddress: credential };
   }
 
-  return { authenticated: true };
+  return { authenticated: false };
 }
 
 /**
@@ -67,7 +68,7 @@ function extractAuth(request: Request, body: ReconcileRequest): {
  * Security Invariants Enforced:
  * 1. Independent Server-Side Payment Verification: Client-supplied `isPaid` and `isConfirmed`
  *    fields are IGNORED. Payment authenticity is established server-side against `paymentStore`.
- * 2. Authentication & Authorization: Verifies token credentials (401) and ensures user
+ * 2. Authentication & Authorization: Verifies header credentials (401) and ensures user
  *    ownership matching (403) so users cannot reconcile payments belonging to others.
  * 3. Replay & Concurrency Prevention: Atomic lock acquisition per attempt/txHash prevents race
  *    conditions during concurrent requests, and idempotency guarantees single ticket issuance.
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const clientIp = request.headers.get("x-forwarded-for") || "127.0.0.1";
+  const clientIp = getClientIp(request);
   if (!paymentStore.checkRateLimit(clientIp)) {
     return NextResponse.json(
       { ok: false, error: "Rate limit exceeded. Please try again later." },
@@ -93,19 +94,13 @@ export async function POST(request: Request) {
     );
   }
 
-  // 1. Authenticate caller
-  const auth = extractAuth(request, body);
-  if (!auth.authenticated) {
-    return NextResponse.json(
-      { ok: false, error: auth.error || "Authentication required." },
-      { status: auth.statusCode || 401 }
-    );
-  }
+  // 1. Authenticate caller strictly from request headers
+  const auth = extractAuth(request);
+  const userAddress = auth.userAddress;
 
   const attemptId = body.attemptId?.trim();
   const eventId = body.eventId?.trim();
   const txHash = body.txHash?.trim();
-  const userAddress = auth.userAddress || body.userAddress?.trim();
 
   if (!attemptId || !eventId) {
     return NextResponse.json(
@@ -123,6 +118,14 @@ export async function POST(request: Request) {
     );
   }
 
+  // Enforce authentication for paid events
+  if (event.isPaid && (!auth.authenticated || !userAddress)) {
+    return NextResponse.json(
+      { ok: false, error: "Authentication required to reconcile paid event payment." },
+      { status: 401 }
+    );
+  }
+
   // 3. Check for existing processed attempt (Idempotency)
   const existing = paymentStore.getProcessedAttempt(attemptId);
   if (existing) {
@@ -133,7 +136,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (userAddress && existing.userAddress && existing.userAddress !== userAddress) {
+    if (
+      userAddress &&
+      existing.userAddress &&
+      userAddress.trim().toLowerCase() !== existing.userAddress.trim().toLowerCase()
+    ) {
       return NextResponse.json(
         { ok: false, error: "Authenticated user is not authorized to claim this ticket attempt." },
         { status: 403 }
