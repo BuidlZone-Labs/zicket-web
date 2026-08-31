@@ -7,7 +7,7 @@ export function HeroSection() {
     <div
       className="min-h-screen relative overflow-hidden -top-32 pt-32 flex flex-col items-center justify-center text-white"
       style={{
-        backgroundImage: "url('/Herosection.png')",
+        backgroundImage: "url('/Herosection.webp')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",

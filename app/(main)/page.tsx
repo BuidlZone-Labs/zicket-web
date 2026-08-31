@@ -1,16 +1,34 @@
-// import { Header } from "../newComponents/header"
+import dynamic from "next/dynamic";
 import { HeroSection } from "../newComponents/hero-section";
 import { HowItWorks } from "../newComponents/how-it-works";
 import { NoSignupsSection } from "../newComponents/no-signups-section";
-// import { TrendingEvents } from "../newComponents/trending-events";
-import EventSlider from "../components/EventSlider";
 import { PowerfulTools } from "../newComponents/powerful-tools";
 import { FAQSection } from "../newComponents/faq-section";
 import { HostInPeace } from "../newComponents/host-in-peace";
-import { TrendingNews } from "../newComponents/trending-news";
-import { QRCodeModalExample } from "../components/QRCodeModalExample";
-import { TicketCancellationModalExample } from "../components/TicketCancellationModalExample";
-// import { Footer } from "@/components/footer"
+import EventSliderSkeleton from "../components/EventSliderSkeleton";
+import { TrendingNewsSkeleton } from "../newComponents/trending-news-skeleton";
+
+const EventSlider = dynamic(() => import("../components/EventSlider"), {
+  loading: () => <EventSliderSkeleton />,
+});
+
+const TrendingNews = dynamic(
+  () => import("../newComponents/trending-news").then((mod) => mod.TrendingNews),
+  {
+    loading: () => <TrendingNewsSkeleton />,
+  }
+);
+
+const QRCodeModalExample = dynamic(
+  () => import("../components/QRCodeModalExample").then((mod) => mod.QRCodeModalExample)
+);
+
+const TicketCancellationModalExample = dynamic(
+  () =>
+    import("../components/TicketCancellationModalExample").then(
+      (mod) => mod.TicketCancellationModalExample
+    )
+);
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white dark:bg-[#141414]">

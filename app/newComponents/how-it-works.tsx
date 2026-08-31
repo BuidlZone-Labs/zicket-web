@@ -3,19 +3,19 @@ import Image from "next/image";
 export function HowItWorks() {
   const steps = [
     {
-      image: "/images/discover.png",
+      image: "/images/discover.webp",
       title: "Discover Without Login",
       description:
         "Guests can explore public or private events without creating accounts or being tracked.",
     },
     {
-      image: "/images/mask.png",
+      image: "/images/mask.webp",
       title: "Attend On Your Terms",
       description:
         "Join events anonymously or with zk verification — no personal data exposed.",
     },
     {
-      image: "/images/wallet.png",
+      image: "/images/wallet.webp",
       title: "Only Connect When Needed",
       description:
         "Wallets are used only for payment. No guest wallet required for free events.",

@@ -17,8 +17,8 @@ export function TrendingNews() {
       title: "Zicket X Builders: A Hack Night Recap",
       subject: "How the dev crowd used Zicket for a private demo series.",
       author: "ZKC Node",
-      avatar: "/images/avatar1.jpg",
-      image: "/images/News1.jpg",
+      avatar: "/images/avatar1.webp",
+      image: "/images/News1.webp",
     },
     {
       genre: "Behind the Scenes",
@@ -26,8 +26,8 @@ export function TrendingNews() {
       title: "Designing for Private Discovery",
       subject: "Why our Interface hides what doesnt matter",
       author: "Studio Delta",
-      avatar: "/images/avatar2.jpg",
-      image: "/images/News2.jpg",
+      avatar: "/images/avatar2.webp",
+      image: "/images/News2.webp",
     },
     {
       genre: "Ecosystem",
@@ -35,8 +35,8 @@ export function TrendingNews() {
       title: "CircleDrop Format Explained",
       subject: "Smaller, faster events for high trust groups",
       author: "Indie Venue Club",
-      avatar: "/images/avatar3.jpg",
-      image: "/images/News-3.jpg",
+      avatar: "/images/avatar3.webp",
+      image: "/images/News-3.webp",
     },
     {
       genre: "Community",
@@ -44,8 +44,8 @@ export function TrendingNews() {
       title: "Monthly Meetup Highlights",
       subject: "Key insights from our latest community gathering",
       author: "Community Team",
-      avatar: "/images/avatar1.jpg",
-      image: "/images/News2.jpg",
+      avatar: "/images/avatar1.webp",
+      image: "/images/News2.webp",
     },
     {
       genre: "Product",
@@ -53,8 +53,8 @@ export function TrendingNews() {
       title: "New Features This Month",
       subject: "Latest updates and improvements to the platform",
       author: "Product Team",
-      avatar: "/images/avatar2.jpg",
-      image: "/images/News1.jpg",
+      avatar: "/images/avatar2.webp",
+      image: "/images/News1.webp",
     },
   ];
 

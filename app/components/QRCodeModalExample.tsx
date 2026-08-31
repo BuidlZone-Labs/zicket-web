@@ -1,8 +1,13 @@
 'use client'
 
 import React, { useState } from 'react'
-import { QRCodeModal } from './QRCodeModal'
+import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
+
+const QRCodeModal = dynamic(
+  () => import('./QRCodeModal').then((mod) => mod.QRCodeModal),
+  { ssr: false }
+)
 
 /**
  * Example component showing how to use the QRCodeModal
