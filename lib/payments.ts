@@ -20,10 +20,19 @@ export interface PaymentRecord {
   reconciledAt?: string;
 }
 
+export interface ProcessedTicketRecord {
+  ticketId: string;
+  eventId: string;
+  userAddress?: string;
+  createdAt: string;
+}
+
 class PaymentStore {
   private payments = new Map<string, PaymentRecord>();
   private attemptToTx = new Map<string, string>();
   private activeLocks = new Set<string>();
+  private processedAttempts = new Map<string, ProcessedTicketRecord>();
+  private rateLimitMap = new Map<string, number[]>();
 
   /**
    * Registers a payment record in the authoritative store.
@@ -93,6 +102,38 @@ class PaymentStore {
   }
 
   /**
+   * Retrieves a previously processed attempt record for idempotency checks.
+   */
+  public getProcessedAttempt(attemptId: string): ProcessedTicketRecord | undefined {
+    return this.processedAttempts.get(attemptId);
+  }
+
+  /**
+   * Records a processed attempt for idempotency.
+   */
+  public setProcessedAttempt(attemptId: string, record: ProcessedTicketRecord): void {
+    this.processedAttempts.set(attemptId, record);
+  }
+
+  /**
+   * Rate limits incoming requests per key (IP / User ID).
+   */
+  public checkRateLimit(key: string, maxRequests = 30, windowMs = 60_000): boolean {
+    const now = Date.now();
+    const timestamps = (this.rateLimitMap.get(key) || []).filter(
+      (t) => now - t < windowMs
+    );
+
+    if (timestamps.length >= maxRequests) {
+      return false;
+    }
+
+    timestamps.push(now);
+    this.rateLimitMap.set(key, timestamps);
+    return true;
+  }
+
+  /**
    * Acquires an atomic lock for a given reconciliation key (e.g. attemptId or txHash).
    * Returns true if lock was acquired, false if lock is currently held by another request.
    */
@@ -118,10 +159,16 @@ class PaymentStore {
     this.payments.clear();
     this.attemptToTx.clear();
     this.activeLocks.clear();
+    this.processedAttempts.clear();
+    this.rateLimitMap.clear();
   }
 }
 
 export const paymentStore = new PaymentStore();
+
+export function resetReconcileState(): void {
+  paymentStore.reset();
+}
 
 export interface VerificationResult {
   ok: boolean;

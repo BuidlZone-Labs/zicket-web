@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { paymentStore, type PaymentRecord } from "@/lib/payments";
+import { paymentStore } from "@/lib/payments";
 
 type TxRecord = {
   createdAt: number;

@@ -11,35 +11,6 @@ type ReconcileRequest = {
   isPaid?: boolean;
 };
 
-type TicketRecord = {
-  ticketId: string;
-  eventId: string;
-  userAddress?: string;
-  createdAt: string;
-};
-
-const processedAttempts = new Map<string, TicketRecord>();
-
-// Simple in-memory rate limiting map: IP/Address -> timestamp list
-const rateLimitMap = new Map<string, number[]>();
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const MAX_REQUESTS_PER_WINDOW = 30;
-
-function checkRateLimit(key: string): boolean {
-  const now = Date.now();
-  const timestamps = (rateLimitMap.get(key) || []).filter(
-    (t) => now - t < RATE_LIMIT_WINDOW_MS
-  );
-
-  if (timestamps.length >= MAX_REQUESTS_PER_WINDOW) {
-    return false;
-  }
-
-  timestamps.push(now);
-  rateLimitMap.set(key, timestamps);
-  return true;
-}
-
 /**
  * Extracts and validates caller authentication from request headers or body.
  */
@@ -91,15 +62,6 @@ function extractAuth(request: Request, body: ReconcileRequest): {
 }
 
 /**
- * Reset route state (for test suite isolation).
- */
-export function resetReconcileState(): void {
-  processedAttempts.clear();
-  rateLimitMap.clear();
-  paymentStore.reset();
-}
-
-/**
  * Finalizes a ticket purchase after server-side payment verification.
  *
  * Security Invariants Enforced:
@@ -124,7 +86,7 @@ export async function POST(request: Request) {
   }
 
   const clientIp = request.headers.get("x-forwarded-for") || "127.0.0.1";
-  if (!checkRateLimit(clientIp)) {
+  if (!paymentStore.checkRateLimit(clientIp)) {
     return NextResponse.json(
       { ok: false, error: "Rate limit exceeded. Please try again later." },
       { status: 429 }
@@ -162,7 +124,7 @@ export async function POST(request: Request) {
   }
 
   // 3. Check for existing processed attempt (Idempotency)
-  const existing = processedAttempts.get(attemptId);
+  const existing = paymentStore.getProcessedAttempt(attemptId);
   if (existing) {
     if (existing.eventId !== eventId) {
       return NextResponse.json(
@@ -222,7 +184,7 @@ export async function POST(request: Request) {
       }
 
       if (verification.deduplicated && verification.reconciledTicketId) {
-        processedAttempts.set(attemptId, {
+        paymentStore.setProcessedAttempt(attemptId, {
           ticketId: verification.reconciledTicketId,
           eventId,
           userAddress,
@@ -239,7 +201,7 @@ export async function POST(request: Request) {
 
     // 6. Generate and persist ticket ID
     const ticketId = `ticket_${eventId}_${attemptId.slice(0, 8)}`;
-    processedAttempts.set(attemptId, {
+    paymentStore.setProcessedAttempt(attemptId, {
       ticketId,
       eventId,
       userAddress,
