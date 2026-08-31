@@ -1,9 +1,26 @@
 "use client"
 import React from 'react';
+import dynamic from 'next/dynamic';
 import ZkEmailCenterCard from './ZkEmailCenterCard';
 import RecentActivities from './RecentActivities';
-import RevenueTrends from './RevenueTrendsChart';
-import PrivacySplitChart from './PrivacySplitChart';
+
+const RevenueTrends = dynamic(() => import('./RevenueTrendsChart'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-64 w-full bg-white dark:bg-zinc-900 rounded-lg animate-pulse p-4 border flex items-center justify-center text-xs text-gray-400">
+      Loading chart...
+    </div>
+  ),
+});
+
+const PrivacySplitChart = dynamic(() => import('./PrivacySplitChart'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-64 w-full bg-white dark:bg-zinc-900 rounded-lg animate-pulse p-4 border flex items-center justify-center text-xs text-gray-400">
+      Loading privacy chart...
+    </div>
+  ),
+});
 
 const ActivitiesPanel = () => {
   return (

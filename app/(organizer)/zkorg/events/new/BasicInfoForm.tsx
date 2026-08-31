@@ -17,12 +17,24 @@ import { Input } from "@/components/ui/input"
 import { InputWithIcon } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tag } from "@/components/ui/tag"
+import dynamic from "next/dynamic"
 import { StepIndicator } from "./StepIndicator"
-import { RichTextEditor } from "./RichTextEditor"
 import { FileUpload } from "./FileUpload"
 import { cn } from "@/lib/utils"
 import { useCooldown } from "@/hooks/useCooldown"
 import { CooldownMessage } from "@/app/components/AntiSpam/CooldownMessage"
+
+const RichTextEditor = dynamic(
+  () => import("./RichTextEditor").then((mod) => mod.RichTextEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-40 w-full rounded-lg border border-[#E3E3E3] dark:border-[#2A2A2A] bg-gray-50 dark:bg-zinc-900 animate-pulse p-3 flex items-center justify-center text-xs text-gray-400">
+        Loading editor...
+      </div>
+    ),
+  }
+)
 
 const defaultValues: BasicInfoEventFormValues = {
   title: "",
