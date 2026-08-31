@@ -87,15 +87,22 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
    */
   const reconcileWithBackend = async (
     nextAttemptId: string,
-    status: { isConfirmed: boolean; isPaid: boolean },
+    status: { isConfirmed: boolean; isPaid: boolean; txHash?: string; userAddress?: string },
   ): Promise<PaymentAttemptResult> => {
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (status.userAddress) {
+        headers["Authorization"] = `Bearer ${status.userAddress}`;
+        headers["X-User-Address"] = status.userAddress;
+      }
+
       const response = await fetch("/api/payments/reconcile", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           attemptId: nextAttemptId,
           eventId: event.id,
+          txHash: status.txHash,
           isConfirmed: status.isConfirmed,
           isPaid: status.isPaid,
         }),
@@ -143,6 +150,8 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
   const handleStatusChange = async (status: {
     isConfirmed: boolean;
     isPaid: boolean;
+    txHash?: string;
+    userAddress?: string;
   }): Promise<PaymentAttemptResult> => {
     if (inFlightRef.current) {
       return { ok: false, error: "Payment already in progress." };

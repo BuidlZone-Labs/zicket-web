@@ -44,6 +44,8 @@ interface TicketInfoProps {
   onStatusChange?: (status: {
     isConfirmed: boolean;
     isPaid: boolean;
+    txHash?: string;
+    userAddress?: string;
   }) => Promise<{ ok: boolean; error?: string }> | { ok: boolean; error?: string };
   onResetPayment?: () => void;
 }
@@ -128,8 +130,13 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     reset: resetChainTracking,
     checkConnection,
   } = useTransactionStatus({
-    onConfirmed: () => {
-      void onStatusChange?.({ isConfirmed: true, isPaid });
+    onConfirmed: (confirmedHash: string) => {
+      void onStatusChange?.({
+        isConfirmed: true,
+        isPaid,
+        txHash: confirmedHash || chainTxHash || undefined,
+        userAddress: stellarPublicKey ?? undefined,
+      });
     },
   });
 
@@ -166,7 +173,12 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     // skip the trust prompt and don't re-trigger a new wallet signature (the
     // user could otherwise end up paying twice).
     if (hasPaymentFailed && chainStatus === "confirmed") {
-      void onStatusChange?.({ isConfirmed: true, isPaid });
+      void onStatusChange?.({
+        isConfirmed: true,
+        isPaid,
+        txHash: chainTxHash ?? undefined,
+        userAddress: stellarPublicKey ?? undefined,
+      });
       return;
     }
 
@@ -368,7 +380,13 @@ export const TicketInfo: FC<TicketInfoProps> = ({
     bannerStatus === "wallet_error"
       ? (isOnCooldown ? undefined : handlePrimaryClick)
       : bannerStatus === "reconcile_failed"
-        ? () => void onStatusChange?.({ isConfirmed: true, isPaid })
+        ? () =>
+            void onStatusChange?.({
+              isConfirmed: true,
+              isPaid,
+              txHash: chainTxHash ?? undefined,
+              userAddress: stellarPublicKey ?? undefined,
+            })
         : bannerStatus === "failed"
           ? handleRetry
           : undefined;
