@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from "react";
 import { dummyEvents } from "@/lib/dummyEvents/events";
 import { explorePathForEventTitle } from "@/lib/dummyEvents/explorePath";
 import { useSimulatedAvailability } from "@/lib/hooks/useSimulatedAvailability";
+import { PrivacyBadge } from "@/components/privacy/PrivacyBadge";
 
 const trendingEvents = dummyEvents.slice(0, 4);
 
@@ -27,6 +28,21 @@ function TrendingEventCard({ card }: { card: (typeof dummyEvents)[number] }) {
     <div className="border border-gray-200 p-1 rounded-md shrink-0">
       <div className="relative h-48 w-[270px] md:w-[385px]">
         <Image alt={card.title} src={card.image} fill className="object-cover rounded-md" />
+        {card.privacyLevel && (
+          <div
+            className="absolute top-2 left-2 z-10"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <PrivacyBadge
+              level={card.privacyLevel[0]}
+              variant="card-overlay"
+              size="sm"
+            />
+          </div>
+        )}
       </div>
       <div className="px-6 py-4 flex flex-col gap-4">
         <div className="flex items-center justify-between gap-2">

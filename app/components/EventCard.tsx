@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { explorePathForEventTitle } from "@/lib/dummyEvents/explorePath";
 import { useSimulatedAvailability } from "@/lib/hooks/useSimulatedAvailability";
+import { PrivacyBadge } from "@/components/privacy/PrivacyBadge";
+import type { PrivacyLevel } from "@/lib/dummyEvents/events";
 
 type EventCardProps = {
   image?: string;
@@ -13,6 +15,7 @@ type EventCardProps = {
   location?: string;
   price?: string;
   eventId?: string;
+  privacyLevel?: PrivacyLevel | PrivacyLevel[] | string;
 };
 
 export default function EventCard({
@@ -23,6 +26,7 @@ export default function EventCard({
   location = "London, UK",
   price = "$100.00",
   eventId,
+  privacyLevel,
 }: EventCardProps) {
   const { slotsLeft, isSoldOut } = useSimulatedAvailability(eventId);
 
@@ -30,7 +34,7 @@ export default function EventCard({
 
   return (
     <div className="bg-white dark:bg-transparent rounded-2xl shadow p-0 flex flex-col w-[290px] max-w-full border border-[#E5E5E5] dark:border-[#232323] cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-xl">
-      <div className="p-1 pb-0 overflow-hidden rounded-xl">
+      <div className="p-1 pb-0 overflow-hidden rounded-xl relative">
         <Image
           src={image}
           alt={title}
@@ -38,6 +42,21 @@ export default function EventCard({
           height={150}
           className="rounded-xl object-cover w-full h-[150px] bg-[#E5E5E5] transition-transform duration-300 hover:scale-105"
         />
+        {privacyLevel && (
+          <div
+            className="absolute top-2 left-2 z-10"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <PrivacyBadge
+              level={Array.isArray(privacyLevel) ? privacyLevel[0] : privacyLevel}
+              variant="card-overlay"
+              size="sm"
+            />
+          </div>
+        )}
       </div>
       <div className="p-4 pt-2 flex flex-col gap-2">
         <div className="flex items-center justify-between mb-1">
