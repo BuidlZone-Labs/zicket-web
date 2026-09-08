@@ -14,9 +14,8 @@ import {
 /**
  * In-process stand-in for the settlement backend, mirroring the shape the real
  * indexer will return so only this file changes when it lands. It is
- * deliberately the same pattern the existing mocked routes use
- * (`app/api/payments/reconcile`, `app/api/transactions/[txHash]/status`):
- * module-level `Map`s, no persistence, reset on redeploy.
+ * deliberately the same pattern used for mock data storage: module-level `Map`s,
+ * no persistence, reset on redeploy.
  *
  * TODO(backend): replace `buildBaseline` with a fetch against the settlement
  * service; keep the overlay maps only until writes are owned server-side.

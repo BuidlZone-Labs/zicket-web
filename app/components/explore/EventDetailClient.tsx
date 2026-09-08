@@ -80,7 +80,7 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
   };
 
   /**
-   * Calls the reconcile endpoint to finalize a confirmed payment into a ticket.
+   * Calls the backend verify-payment endpoint to finalize a confirmed payment into a ticket.
    * Normalizes HTTP errors, rejected payloads, and network failures into a
    * single `{ ok, error }` result so callers don't have to branch on transport
    * details.
@@ -90,21 +90,22 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
     status: { isConfirmed: boolean; isPaid: boolean; txHash?: string; userAddress?: string },
   ): Promise<PaymentAttemptResult> => {
     try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (status.userAddress) {
         headers["Authorization"] = `Bearer ${status.userAddress}`;
         headers["X-User-Address"] = status.userAddress;
       }
 
-      const response = await fetch("/api/payments/reconcile", {
+      const response = await fetch(`${baseUrl}/ticket-orders/verify-payment`, {
         method: "POST",
         headers,
         body: JSON.stringify({
-          attemptId: nextAttemptId,
-          eventId: event.id,
-          txHash: status.txHash,
-          isConfirmed: status.isConfirmed,
-          isPaid: status.isPaid,
+          txHash: status.txHash || nextAttemptId,
+          eventTicketId: event.id,
+          ticketType: event.ticketTypes?.[0]?.name || "General Access",
+          quantity: 1,
+          expectedAmount: event.price ?? 0,
         }),
       });
 
@@ -112,9 +113,9 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
         let message = "Could not reconcile with backend. Please retry.";
 
         try {
-          const payload = (await response.json()) as ReconcileResponse;
-          if (payload?.error) {
-            message = payload.error;
+          const payload = await response.json();
+          if (payload?.error || payload?.message) {
+            message = payload.error || payload.message;
           }
         } catch {
         }
@@ -122,11 +123,11 @@ export default function EventDetailClient({ event }: EventDetailClientProps) {
         return { ok: false, error: message };
       }
 
-      const payload = (await response.json()) as ReconcileResponse;
-      if (!payload.ok) {
+      const payload = await response.json();
+      if (payload.success === false || payload.ok === false) {
         return {
           ok: false,
-          error: payload.error ?? "Backend rejected this payment confirmation.",
+          error: payload.message ?? payload.error ?? "Backend rejected this payment confirmation.",
         };
       }
 

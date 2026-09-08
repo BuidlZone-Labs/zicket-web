@@ -97,16 +97,18 @@ export default function OrganizerCheckInPage() {
 
     setIsSyncing(true);
     const remaining: QueuedCheckIn[] = [];
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
 
     for (const item of offlineQueue) {
       try {
-        const res = await fetch('/api/tickets/verify-attend', {
+        const res = await fetch(`${baseUrl}/event-tickets/scan`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(publicKey ? { 'Authorization': `Bearer ${publicKey}` } : {}),
+          },
           body: JSON.stringify({
             ticketId: item.ticketId,
-            eventId: item.eventId,
-            payload: item.payload,
           }),
         });
         if (!res.ok && res.status >= 500) {
@@ -122,7 +124,7 @@ export default function OrganizerCheckInPage() {
       localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(remaining));
     } catch {}
     setIsSyncing(false);
-  }, [offlineQueue, isSyncing]);
+  }, [offlineQueue, isSyncing, publicKey]);
 
   useEffect(() => {
     if (!isOffline && offlineQueue.length > 0) {
@@ -182,23 +184,27 @@ export default function OrganizerCheckInPage() {
     }
 
     try {
-      const response = await fetch('/api/tickets/verify-attend', {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const response = await fetch(`${baseUrl}/event-tickets/scan`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Organizer-Address': publicKey,
           'Authorization': `Bearer ${publicKey}`,
         },
         body: JSON.stringify({
           ticketId: cleanTicketId,
-          eventId: selectedEventId,
-          payload: payloadRaw,
-          organizerAddress: publicKey,
         }),
       });
 
-      const data = (await response.json()) as CheckInResponse;
-      setResultState(data);
+      const body = await response.json();
+      const checkInResponse: CheckInResponse = {
+        success: body.success ?? response.ok,
+        message: body.message,
+        error: body.error || body.message,
+        reason: body.error,
+        ticket: body.data || body.ticket,
+      };
+      setResultState(checkInResponse);
     } catch {
       // Network error during fetch -> queue offline
       const queuedItem: QueuedCheckIn = {

@@ -22,13 +22,20 @@ export interface UseTransactionStatusOptions {
     onFailed?: (error: string) => void
 }
 
-/** Fetches the current on-chain status for a tx hash from the status API. */
+/** Fetches the current on-chain status for a tx hash from the backend API. */
 async function fetchTransactionStatus(
     txHash: string
 ): Promise<{ status: "pending" | "confirmed" | "failed"; error?: string }> {
-    const res = await fetch(`/api/transactions/${txHash}/status`)
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || ""
+    const res = await fetch(`${baseUrl}/ticket-orders/transaction-status/${encodeURIComponent(txHash)}`, {
+        headers: {
+            "Content-Type": "application/json",
+        },
+    })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    return res.json()
+    const body = await res.json()
+    const status = body.data?.state || body.status || "pending"
+    return { status, error: body.error || body.message }
 }
 
 const INITIAL_STATE: TransactionState = {
