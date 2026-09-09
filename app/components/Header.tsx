@@ -70,8 +70,8 @@ function Header() {
                   key={link.href}
                   href={link.href}
                   className={`px-2 text-sm font-medium ${pathname === link.href
-                      ? "text-[#6917AF] dark:text-[#D7B5F5]"
-                      : "text-[#172233] dark:text-white hover:text-[#6917AF] dark:hover:text-[#D7B5F5]"
+                    ? "text-[#6917AF] dark:text-[#D7B5F5]"
+                    : "text-[#172233] dark:text-white hover:text-[#6917AF] dark:hover:text-[#D7B5F5]"
                     }`}
                   aria-current={pathname === link.href ? "page" : undefined}
                 >
@@ -82,7 +82,7 @@ function Header() {
           </div>
         </div>
 
-        <div className="hidden lg:flex items-center gap-4 flex-1 max-w-md mx-8">
+        {/* <div className="hidden lg:flex items-center gap-4 flex-1 max-w-md mx-8">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" aria-hidden="true" />
             <label htmlFor="site-search" className="sr-only">
@@ -97,11 +97,11 @@ function Header() {
               className="w-full pl-10 pr-4 py-2 bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-600 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#6917AF] focus:border-transparent"
             />
           </div>
-        </div>
+        </div> */}
 
         <div className="hidden lg:flex items-center gap-4">
           <WalletConnectionIndicator variant="user" />
-          <div className="flex items-center gap-2">
+          {/* <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-[#172233] dark:text-white">
               Anonymous Browsing
             </span>
@@ -118,10 +118,13 @@ function Header() {
                 </span>
               </>
             )}
-          </div>
-          <a href="/login" className="group flex gap-1 items-center cursor-pointer px-6 py-3 border border-[#8F37DA] bg-gradient-to-b from-[#5E4BF3] to-[#9109D0] text-white rounded-full font-bold transition-all duration-300 dark:hover:drop-shadow-[0_0_2em_rgba(255,255,255,0.3)] dark:hover:text-gray-50">
+          </div> */}
+          <a href="/auth/login" className="group flex gap-1 items-center cursor-pointer px-6 py-3 border border-[#8F37DA] bg-gradient-to-b from-[#5E4BF3] to-[#9109D0] text-white rounded-full font-bold transition-all duration-300 dark:hover:drop-shadow-[0_0_2em_rgba(255,255,255,0.3)] dark:hover:text-gray-50">
             Host Event <ArrowUpRight size="15" className="group-hover:rotate-45 delay-300 transition-all" aria-hidden="true" />
           </a>
+          <div className="hidden md:block">
+            <ModeToggle />
+          </div>
         </div>
         {/* mobile nav */}
         <button
@@ -146,8 +149,8 @@ function Header() {
                     href={link.href}
                     onClick={() => setIsOpen(false)}
                     className={`px-2 ${pathname === link.href
-                        ? "text-[#6917AF]"
-                        : "text-[#172233] hover:text-[#6917AF]"
+                      ? "text-[#6917AF]"
+                      : "text-[#172233] hover:text-[#6917AF]"
                       }`}
                     aria-current={pathname === link.href ? "page" : undefined}
                   >
@@ -171,7 +174,7 @@ function Header() {
               />
             </div>
             <WalletConnectionIndicator variant="user" />
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-[#172233]">
                 Anonymous Browsing
               </span>
@@ -188,18 +191,17 @@ function Header() {
                   </span>
                 </>
               )}
-            </div>
-            <a href="/login" className="flex px-6 py-3 bg-[#6917AF] text-white rounded-full font-bold">
+            </div> */}
+            <a href="/auth/login" className="flex px-6 py-3 bg-[#6917AF] text-white rounded-full font-bold">
               Host Event
               <ArrowUpRight className="w-5 h-5" aria-hidden="true" />
             </a>
+            <div className="hidden md:block absolute top-12 right-6">
+              <ModeToggle />
+            </div>
           </div>
         )}
       </nav>
-
-      <div className="hidden md:block absolute top-12 right-6">
-        <ModeToggle />
-      </div>
     </header>
   );
 }
