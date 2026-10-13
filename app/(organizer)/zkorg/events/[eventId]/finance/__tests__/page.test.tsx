@@ -138,6 +138,18 @@ describe("EventFinancePage", () => {
     expect(screen.getByTestId("finalize-event-date")).toBeDisabled();
   });
 
+  it("requests production /api/v1/organizer/events/:eventId/finance endpoint", async () => {
+    mockFinanceResponse();
+    renderPage();
+
+    await screen.findByRole("heading", { name: /Crypto Art Lagos 2025 — Finance/i });
+    const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/organizer/events/crypto-art-lagos-2025/finance"),
+      expect.anything()
+    );
+  });
+
   it("surfaces a retryable error when the snapshot can't be loaded", async () => {
     mockFinanceResponse(FINANCE, false);
     renderPage();

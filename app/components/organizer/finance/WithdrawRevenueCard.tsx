@@ -68,7 +68,7 @@ export function WithdrawRevenueCard({ finance, onSettled }: WithdrawRevenueCardP
     async (txHash: string) => {
       try {
         const res = await fetch(
-          `/api/organizer/events/${encodeURIComponent(finance.eventId)}/finance`,
+          `/api/v1/organizer/events/${encodeURIComponent(finance.eventId)}/finance`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
