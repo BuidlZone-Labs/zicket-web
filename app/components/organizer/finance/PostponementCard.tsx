@@ -66,7 +66,7 @@ export function PostponementCard({ finance, onUpdated }: PostponementCardProps) 
   /** Persists a confirmed postponement transaction and adopts the new snapshot. */
   const commit = async (body: Record<string, unknown>) => {
     const res = await fetch(
-      `/api/organizer/events/${encodeURIComponent(finance.eventId)}/postponement`,
+      `/api/v1/organizer/events/${encodeURIComponent(finance.eventId)}/postponement`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

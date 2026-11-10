@@ -53,10 +53,18 @@ export function useEventFinance(
     inFlightRef.current = true;
     setIsRefreshing(true);
     try {
-      const res = await fetch(`/api/organizer/events/${encodeURIComponent(eventId)}/finance`, {
+      const res = await fetch(`/api/v1/organizer/events/${encodeURIComponent(eventId)}/finance`, {
         cache: "no-store",
         signal: controller.signal,
       });
+
+      if (res.status === 401 || res.status === 403) {
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
+        throw new Error("Authentication required. Redirecting to login…");
+      }
+
       if (!res.ok) throw new Error(`Couldn't load settlement data (HTTP ${res.status}).`);
       const data = (await res.json()) as EventFinance;
 
